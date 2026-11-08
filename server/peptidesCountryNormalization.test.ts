@@ -19,3 +19,11 @@ test("préserve les autres pays libres", () => {
   assert.equal(canonicalizePeptauraCountry("France"), "France");
   assert.equal(canonicalizePeptauraCountry("United Arab Emirates"), "United Arab Emirates");
 });
+
+test("applique uniquement l'alias Peptaura strict Hongrie vers Hungary", () => {
+  assert.equal(canonicalizePeptauraCountry("Hongrie"), "Hungary");
+  assert.equal(canonicalizePeptauraCountry("  HONGRIE  "), "Hungary");
+  assert.equal(canonicalizePeptauraCountry("Hungary"), "Hungary");
+  assert.equal(canonicalizePeptauraCountry("Hungría"), "Hungría");
+  assert.equal(canonicalizePeptauraCountry("Hongrie (HU)"), "Hongrie (HU)");
+});

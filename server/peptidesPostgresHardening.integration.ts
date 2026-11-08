@@ -39,15 +39,88 @@ after(async () => {
 });
 
 async function createActiveOrder(storage: InstanceType<typeof PgStorage>, email: string, metadata: Record<string, unknown>) {
+  const sourceHash = String(metadata.peptidesResponsesSha256 || "test-source-hash");
   const order = await storage.createOrder({
     email,
     productType: "PEPTIDES_ENGINE",
     amountCents: 29900,
-    metadata,
+    metadata: {
+      peptidesResponsesSha256: sourceHash,
+      peptidesSourceState: "READY",
+      peptidesSourceProviderHold: false,
+      peptidesSourceResponsesSha256: sourceHash,
+      peptidesSourceOwnerEmail: email.toLowerCase(),
+      peptidesSourceContextExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+      ...metadata,
+    },
   });
   await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
   return (await storage.getOrder(order.id))!;
 }
+
+test("PostgreSQL source-only claims are atomic, hash-bound and provider-free", async () => {
+  const storage = new PgStorage();
+  const email = `source-${randomUUID()}@example.com`;
+  const responses = { pep_email: email, pep_name: "Source" };
+  const sourceHash = hashPeptidesManualMutationPayload(responses);
+  const order = await storage.createOrder({
+    email,
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 29900,
+    metadata: { peptidesResponses: responses, peptidesResponsesSha256: sourceHash },
+  });
+  await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
+  const config = getPeptidesGenerationCircuitConfig({});
+
+  const concurrent = await Promise.all([
+    storage.claimPeptidesSourceCheck(order.id, config.leaseMs),
+    storage.claimPeptidesSourceCheck(order.id, config.leaseMs),
+  ]);
+  assert.equal(concurrent.filter(Boolean).length, 1);
+  const sourceClaim = concurrent.find(Boolean)!;
+  assert.equal(await storage.claimPeptidesGenerationAttempt(order.id, config), null);
+  assert.equal(await storage.claimPeptidesManualGenerationProvider(order.id, "source-held", false, 60_000), false);
+  assert.equal(await storage.finalizePeptidesSourceCheck(
+    order.id,
+    sourceClaim,
+    "READY",
+    "",
+    "",
+    { country: "Hungary", shippingAvailability: { live: true } },
+  ), true);
+  const ready = await storage.getOrder(order.id);
+  const readyMeta = ready?.metadata as any;
+  assert.equal(readyMeta.peptidesSourceResponsesSha256, sourceHash);
+  assert.equal(readyMeta.peptidesSourceOwnerEmail, email.toLowerCase());
+  assert.ok(Date.parse(readyMeta.peptidesSourceContextExpiresAt) > Date.now());
+  assert.equal(readyMeta.peptidesGenerationAttempts, undefined);
+  assert.equal(readyMeta.peptidesGenerationReservedCostMicroUsd, undefined);
+
+  const changedEmail = `changed-${randomUUID()}@example.com`;
+  const changed = await storage.createOrder({
+    email: changedEmail,
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 29900,
+    metadata: { peptidesResponsesSha256: "hash-before" },
+  });
+  await storage.updateOrder(changed.id, { status: "paid", paidAt: new Date() });
+  const changedClaim = await storage.claimPeptidesSourceCheck(changed.id, config.leaseMs);
+  assert.ok(changedClaim);
+  await storage.setOrderMetadataKey(changed.id, "peptidesResponsesSha256", "hash-after");
+  assert.equal(await storage.finalizePeptidesSourceCheck(
+    changed.id,
+    changedClaim!,
+    "READY",
+    "",
+    "",
+    { country: "Hungary" },
+  ), false);
+  const changedMeta = (await storage.getOrder(changed.id))?.metadata as any;
+  assert.equal(changedMeta.peptidesSourceState, "EXHAUSTED");
+  assert.equal(changedMeta.peptidesSourceProviderHold, true);
+  assert.equal(changedMeta.peptidesSourceDeliveryHold, true);
+  assert.equal(changedMeta.peptidesGenerationState, "NEEDS_REVIEW");
+});
 
 test("PostgreSQL enforces one report, monotone delivery and an atomic release/mutation race", async () => {
   const storage = new PgStorage();
@@ -245,8 +318,8 @@ test("PostgreSQL backfills exact legacy delivery and claims partial-refund gener
 
   const budgetEmail = `budget-${randomUUID()}@example.com`;
   const budgetOrder = await createActiveOrder(storage, budgetEmail, {
-    peptidesGenerationAttempts: 1,
-    peptidesGenerationReservedCostMicroUsd: 900,
+    peptidesGenerationAttempts: 0,
+    peptidesGenerationReservedCostMicroUsd: 0,
     peptidesGenerationReservationLedger: [{
       startedAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
       costMicroUsd: 900,

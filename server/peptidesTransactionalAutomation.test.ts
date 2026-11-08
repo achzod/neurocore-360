@@ -15,11 +15,20 @@ const { hashPeptidesManualMutationPayload } = await import("./peptidesManualMuta
 
 async function paidPeptidesOrder(metadata: Record<string, unknown> = {}) {
   const storage = new MemStorage();
+  const sourceHash = String(metadata.peptidesResponsesSha256 || "test-source-hash");
   const order = await storage.createOrder({
     email: "client@example.com",
     productType: "PEPTIDES_ENGINE",
     amountCents: 29900,
-    metadata,
+    metadata: {
+      peptidesResponsesSha256: sourceHash,
+      peptidesSourceState: "READY",
+      peptidesSourceProviderHold: false,
+      peptidesSourceResponsesSha256: sourceHash,
+      peptidesSourceOwnerEmail: "client@example.com",
+      peptidesSourceContextExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+      ...metadata,
+    },
   });
   await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
   return { storage, order: (await storage.getOrder(order.id))! };
