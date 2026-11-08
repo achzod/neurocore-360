@@ -1724,7 +1724,7 @@ export class MemStorage implements IStorage {
       order.updatedAt = new Date();
       return null;
     }
-    if (!sourceHash || !ownerEmail || held || manual || meta.peptidesReportId || meta.peptidesGenerationResponseId
+    if (!sourceHash || !ownerEmail || held || manual || meta.peptidesReportId
       || ["READY", "EXHAUSTED"].includes(sourceState)
       || String(meta.peptidesGenerationState || "").toUpperCase() === "NEEDS_REVIEW"
       || attempts >= 3
@@ -1733,10 +1733,11 @@ export class MemStorage implements IStorage {
     const phaseStartedAt = String(meta.peptidesSourcePhaseStartedAt || new Date(nowMs).toISOString());
     const attemptCount = attempts + 1;
     const phaseStartedAtMs = Date.parse(phaseStartedAt);
+    const minimumFutureLeaseUntilMs = nowMs + 2 * 60_000;
     const boundedLeaseUntilMs = attemptCount === 1
-      ? phaseStartedAtMs + 5 * 60_000
+      ? Math.max(phaseStartedAtMs + 5 * 60_000, minimumFutureLeaseUntilMs)
       : attemptCount === 2
-        ? phaseStartedAtMs + 20 * 60_000
+        ? Math.max(phaseStartedAtMs + 20 * 60_000, minimumFutureLeaseUntilMs)
         : nowMs + leaseMs;
     const claim: PeptidesSourceCheckClaim = {
       claimId: randomUUID(), attemptCount, phaseStartedAt,
@@ -5164,8 +5165,11 @@ export class PgStorage implements IStorage {
                 'peptidesSourceAttempts', COALESCE((metadata->>'peptidesSourceAttempts')::int, 0) + 1,
                 'peptidesSourcePhaseStartedAt', COALESCE(NULLIF(metadata->>'peptidesSourcePhaseStartedAt', ''), NOW()::text),
                 'peptidesSourceLeaseUntil', CASE COALESCE((metadata->>'peptidesSourceAttempts')::int, 0)
-                  WHEN 0 THEN (NOW() + INTERVAL '5 minutes')::text
-                  WHEN 1 THEN (COALESCE(NULLIF(metadata->>'peptidesSourcePhaseStartedAt', '')::timestamptz, NOW()) + INTERVAL '20 minutes')::text
+                  WHEN 0 THEN GREATEST(NOW() + INTERVAL '5 minutes', NOW() + INTERVAL '2 minutes')::text
+                  WHEN 1 THEN GREATEST(
+                    COALESCE(NULLIF(metadata->>'peptidesSourcePhaseStartedAt', '')::timestamptz, NOW()) + INTERVAL '20 minutes',
+                    NOW() + INTERVAL '2 minutes'
+                  )::text
                   ELSE (NOW() + ($2::bigint * INTERVAL '1 millisecond'))::text
                 END,
                 'peptidesSourceNextRetryAt', '',
@@ -5178,7 +5182,6 @@ export class PgStorage implements IStorage {
           AND product_type = 'PEPTIDES_ENGINE'
           AND status IN ('paid', 'partial_refund')
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
-          AND COALESCE(metadata->>'peptidesGenerationResponseId', '') = ''
           AND COALESCE(metadata->>'peptidesResponsesSha256', '') <> ''
           AND COALESCE(LOWER(email), '') <> ''
           AND COALESCE(metadata->>'peptidesEmailHold', 'false') <> 'true'

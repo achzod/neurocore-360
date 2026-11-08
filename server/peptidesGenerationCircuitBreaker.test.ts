@@ -407,6 +407,81 @@ test("source-only claims follow T0/+5/+20 without consuming provider budget", as
   assert.equal(((await storage.getOrder(order.id))?.metadata as any).peptidesGenerationState, "NEEDS_REVIEW");
 });
 
+test("a delayed second source probe always receives a future lease", async () => {
+  process.env.DATABASE_URL ||= "postgresql://test:***@127.0.0.1:1/test";
+  const { MemStorage } = await import("./storage");
+  const storage = new MemStorage();
+  const order = await storage.createOrder({
+    email: "source-delayed@example.test",
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 19900,
+    metadata: { peptidesResponsesSha256: "delayed-source-hash" },
+  });
+  await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
+  const config = getPeptidesGenerationCircuitConfig({});
+  const first = await storage.claimPeptidesSourceCheck(order.id, config.leaseMs);
+  assert.ok(first);
+  assert.equal(await storage.finalizePeptidesSourceCheck(
+    order.id,
+    first!,
+    "RETRY_SCHEDULED",
+    "shipping unavailable",
+    new Date(Date.now() - 1_000).toISOString(),
+  ), true);
+  await storage.setOrderMetadataKey(
+    order.id,
+    "peptidesSourcePhaseStartedAt",
+    new Date(Date.now() - 30 * 60_000).toISOString(),
+  );
+  const second = await storage.claimPeptidesSourceCheck(order.id, config.leaseMs);
+  assert.equal(second?.attemptCount, 2);
+  assert.ok(Date.parse(second!.leaseUntil) >= Date.now() + 119_000);
+  assert.equal(await storage.claimPeptidesSourceCheck(order.id, config.leaseMs), null);
+});
+
+test("a durable provider response performs source preflight before canonical resume", async () => {
+  process.env.DATABASE_URL ||= "postgresql://test:***@127.0.0.1:1/test";
+  const { MemStorage } = await import("./storage");
+  const storage = new MemStorage();
+  const order = await storage.createOrder({
+    email: "source-durable@example.test",
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 19900,
+    metadata: {
+      peptidesResponsesSha256: "durable-source-hash",
+      peptidesGenerationResponseId: "resp_durable_source",
+      peptidesGenerationState: "RETRY_SCHEDULED",
+      peptidesGenerationAttempts: 1,
+      peptidesGenerationReservedCostMicroUsd: 1000,
+      peptidesGenerationLeaseUntil: "",
+    },
+  });
+  await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
+  const config = getPeptidesGenerationCircuitConfig({});
+  const sourceClaim = await storage.claimPeptidesSourceCheck(order.id, config.leaseMs);
+  assert.ok(sourceClaim);
+  assert.equal(await storage.claimPeptidesGenerationResume(
+    order.id,
+    "resp_durable_source",
+    config.leaseMs,
+  ), null);
+  assert.equal(await storage.finalizePeptidesSourceCheck(
+    order.id,
+    sourceClaim!,
+    "READY",
+    "",
+    "",
+    { country: "Hungary", shippingAvailability: { live: true } },
+  ), true);
+  const resume = await storage.claimPeptidesGenerationResume(
+    order.id,
+    "resp_durable_source",
+    config.leaseMs,
+  );
+  assert.ok(resume);
+  assert.equal(resume?.attemptCount, 1);
+});
+
 test("a successful source claim releases provider hold only for a later claim", async () => {
   process.env.DATABASE_URL ||= "postgresql://test:***@127.0.0.1:1/test";
   const { MemStorage } = await import("./storage");

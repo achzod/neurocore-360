@@ -96,6 +96,55 @@ test("PostgreSQL source-only claims are atomic, hash-bound and provider-free", a
   assert.equal(readyMeta.peptidesGenerationAttempts, undefined);
   assert.equal(readyMeta.peptidesGenerationReservedCostMicroUsd, undefined);
 
+  const durableEmail = `durable-${randomUUID()}@example.com`;
+  const durable = await storage.createOrder({
+    email: durableEmail,
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 29900,
+    metadata: {
+      peptidesResponsesSha256: "durable-pg-hash",
+      peptidesGenerationResponseId: "resp_durable_pg",
+      peptidesGenerationState: "RETRY_SCHEDULED",
+      peptidesGenerationAttempts: 1,
+      peptidesGenerationReservedCostMicroUsd: 1000,
+    },
+  });
+  await storage.updateOrder(durable.id, { status: "paid", paidAt: new Date() });
+  const durableSourceClaim = await storage.claimPeptidesSourceCheck(durable.id, config.leaseMs);
+  assert.ok(durableSourceClaim);
+  assert.equal(await storage.finalizePeptidesSourceCheck(
+    durable.id,
+    durableSourceClaim!,
+    "READY",
+    "",
+    "",
+    { country: "Hungary", shippingAvailability: { live: true } },
+  ), true);
+  assert.ok(await storage.claimPeptidesGenerationResume(durable.id, "resp_durable_pg", config.leaseMs));
+
+  const delayedEmail = `delayed-${randomUUID()}@example.com`;
+  const delayed = await storage.createOrder({
+    email: delayedEmail,
+    productType: "PEPTIDES_ENGINE",
+    amountCents: 29900,
+    metadata: { peptidesResponsesSha256: "delayed-pg-hash" },
+  });
+  await storage.updateOrder(delayed.id, { status: "paid", paidAt: new Date() });
+  const delayedFirst = await storage.claimPeptidesSourceCheck(delayed.id, config.leaseMs);
+  assert.ok(delayedFirst);
+  assert.equal(await storage.finalizePeptidesSourceCheck(
+    delayed.id,
+    delayedFirst!,
+    "RETRY_SCHEDULED",
+    "shipping unavailable",
+    new Date(Date.now() - 1_000).toISOString(),
+  ), true);
+  await storage.setOrderMetadataKey(delayed.id, "peptidesSourcePhaseStartedAt", new Date(Date.now() - 30 * 60_000).toISOString());
+  const delayedSecond = await storage.claimPeptidesSourceCheck(delayed.id, config.leaseMs);
+  assert.equal(delayedSecond?.attemptCount, 2);
+  assert.ok(Date.parse(delayedSecond!.leaseUntil) >= Date.now() + 119_000);
+  assert.equal(await storage.claimPeptidesSourceCheck(delayed.id, config.leaseMs), null);
+
   const changedEmail = `changed-${randomUUID()}@example.com`;
   const changed = await storage.createOrder({
     email: changedEmail,
