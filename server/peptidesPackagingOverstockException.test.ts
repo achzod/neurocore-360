@@ -125,7 +125,8 @@ test("la route admin lie l'exception au HOLD, a skipEmail et au payload cible", 
   assert.match(block, /parseGhDuoPackagingOverstockException/);
   assert.match(block, /packagingOverstockException: ghPackagingOverstockException/);
   assert.match(block, /PEPTIDES_SINGLE_PROVIDER_PASS_REQUIRES_HELD_SILENT_RECOVERY/);
-  assert.match(block, /maxCandidates: singleProviderPass/);
+  assert.match(block, /maxCandidates: 1/);
+  assert.match(block, /providerRetries: 1/);
   const payloadStart = routes.indexOf("function getPeptidesManualMutationPayload");
   const payloadEnd = routes.indexOf("function validateManualPeptidesOrderTargetOrRespond", payloadStart);
   assert.match(routes.slice(payloadStart, payloadEnd), /ghPackagingOverstockException/);

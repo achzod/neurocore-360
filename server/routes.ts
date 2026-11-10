@@ -16803,11 +16803,20 @@ export async function registerRoutes(
 
     if (shouldAlert) {
       const adminEmail = process.env.ADMIN_NOTIF_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-      await sendCTAEmail(
+      const alerted = await sendCTAEmail(
         adminEmail,
         `[ACTION REQUISE] Peptides Engine ${order.email}`,
         `Une commande Peptides payee exige une action.\n\nCode: ${incident.code}\nDetail: ${incident.detail}\nOrderId: ${order.id}\nReportId: ${metadata.peptidesReportId || "absent"}\nClient: ${order.email}\n\nL'incident est persiste sur la commande et ne peut plus rester silencieux.`,
-      ).catch((error) => console.error("[Peptides Fulfillment] Admin alert failed:", error));
+      ).catch((error) => {
+        console.error("[Peptides Fulfillment] Admin alert failed:", error);
+        return false;
+      });
+      if (alerted) {
+        await storage.setOrderMetadataIfPeptidesReportMatches(order.id, expectedReportId, {
+          peptidesFulfillmentIncidentAlertedAt: new Date().toISOString(),
+          peptidesFulfillmentIncidentAlertState: "PROVIDER_ACCEPTED",
+        }).catch(() => false);
+      }
     }
     return true;
   }
@@ -17347,6 +17356,14 @@ export async function registerRoutes(
               : !Number.isFinite(sourceExpiresAtMs) || sourceExpiresAtMs <= Date.now()
                 ? "source_context_expired"
                 : "";
+        if (sourceGuardError === "source_context_expired") {
+          const reset = await storage.resetExpiredPeptidesSourceContext(
+            order.id,
+            String(freshMeta?.peptidesSourceContextExpiresAt || ""),
+          );
+          console.warn(`[AutoGen] Peptaura source context expired for ${email}; refresh ${reset ? "queued" : "lost CAS"}, no provider call`);
+          continue;
+        }
         if (sourceGuardError) {
           await storage.markPeptidesSourceNeedsReview(
             order.id,
@@ -17692,6 +17709,103 @@ export async function registerRoutes(
       console.error("[Peptides Delivery Reconcile] cycle failed:", error);
     } finally {
       peptidesDeliveryReconcileRunning = false;
+    }
+  }, 5 * 60 * 1000).unref();
+
+  // Payment confirmations have their own durable claim and SMTP reconciliation.
+  // A confirmed pre-accept failure releases only that exact claim for retry. An
+  // ambiguous provider result stays fenced, so a restart can never duplicate it.
+  let peptidesConfirmationReconcileRunning = false;
+  setInterval(async () => {
+    if (peptidesConfirmationReconcileRunning) return;
+    peptidesConfirmationReconcileRunning = true;
+    try {
+      const candidates = await pool.query(
+        `SELECT id, email, metadata
+           FROM orders
+          WHERE product_type = 'PEPTIDES_ENGINE'
+            AND status IN ('paid', 'partial_refund')
+            AND COALESCE(metadata->>'peptidesOrderConfirmationClaimId', '') <> ''
+            AND COALESCE(metadata->>'peptidesOrderConfirmationState', '') <> 'SMTP_DELIVERED'
+          ORDER BY updated_at ASC
+          LIMIT 50`,
+      );
+      for (const row of candidates.rows) {
+        const metadata = (row.metadata || {}) as Record<string, any>;
+        const claimId = String(metadata.peptidesOrderConfirmationClaimId || "");
+        if (!claimId) continue;
+        const trackingResult = await pool.query(
+          `SELECT id, subject, sendpulse_task_id, sendpulse_status, metadata, sent_at
+             FROM email_tracking
+            WHERE LOWER(recipient_email) = LOWER($1)
+              AND email_type = 'sendPeptidesOrderConfirmation'
+              AND metadata->>'orderId' = $2
+            ORDER BY sent_at DESC
+            LIMIT 1`,
+          [row.email, row.id],
+        );
+        const tracking = trackingResult.rows[0];
+        if (!tracking) continue;
+        const trackingMetadata = (tracking.metadata || {}) as Record<string, any>;
+        const confirmedPreAcceptFailure = tracking.sendpulse_status === "failed"
+          && trackingMetadata.sendpulseAccepted === false
+          && !tracking.sendpulse_task_id;
+        if (confirmedPreAcceptFailure) {
+          await pool.query(
+            `UPDATE orders
+                SET metadata = (COALESCE(metadata, '{}'::jsonb) - 'peptidesOrderConfirmationClaimId')
+                  || jsonb_build_object('peptidesOrderConfirmationState', 'FAILED_PRE_ACCEPT'),
+                    updated_at = NOW()
+              WHERE id = $1
+                AND metadata->>'peptidesOrderConfirmationClaimId' = $2`,
+            [row.id, claimId],
+          );
+          continue;
+        }
+        const startedAt = new Date(tracking.sent_at || Date.now());
+        const evidence = await reconcileSendPulseDeliveryEvidence({
+          recipientEmail: row.email,
+          subject: tracking.subject || "Commande Peptides Engine confirmée , ton protocole arrive bientôt",
+          startedAt,
+          taskId: tracking.sendpulse_task_id || null,
+          requestTimeoutMs: 15_000,
+        }).catch(() => ({ state: "PENDING" as const, taskId: tracking.sendpulse_task_id || null, smtpCode: null, detail: "reconcile_failed" }));
+        if (evidence.state === "DELIVERED") {
+          await pool.query(
+            `UPDATE orders
+                SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+                    updated_at = NOW()
+              WHERE id = $2
+                AND metadata->>'peptidesOrderConfirmationClaimId' = $3`,
+            [JSON.stringify({
+              peptidesOrderConfirmationState: "SMTP_DELIVERED",
+              peptidesOrderConfirmationSmtpCode: evidence.smtpCode,
+              peptidesOrderConfirmationTaskId: evidence.taskId,
+              peptidesOrderConfirmationDeliveredAt: new Date().toISOString(),
+            }), row.id, claimId],
+          );
+        } else if (evidence.state === "FAILED") {
+          await pool.query(
+            `UPDATE orders
+                SET metadata = (COALESCE(metadata, '{}'::jsonb) - 'peptidesOrderConfirmationClaimId')
+                  || $1::jsonb,
+                    updated_at = NOW()
+              WHERE id = $2
+                AND metadata->>'peptidesOrderConfirmationClaimId' = $3`,
+            [JSON.stringify({
+              peptidesOrderConfirmationState: "SMTP_FAILED_RETRYABLE",
+              peptidesOrderConfirmationSmtpCode: evidence.smtpCode,
+              peptidesOrderConfirmationTaskId: evidence.taskId,
+            }), row.id, claimId],
+          );
+        } else if (Date.now() - startedAt.getTime() > 10 * 60 * 1000) {
+          await storage.setOrderMetadataKey(row.id, "peptidesOrderConfirmationState", "PROVIDER_RESULT_UNKNOWN");
+        }
+      }
+    } catch (error) {
+      console.error("[Peptides Confirmation Reconcile] cycle failed:", error);
+    } finally {
+      peptidesConfirmationReconcileRunning = false;
     }
   }, 5 * 60 * 1000).unref();
 

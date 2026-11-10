@@ -1,6 +1,7 @@
 import { Pool } from "pg";
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
 
-const DATABASE_URL = "postgresql://apexlabs_user:2qxEKBpe8afjZaWPEUOQIR5idjrNOLQi@dpg-d6ip5hlm5p6s73ab2p4g-a.frankfurt-postgres.render.com:5432/apexlabs_db";
+const DATABASE_URL = process.env.DATABASE_URL;
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
