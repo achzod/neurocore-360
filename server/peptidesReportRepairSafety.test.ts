@@ -40,7 +40,7 @@ test("repair deterministically completes U-100 arithmetic for injectable microgr
       timing: "le matin",
       route: "sous-cutanée",
       cycleDuration: "12 semaines",
-      reconstitution: "Vial de 5 mg + 2 ml de BAC water.",
+      reconstitution: "Vial de 5 mg avec 2 ml de BAC water.",
       vialsNeeded: "1 vial de 5 mg",
       priceEstimate: "33.20 USD",
       purchaseUrl: "https://www.peptaura.com/product/example",
