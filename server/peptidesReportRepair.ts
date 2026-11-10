@@ -728,7 +728,7 @@ function cleanExpertPeptideFields(report: RepairableReport): void {
       .replace(/(\d),\s+(\d)/g, "$1,$2");
 
     const normalizedReconstitution = String(peptide.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2");
-    const vialMatch = normalizedReconstitution.match(/vial(?: de)?\s*(\d+(?:\.\d+)?)\s*mg\s*\+\s*(\d+(?:\.\d+)?)\s*ml/i);
+    const vialMatch = normalizedReconstitution.match(/vial(?: de)?\s*(\d+(?:\.\d+)?)\s*mg\s*(?:\+|avec)\s*(\d+(?:\.\d+)?)\s*ml/i);
     const doseMatch = Array.from(String(peptide.dosage || "").replace(/(\d),(\d)/g, "$1.$2").matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b/gi))
       .map((match) => {
         const value = Number(match[1]);
