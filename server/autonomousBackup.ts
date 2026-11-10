@@ -47,6 +47,7 @@ type BackupConfig = {
   secretAccessKey: string;
   encryptionKey: Buffer;
   prefix: string;
+  maxStorageBytes: number;
 };
 
 type BackupWorkerOptions = {
@@ -70,6 +71,10 @@ export function backupConfigFromEnv(): BackupConfig | null {
   if (missing.length) throw new Error(`AUTONOMOUS_BACKUP_CONFIG_MISSING:${missing.join(",")}`);
   const encryptionKey = Buffer.from(required.key, "base64");
   if (encryptionKey.length !== 32) throw new Error("BACKUP_ENCRYPTION_KEY_B64_MUST_DECODE_TO_32_BYTES");
+  const configuredMax = Number(env("BACKUP_MAX_STORAGE_BYTES") || 8_000_000_000);
+  if (!Number.isFinite(configuredMax) || configuredMax < 1_000_000_000) {
+    throw new Error("BACKUP_MAX_STORAGE_BYTES_INVALID");
+  }
   return {
     bucket: required.bucket,
     endpoint: required.endpoint.replace(/\/+$/, ""),
@@ -78,6 +83,7 @@ export function backupConfigFromEnv(): BackupConfig | null {
     secretAccessKey: required.secretAccessKey,
     encryptionKey,
     prefix: env("BACKUP_S3_PREFIX") || DEFAULT_PREFIX,
+    maxStorageBytes: configuredMax,
   };
 }
 
@@ -144,6 +150,24 @@ export function selectRetentionKeys(
     }
   }
   if (sorted[0]) keep.add(sorted[0].key);
+  return keep;
+}
+
+export function applyStorageCap(
+  entries: Array<{ key: string; createdAt: Date; size: number }>,
+  selected: Set<string>,
+  maxStorageBytes: number,
+): Set<string> {
+  const keep = new Set(selected);
+  const retainedNewestFirst = entries
+    .filter(entry => keep.has(entry.key))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  let retainedBytes = retainedNewestFirst.reduce((sum, entry) => sum + entry.size, 0);
+  for (const entry of [...retainedNewestFirst].reverse()) {
+    if (retainedBytes <= maxStorageBytes || entry === retainedNewestFirst[0]) break;
+    keep.delete(entry.key);
+    retainedBytes -= entry.size;
+  }
   return keep;
 }
 
@@ -266,8 +290,12 @@ async function pruneOldBackups(config: BackupConfig, client: S3Client): Promise<
   }));
   const entries = (listed.Contents || [])
     .filter(item => item.Key?.endsWith(".dump.apexbk") && item.LastModified)
-    .map(item => ({ key: item.Key!, createdAt: item.LastModified! }));
-  const keep = selectRetentionKeys(entries);
+    .map(item => ({ key: item.Key!, createdAt: item.LastModified!, size: Number(item.Size || 0) }));
+  const keep = applyStorageCap(
+    entries,
+    selectRetentionKeys(entries),
+    config.maxStorageBytes,
+  );
   const obsolete = entries.filter(entry => !keep.has(entry.key));
   const remove = obsolete.flatMap(entry => [{ Key: entry.key }, { Key: `${entry.key}.json` }]);
   if (!remove.length) return 0;

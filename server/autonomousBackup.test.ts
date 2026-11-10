@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { backupConfigFromEnv, selectRetentionKeys } from "./autonomousBackup";
+import { applyStorageCap, backupConfigFromEnv, selectRetentionKeys } from "./autonomousBackup";
 
 const withEnv = (values: Record<string, string | undefined>, fn: () => void) => {
   const previous = Object.fromEntries(Object.keys(values).map(key => [key, process.env[key]]));
@@ -53,6 +53,14 @@ test("backup accepts only a 256-bit encryption key", () => {
     const config = backupConfigFromEnv();
     assert.equal(config?.encryptionKey.length, 32);
     assert.equal(config?.region, "auto");
+    assert.equal(config?.maxStorageBytes, 8_000_000_000);
+  });
+  withEnv({
+    ...base,
+    BACKUP_ENCRYPTION_KEY_B64: Buffer.alloc(32, 7).toString("base64"),
+    BACKUP_MAX_STORAGE_BYTES: "not-a-number",
+  }, () => {
+    assert.throws(() => backupConfigFromEnv(), /BACKUP_MAX_STORAGE_BYTES_INVALID/);
   });
 });
 
@@ -66,6 +74,19 @@ test("retention keeps recent daily, older weekly and long-term monthly snapshots
   for (let day = 0; day <= 13; day++) assert.equal(keep.has(`backup-${day}`), true);
   assert.equal(keep.size <= 36, true, `unexpected retention size ${keep.size}`);
   assert.equal(keep.has("backup-429"), false);
+});
+
+test("storage cap preserves the newest backup and removes oldest selected objects", () => {
+  const now = new Date("2026-11-10T12:00:00Z");
+  const entries = [0, 1, 2, 3].map(daysAgo => ({
+    key: `backup-${daysAgo}`,
+    createdAt: new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000),
+    size: 300,
+  }));
+  const keep = applyStorageCap(entries, new Set(entries.map(entry => entry.key)), 650);
+  assert.deepEqual([...keep].sort(), ["backup-0", "backup-1"]);
+  const tinyCap = applyStorageCap(entries, new Set(entries.map(entry => entry.key)), 1);
+  assert.deepEqual([...tinyCap], ["backup-0"]);
 });
 
 test("runtime integration schedules backup and reports failures", () => {

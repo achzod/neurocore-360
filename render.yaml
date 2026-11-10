@@ -46,4 +46,5 @@ services:
       # - BACKUP_S3_SECRET_ACCESS_KEY
       # - BACKUP_ENCRYPTION_KEY_B64 (32 octets aléatoires encodés en base64)
       # - BACKUP_S3_PREFIX (optionnel, défaut apexlabs-postgres)
+      # - BACKUP_MAX_STORAGE_BYTES (optionnel, défaut 8000000000 pour rester sous le quota R2 gratuit)
       # - VITE_GA_MEASUREMENT_ID (Google Analytics 4, ex: G-XXXXXXXXXX)

@@ -15,7 +15,7 @@ Créer chaque jour un dump PostgreSQL complet, le chiffrer avant sa sortie de Re
 - nettoyage des fichiers temporaires ;
 - multipart incomplet supprimé en cas d’échec ;
 - alerte admin au premier échec, puis au maximum une fois par 24 heures ;
-- rétention bornée : 14 quotidiens, 8 semaines, 12 mois environ ;
+- rétention bornée : 14 quotidiens, 8 semaines, 12 mois environ, avec plafond dur de 8 GB par défaut pour rester sous le quota gratuit ;
 - aucun secret dans Git ou dans les logs.
 
 ## Variables Render
@@ -28,6 +28,7 @@ Créer chaque jour un dump PostgreSQL complet, le chiffrer avant sa sortie de Re
 - `BACKUP_S3_SECRET_ACCESS_KEY`
 - `BACKUP_ENCRYPTION_KEY_B64` : exactement 32 octets aléatoires en base64
 - `BACKUP_S3_PREFIX` : facultatif, défaut `apexlabs-postgres`
+- `BACKUP_MAX_STORAGE_BYTES` : facultatif, défaut `8000000000`; les archives les plus anciennes sont retirées avant de dépasser ce budget
 
 ## Activation sûre
 
