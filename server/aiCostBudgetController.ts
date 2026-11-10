@@ -629,6 +629,34 @@ export async function resumeAICostBudgetReservation(
   if (!responseId) return null;
   await ensureBudgetTables();
   const { pool } = await import("./db");
+  // Provider creation can succeed while the first ledger bind is unavailable.
+  // The order callback still owns the exact response id, so rebind only the
+  // newest unbound reservation in this scope and never reserve more budget.
+  await pool.query(
+    `WITH candidate AS (
+       SELECT id
+         FROM ai_cost_budget_reservations
+        WHERE product = $1 AND order_id = $2 AND profile = $3
+          AND response_id IS NULL
+          AND status IN ('RESERVED', 'UNCERTAIN')
+        ORDER BY created_at DESC
+        LIMIT 1
+     )
+     UPDATE ai_cost_budget_reservations r
+        SET response_id = $4, updated_at = NOW()
+       FROM candidate
+      WHERE r.id = candidate.id
+        AND NOT EXISTS (
+          SELECT 1 FROM ai_cost_budget_reservations existing
+           WHERE existing.response_id = $4
+        )`,
+    [
+      normalizeProduct(rawContext.product),
+      normalizeOrderId(rawContext.orderId),
+      String(rawContext.profile || "unknown").trim().slice(0, 80),
+      responseId,
+    ],
+  );
   const result = await pool.query(
     `SELECT id, product, order_id, profile, label, cost_category, authorization_id,
             reserved_cost_usd, created_at

@@ -406,10 +406,16 @@ test("automatic Peptides delivery remains signed-link-only", () => {
   assert.doesNotMatch(autoGen, /generateExportPDF|attachments?_binary|Content-Disposition|\.pdf\b/i);
 });
 
-test("stale workers cannot detach a newly linked Peptides report", () => {
+test("invalid or stale workers cannot detach a linked Peptides report", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   const storage = readFileSync(new URL("./storage.ts", import.meta.url), "utf8");
-  assert.match(routes, /setOrderMetadataIfPeptidesReportMatches\([\s\S]*peptidesPreviousInvalidReportId:[\s\S]*peptidesReportId: ""/);
+  const invalidIncident = routes.slice(
+    routes.indexOf("peptidesPreviousInvalidReportId"),
+    routes.indexOf("peptidesPreviousInvalidReportId") + 900,
+  );
+  assert.match(invalidIncident, /peptidesEmailHold:\s*true/);
+  assert.match(invalidIncident, /peptidesManualFulfillment:\s*true/);
+  assert.doesNotMatch(invalidIncident, /peptidesReportId:\s*""/);
   assert.doesNotMatch(routes, /setOrderMetadataKey\(order\.id, "peptidesReportId", ""\)/);
   assert.match(storage, /COALESCE\(metadata->>'peptidesReportId', ''\) = \$3/);
 });

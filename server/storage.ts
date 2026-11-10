@@ -360,6 +360,8 @@ export interface IStorage {
   /** Atomic JSONB merge: set a single metadata key without stomping concurrently-set keys. */
   setOrderMetadataKey(orderId: string, key: string, value: string | number | boolean): Promise<boolean>;
   setPeptidesGenerationResponseIdIfClaimMatches(orderId: string, claimId: string, responseId: string): Promise<boolean>;
+  /** Recover a provider response id durably journaled before a worker crash. */
+  recoverPeptidesGenerationResponseIdFromBudget(orderId: string): Promise<string | null>;
   /** Atomic CAS merge: mutate metadata only while the linked Peptides report is still the expected one. */
   setOrderMetadataIfPeptidesReportMatches(
     orderId: string,
@@ -1377,6 +1379,7 @@ export class MemStorage implements IStorage {
       peptidesGenerationState: "SUCCEEDED",
       peptidesGenerationLeaseUntil: "",
       peptidesGenerationNextRetryAt: "",
+      peptidesGenerationCompletedResponseId: meta.peptidesGenerationResponseId || meta.peptidesGenerationCompletedResponseId || "",
       peptidesGenerationResponseId: "",
       peptidesGenerationCompletedAt: completedAt.toISOString(),
       peptidesEmailScheduledAt: new Date(completedAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
@@ -1412,6 +1415,12 @@ export class MemStorage implements IStorage {
     order.metadata = { ...meta, peptidesGenerationResponseId: responseId } as any;
     order.updatedAt = new Date();
     return true;
+  }
+
+  async recoverPeptidesGenerationResponseIdFromBudget(orderId: string): Promise<string | null> {
+    const order = this.memOrders.get(orderId);
+    const responseId = String((order?.metadata as any)?.peptidesGenerationResponseId || "").trim();
+    return responseId || null;
   }
 
   async setOrderMetadataIfPeptidesReportMatches(
@@ -2936,6 +2945,7 @@ export class PgStorage implements IStorage {
                   'peptidesGenerationState', 'SUCCEEDED',
                   'peptidesGenerationLeaseUntil', '',
                   'peptidesGenerationNextRetryAt', '',
+                  'peptidesGenerationCompletedResponseId', COALESCE(metadata->>'peptidesGenerationResponseId', metadata->>'peptidesGenerationCompletedResponseId', ''),
                   'peptidesGenerationResponseId', '',
                   'peptidesGenerationCompletedAt', NOW()::text,
                   'peptidesEmailScheduledAt', (NOW() + INTERVAL '24 hours')::text,
@@ -4678,6 +4688,7 @@ export class PgStorage implements IStorage {
                'peptidesGenerationState', 'SUCCEEDED',
                'peptidesGenerationLeaseUntil', '',
                'peptidesGenerationNextRetryAt', '',
+               'peptidesGenerationCompletedResponseId', COALESCE(metadata->>'peptidesGenerationResponseId', metadata->>'peptidesGenerationCompletedResponseId', ''),
                'peptidesGenerationResponseId', '',
                'peptidesGenerationCompletedAt', NOW()::text,
                'peptidesEmailScheduledAt', (NOW() + INTERVAL '24 hours')::text,
@@ -4721,6 +4732,50 @@ export class PgStorage implements IStorage {
       [responseId, orderId, claimId],
     );
     return (result.rowCount ?? 0) === 1;
+  }
+
+  async recoverPeptidesGenerationResponseIdFromBudget(orderId: string): Promise<string | null> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `WITH candidate AS (
+         SELECT r.response_id
+           FROM ai_cost_budget_reservations r
+           JOIN orders o ON o.id = r.order_id
+          WHERE o.id = $1
+            AND r.product = 'peptides'
+            AND r.profile = 'peptides'
+            AND r.response_id IS NOT NULL
+            AND r.response_id <> ''
+            AND r.status IN ('RESERVED', 'UNCERTAIN', 'COMPLETED')
+            AND r.created_at >= COALESCE(
+              NULLIF(o.metadata->>'peptidesGenerationResetAt', '')::timestamptz,
+              NULLIF(o.metadata->>'peptidesGenerationStartedAt', '')::timestamptz - INTERVAL '1 minute',
+              r.created_at
+            )
+          ORDER BY r.created_at DESC
+          LIMIT 1
+       )
+       UPDATE orders o
+          SET metadata = COALESCE(o.metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesGenerationResponseId', candidate.response_id,
+                'peptidesGenerationResponseRecoveredFrom', 'ai_cost_budget_reservations',
+                'peptidesGenerationResponseRecoveredAt', NOW()::text
+              ),
+              updated_at = NOW()
+         FROM candidate
+        WHERE o.id = $1
+          AND COALESCE(o.metadata->>'peptidesReportId', '') = ''
+          AND COALESCE(o.metadata->>'peptidesGenerationResponseId', '') = ''
+       RETURNING o.metadata->>'peptidesGenerationResponseId' AS response_id`,
+      [orderId],
+    );
+    if ((result.rowCount ?? 0) === 1) return String(result.rows[0].response_id);
+    const existing = await pool.query(
+      `SELECT metadata->>'peptidesGenerationResponseId' AS response_id
+         FROM orders WHERE id = $1`,
+      [orderId],
+    );
+    return String(existing.rows[0]?.response_id || "").trim() || null;
   }
 
   async setOrderMetadataIfPeptidesReportMatches(
@@ -5575,7 +5630,8 @@ export class PgStorage implements IStorage {
                 'peptidesGenerationResponseId', '',
                 'peptidesGenerationStoredResumeAttempts', 0,
                 'peptidesGenerationLastError', '',
-                'peptidesGenerationReviewReason', ''
+                'peptidesGenerationReviewReason', '',
+                'peptidesGenerationResetAt', NOW()::text
               ),
               updated_at = NOW()
         WHERE id = $1
