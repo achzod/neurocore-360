@@ -195,6 +195,27 @@ test("expired generation workers stay fenced and cannot open a second paid attem
   }), undefined);
 });
 
+test("an expired READY source context is reset for deterministic refresh instead of terminal review", async () => {
+  const expiredAt = new Date(Date.now() - 60_000).toISOString();
+  const { storage, order } = await paidPeptidesOrder({
+    peptidesSourceState: "READY",
+    peptidesSourceAttempts: 3,
+    peptidesSourceContext: { country: "France" },
+    peptidesSourceContextExpiresAt: expiredAt,
+    peptidesSourceProviderHold: false,
+    peptidesSourceDeliveryHold: false,
+  });
+  assert.equal(await storage.resetExpiredPeptidesSourceContext(order.id, expiredAt), true);
+  const reset = (await storage.getOrder(order.id))?.metadata as any;
+  assert.equal(reset.peptidesSourceState, "PENDING");
+  assert.equal(reset.peptidesSourceAttempts, 0);
+  assert.equal(reset.peptidesSourceContext, null);
+  assert.equal(reset.peptidesSourceProviderHold, true);
+  assert.equal(reset.peptidesSourceDeliveryHold, true);
+  assert.notEqual(reset.peptidesGenerationState, "NEEDS_REVIEW");
+  assert.equal(await storage.resetExpiredPeptidesSourceContext(order.id, expiredAt), false, "stale reset CAS must lose");
+});
+
 test("production flow centralizes confirmation and claims every report delivery before provider calls", () => {
   const routes = readFileSync(new URL("./routes.ts", import.meta.url), "utf8");
   assert.match(routes, /async function sendPeptidesOrderConfirmationOnce/);

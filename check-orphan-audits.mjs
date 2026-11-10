@@ -1,8 +1,9 @@
 import pg from 'pg';
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
 const { Pool } = pg;
 
 const pool = new Pool({
-  connectionString: 'postgresql://apexlabs_user:2qxEKBpe8afjZaWPEUOQIR5idjrNOLQi@dpg-d6ip5hlm5p6s73ab2p4g-a.oregon-postgres.render.com/apexlabs_db',
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 

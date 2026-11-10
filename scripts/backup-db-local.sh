@@ -17,7 +17,11 @@ set -e  # Exit on error
 
 # Configuration
 BACKUP_DIR="$HOME/backups/apexlabs"
-DB_URL="postgresql://apexlabs_user:2qxEKBpe8afjZaWPEUOQIR5idjrNOLQi@dpg-d6ip5hlm5p6s73ab2p4g-a.oregon-postgres.render.com/apexlabs_db"
+DB_URL="${DATABASE_URL:-}"
+if [ -z "$DB_URL" ]; then
+    echo "❌ ERROR: DATABASE_URL must be injected by the runtime; plaintext credentials are forbidden."
+    exit 1
+fi
 DATE=$(date +%Y-%m-%d_%H-%M-%S)
 BACKUP_FILE="$BACKUP_DIR/apexlabs_backup_$DATE.sql.gz"
 KEEP_BACKUPS=14

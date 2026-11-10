@@ -416,6 +416,8 @@ export interface IStorage {
     sourceContext?: unknown,
   ): Promise<boolean>;
   markPeptidesSourceNeedsReview(orderId: string, reason: string, error: string): Promise<boolean>;
+  /** Reset only an expired READY source snapshot so the next cycle refreshes it without another provider call. */
+  resetExpiredPeptidesSourceContext(orderId: string, expectedExpiresAt: string): Promise<boolean>;
   claimPeptidesGenerationResume(
     orderId: string,
     responseId: string,
@@ -1816,6 +1818,25 @@ export class MemStorage implements IStorage {
       peptidesSourceProviderHold: true, peptidesSourceDeliveryHold: true,
       peptidesGenerationState: "NEEDS_REVIEW", peptidesGenerationReviewReason: reason,
       peptidesGenerationLastError: error,
+    } as any;
+    order.updatedAt = new Date();
+    return true;
+  }
+
+  async resetExpiredPeptidesSourceContext(orderId: string, expectedExpiresAt: string): Promise<boolean> {
+    const order = this.memOrders.get(orderId);
+    if (!order) return false;
+    const meta = ((order.metadata as any) ?? {}) as Record<string, any>;
+    if (meta.peptidesReportId || String(meta.peptidesSourceState || "").toUpperCase() !== "READY"
+      || String(meta.peptidesSourceContextExpiresAt || "") !== expectedExpiresAt
+      || !Number.isFinite(Date.parse(expectedExpiresAt)) || Date.parse(expectedExpiresAt) > Date.now()) return false;
+    order.metadata = {
+      ...meta,
+      peptidesSourceState: "PENDING", peptidesSourceAttempts: 0, peptidesSourceClaimId: "",
+      peptidesSourcePhaseStartedAt: "", peptidesSourceLeaseUntil: "", peptidesSourceNextRetryAt: "",
+      peptidesSourceContext: null, peptidesSourceValidatedAt: "", peptidesSourceContextExpiresAt: "",
+      peptidesSourceLastError: "source_context_expired_refresh_required",
+      peptidesSourceProviderHold: true, peptidesSourceDeliveryHold: true,
     } as any;
     order.updatedAt = new Date();
     return true;
@@ -5286,6 +5307,35 @@ export class PgStorage implements IStorage {
           AND COALESCE(metadata->>'peptidesReportId', '') = ''
       RETURNING id`,
       [reason.slice(0, 120), error.slice(0, 800), orderId],
+    );
+    return (result.rowCount ?? 0) === 1;
+  }
+
+  async resetExpiredPeptidesSourceContext(orderId: string, expectedExpiresAt: string): Promise<boolean> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      `UPDATE orders
+          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+                'peptidesSourceState', 'PENDING',
+                'peptidesSourceAttempts', 0,
+                'peptidesSourceClaimId', '',
+                'peptidesSourcePhaseStartedAt', '',
+                'peptidesSourceLeaseUntil', '',
+                'peptidesSourceNextRetryAt', '',
+                'peptidesSourceContext', 'null'::jsonb,
+                'peptidesSourceValidatedAt', '',
+                'peptidesSourceContextExpiresAt', '',
+                'peptidesSourceLastError', 'source_context_expired_refresh_required',
+                'peptidesSourceProviderHold', true,
+                'peptidesSourceDeliveryHold', true
+              ), updated_at = NOW()
+        WHERE id = $1
+          AND COALESCE(metadata->>'peptidesReportId', '') = ''
+          AND metadata->>'peptidesSourceState' = 'READY'
+          AND metadata->>'peptidesSourceContextExpiresAt' = $2
+          AND NULLIF(metadata->>'peptidesSourceContextExpiresAt', '')::timestamptz <= NOW()
+        RETURNING id`,
+      [orderId, expectedExpiresAt],
     );
     return (result.rowCount ?? 0) === 1;
   }

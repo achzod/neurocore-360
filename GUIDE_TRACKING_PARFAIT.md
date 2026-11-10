@@ -210,7 +210,7 @@ crontab -l
 gunzip /Users/achzod/backups/apexlabs/apexlabs_backup_2026-03-24.sql.gz
 
 # Restaurer (ATTENTION: écrase la DB!)
-psql "postgresql://apexlabs_user:XXX@dpg-XXX.oregon-postgres.render.com/apexlabs_db" < apexlabs_backup_2026-03-24.sql
+psql "${DATABASE_URL}" < apexlabs_backup_2026-03-24.sql
 ```
 
 ---

@@ -88,7 +88,9 @@ test("final retry cannot collapse to two molecules", () => {
   assert.doesNotMatch(engine, /2 peptides maximum si necessaire/);
   assert.match(generationGate, /AXIS_COVERAGE_GATE/);
   assert.match(generationGate, /STACK_REDUNDANCY_GATE/);
-  assert.match(engine, /Ne supprime jamais silencieusement un objectif valide/);
+  assert.match(engine, /validateGeneratedPeptideStack/);
+  assert.match(engine, /requireExplicitAxisCoverage: true/);
+  assert.match(engine, /POST_PRUNING_/);
   assert.match(engine, /CONDITIONAL_HPG_GATE/);
   assert.match(engine, /SECRETAGOGUE_AXIS_GATE/);
   assert.match(engine, /Enclomiphene et KissPeptin-10 doivent rester dans le stack/);

@@ -76,7 +76,6 @@ export function buildPeptidesFulfillmentIncidentPatch(
   additionalPatch: Record<string, string | number | boolean> = {},
   nowIso = new Date().toISOString(),
 ): Record<string, string | number | boolean> {
-  const shouldAlert = shouldAlertPeptidesFulfillmentIncident(metadata, incident.code);
   const sameIncident = metadata.peptidesFulfillmentState === "ACTION_REQUIRED"
     && metadata.peptidesFulfillmentIncidentCode === incident.code
     && metadata.peptidesFulfillmentIncidentDetail === incident.detail;
@@ -93,7 +92,6 @@ export function buildPeptidesFulfillmentIncidentPatch(
       peptidesEmailHold: true,
       peptidesEmailHoldReason: incident.code,
     } : {}),
-    ...(shouldAlert ? { peptidesFulfillmentIncidentAlertedAt: nowIso } : {}),
     ...additionalPatch,
   };
 }
