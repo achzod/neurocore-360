@@ -3498,6 +3498,44 @@ export async function sendAdminEmailNewAudit(
   }
 }
 
+export async function sendOperationalAlertEmail(
+  incident: string,
+  details: string,
+): Promise<boolean> {
+  try {
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+    const safe = (value: string) => value.replace(/[&<>"']/g, char => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[char] || char);
+    const subject = `[BLOQUÉ] APEXLABS ${incident}`;
+    const content = getEmailWrapper(`
+      <h2 style="color: ${COLORS.text}; margin: 0 0 20px;">Incident opérationnel APEXLABS</h2>
+      <p style="color: ${COLORS.textMuted};"><strong style="color: ${COLORS.text};">Type :</strong> ${safe(incident)}</p>
+      <pre style="white-space: pre-wrap; overflow-wrap: anywhere; background: ${COLORS.background}; border: 1px solid ${COLORS.border}; border-radius: 8px; padding: 16px; color: ${COLORS.text};">${safe(details)}</pre>
+    `);
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(content),
+        text: `Incident opérationnel APEXLABS\n\nType: ${incident}\n\n${details}`,
+        subject,
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email: adminEmail }],
+      },
+      {
+        emailType: "sendOperationalAlertEmail",
+        recipientEmail: adminEmail,
+        metadata: { incident, operational: true },
+        bccAdmin: false,
+        allowProviderFallback: true,
+      },
+    );
+    return result.result === true;
+  } catch (error) {
+    console.error("[Operational Alert] send failed:", error);
+    return false;
+  }
+}
+
 export async function sendCTAEmail(
   email: string,
   subject: string,
