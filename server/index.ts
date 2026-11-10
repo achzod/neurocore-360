@@ -8,8 +8,9 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { resumePendingJobs } from "./reportJobManager";
 import { storage } from "./storage";
-import { sendReportReadyEmail, sendAdminEmailNewAudit } from "./emailService";
+import { sendReportReadyEmail, sendAdminEmailNewAudit, sendOperationalAlertEmail } from "./emailService";
 import { sendScheduledBloodEmail } from "./blood-analysis/routes";
+import { startAutonomousBackupWorker } from "./autonomousBackup";
 import { startPeptauraCatalogCron } from "./peptidesEngine";
 import { summarizeRecoveryCtaClickCronResult } from "./recoveryCtaClickFollowup";
 
@@ -190,6 +191,13 @@ if (process.env.NODE_ENV === "production") {
     async () => {
       log(`serving on port ${port}`);
       startPeptauraCatalogCron();
+      startAutonomousBackupWorker({
+        onFailure: async details => {
+          if (sentryEnabled) Sentry.captureException(new Error(`AUTONOMOUS_BACKUP_FAILED: ${details}`));
+          const accepted = await sendOperationalAlertEmail("BACKUP CHIFFRÉ EN ÉCHEC", details);
+          if (!accepted) console.error("[Backup] admin alert was not accepted by the email provider");
+        },
+      });
 
       try {
         const resumedCount = await resumePendingJobs();
