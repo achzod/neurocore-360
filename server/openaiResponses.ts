@@ -799,19 +799,55 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
             timeout: profile.timeoutMs,
           } as any,
         );
-        await bindAICostBudgetReservationResponse(budgetReservation, String(response?.id || ""));
-        if (request.onResponseCreated && response?.id) {
+        let ledgerBindError: unknown;
+        for (const delayMs of [0, 250, 1_000]) {
+          if (delayMs) await sleep(delayMs);
           try {
-            await request.onResponseCreated(String(response.id));
-          } catch (callbackError) {
-            await client.responses.cancel(response.id).catch(() => {});
-            throw callbackError;
+            await bindAICostBudgetReservationResponse(budgetReservation, String(response?.id || ""));
+            ledgerBindError = undefined;
+            break;
+          } catch (error) {
+            ledgerBindError = error;
           }
+        }
+        if (request.onResponseCreated && response?.id) {
+          let callbackError: unknown;
+          for (const delayMs of [0, 250, 1_000]) {
+            if (delayMs) await sleep(delayMs);
+            try {
+              await request.onResponseCreated(String(response.id));
+              callbackError = undefined;
+              break;
+            } catch (error) {
+              callbackError = error;
+            }
+          }
+          if (callbackError) {
+            // Never cancel paid background work. If the ledger bind succeeded,
+            // AutoGen promotes it; if only the order callback succeeded, the
+            // budget controller rebinds that exact response on resume.
+            if (!background) await client.responses.cancel(response.id).catch(() => {});
+            throw new Error(
+              `OPENAI_RESPONSE_ID_CALLBACK_FAILED:${response.id}:${String((callbackError as any)?.message || callbackError)}`,
+            );
+          }
+        }
+        if (ledgerBindError) {
+          throw new Error(
+            `OPENAI_RESPONSE_LEDGER_BIND_FAILED:${response?.id || "unknown"}:${String((ledgerBindError as any)?.message || ledgerBindError)}`,
+          );
         }
       }
 
       while (response?.status === "queued" || response?.status === "in_progress") {
         if (Date.now() >= deadline) {
+          if (background && response?.id) {
+            // Background Responses are durable provider work. Cancelling here
+            // destroys a paid generation that may complete seconds later. The
+            // response id is already bound to the budget ledger and (normally)
+            // the order, so a later AutoGen cycle resumes it without spending.
+            throw new Error(`OPENAI_DURABLE_RESPONSE_PENDING:${response.id}`);
+          }
           try {
             const cancelResult = await Promise.race([
               client.responses.cancel(response.id).then((cancelledResponse) => ({

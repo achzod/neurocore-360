@@ -16,6 +16,7 @@ import {
   packagingOverstockLimitForPeptide,
   parseGhDuoPackagingOverstockException,
 } from "./peptidesPackagingOverstockException";
+import { selectHighestOperationalDoseMg } from "./peptidesDoseParsing";
 
 type RepairableReport = PeptidesReport & {
   _peptauraLiveSync?: {
@@ -729,21 +730,16 @@ function cleanExpertPeptideFields(report: RepairableReport): void {
 
     const normalizedReconstitution = String(peptide.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2");
     const vialMatch = normalizedReconstitution.match(/vial(?: de)?\s*(\d+(?:\.\d+)?)\s*mg\s*(?:\+|avec)\s*(\d+(?:\.\d+)?)\s*ml/i);
-    const doseMatch = Array.from(String(peptide.dosage || "").replace(/(\d),(\d)/g, "$1.$2").matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b/gi))
-      .map((match) => {
-        const value = Number(match[1]);
-        return /^mg$/i.test(match[2]) ? value : value / 1000;
-      })
-      .filter((value) => Number.isFinite(value) && value > 0);
+    const operationalDoseMg = selectHighestOperationalDoseMg(peptide.dosage);
     const completeU100 = /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/i.test(normalizedReconstitution)
       && /\d+(?:\.\d+)?\s*unit[ée]s?(?:\s+U-?100)?\b/i.test(normalizedReconstitution)
       && /\bsoit\s+\d+(?:\.\d+)?\s*ml\b/i.test(normalizedReconstitution);
     const injectable = /sous[- ]?cutan|intramuscul|\bSC\b|\bIM\b/i.test(String(peptide.route || ""));
 
-    if (injectable && vialMatch && doseMatch.length > 0 && (!completeU100 || /retatrutide/i.test(peptide.name || ""))) {
+    if (injectable && vialMatch && operationalDoseMg != null && (!completeU100 || /retatrutide/i.test(peptide.name || ""))) {
       const vialMg = Number(vialMatch[1]);
       const solventMl = Number(vialMatch[2]);
-      const targetDoseMg = Math.max(...doseMatch);
+      const targetDoseMg = operationalDoseMg;
       const concentration = vialMg / solventMl;
       const totalMl = targetDoseMg / concentration;
       const totalUnits = totalMl * 100;

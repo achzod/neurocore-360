@@ -9,6 +9,14 @@ import {
   validateU100Reconstitution,
 } from "./peptidesReportValidator";
 
+test("U-100 validation rejects arithmetic based on a cycle total instead of an operational dose", () => {
+  const issues = validateU100Reconstitution(
+    "Vial 5mg + 2ml BAC water = 2.50 mg/ml. Pour 25.2mg = 1008.0 unites U-100 (soit 10.08 ml).",
+    "300 mcg par injection, 7/7 pendant 12 semaines, total du cycle 25,2 mg",
+  );
+  assert.ok(issues.some((issue) => /absente du dosage operationnel/.test(issue)));
+});
+
 test("strict validator enforces explicit Esteban and Jihed active-axis contracts", () => {
   const strict = (profile: { primaryGoal: string; secondaryGoals: string[] }, peptides: any[]) =>
     validatePeptidesReport({

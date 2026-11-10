@@ -22,6 +22,7 @@ import {
   parseGhDuoPackagingOverstockException,
   type GhDuoPackagingOverstockException,
 } from "./peptidesPackagingOverstockException";
+import { extractOperationalDoseMgValues } from "./peptidesDoseParsing";
 
 export interface PeptidesPeptide {
   name?: string;
@@ -1348,11 +1349,12 @@ export function validateLivePackagingOverstock(
   return `[${snapshotName || "?"}] boite live impose trop de surstock: ratio x${packagingRatio.toFixed(2)} > x1.30`;
 }
 
-export function validateU100Reconstitution(value: string | undefined): string[] {
+export function validateU100Reconstitution(value: string | undefined, dosage?: string): string[] {
   const raw = String(value || "").replace(/(\d),(\d)/g, "$1.$2");
   if (!raw || /aucune reconstitution|sans reconstitution|solution liquide/i.test(raw)) return [];
 
   const issues: string[] = [];
+  const operationalDosesMg = extractOperationalDoseMgValues(dosage);
   const vialMatches = [...raw.matchAll(/\bvial(?:\s+de)?\s+(\d+(?:\.\d+)?)\s*mg\b/gi)];
   for (let vialIndex = 0; vialIndex < vialMatches.length; vialIndex++) {
     const vial = vialMatches[vialIndex];
@@ -1400,6 +1402,10 @@ export function validateU100Reconstitution(value: string | undefined): string[] 
       const doseMg = conversion.dose / (/^mg$/i.test(conversion.doseUnit) ? 1 : 1000);
       const statedUnits = conversion.units;
       const statedVolumeMl = conversion.volumeMl;
+      if (operationalDosesMg.length > 0 && !operationalDosesMg.some((candidate) =>
+        Math.abs(candidate - doseMg) <= Math.max(0.000001, candidate * 0.01))) {
+        issues.push(`dose de reconstitution ${doseMg} mg absente du dosage operationnel`);
+      }
       if (![vialMg, solventMl, doseMg, statedUnits, statedVolumeMl].every(Number.isFinite)
         || vialMg <= 0 || solventMl <= 0 || doseMg <= 0) {
         issues.push("calcul U-100 illisible ou non positif");
@@ -1573,7 +1579,7 @@ export function checkPeptide(
     issues.push(`purchaseUrl mal formee: ${p.purchaseUrl}`);
   }
 
-  issues.push(...validateU100Reconstitution(p.reconstitution));
+  issues.push(...validateU100Reconstitution(p.reconstitution, p.dosage));
   if (/sous[- ]?cutan|intramuscul|\bSC\b|\bIM\b/i.test(String(p.route || ""))) {
     const reconstitution = String(p.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2");
     const completeU100 = /\bvial(?:\s+de)?\s+\d+(?:\.\d+)?\s*mg\b/i.test(reconstitution)

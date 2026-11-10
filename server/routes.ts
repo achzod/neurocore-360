@@ -7440,6 +7440,14 @@ export async function registerRoutes(
           manualExpertDirective: normalizedManualDirective || undefined,
           initialPreviousError: normalizedRecoveryPreviousError || undefined,
           packagingOverstockException: ghPackagingOverstockException || undefined,
+          onResponseCreated: async (responseId: string) => {
+            const persisted = await storage.setOrderMetadataIfPeptidesReportMatches(pepOrder.id, null, {
+              peptidesGenerationResponseId: responseId,
+              peptidesGenerationResponseCapturedAt: new Date().toISOString(),
+              peptidesGenerationResponseCapturedBy: "manual_provider_claim",
+            });
+            if (!persisted) throw new Error("PEPTIDES_MANUAL_RESPONSE_ID_PERSIST_FAILED");
+          },
         });
       } finally {
         await storage.finalizePeptidesManualGenerationProvider(pepOrder.id, manualProviderClaimId).catch(() => false);
@@ -16950,6 +16958,60 @@ export async function registerRoutes(
           }
         }
 
+        // An operator-reviewed historical duplicate is terminal even though it
+        // intentionally owns no report link. Preserve that explicit manual
+        // classification across cycles instead of recreating MISSING_REPORT.
+        if (!meta?.peptidesReportId
+          && String(meta?.peptidesManualFulfillmentState || "") === "DUPLICATE_ORDER_TERMINAL_NO_REGENERATION"
+          && (meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true")
+          && (meta?.peptidesManualFulfillment === true || meta?.peptidesManualFulfillment === "true")) {
+          await storage.setOrderMetadataIfPeptidesReportMatches(order.id, null, {
+            peptidesFulfillmentState: "RESOLVED_DUPLICATE_ORDER",
+            peptidesFulfillmentIncidentCode: "DUPLICATE_ORDER_REPORT_EXISTS",
+            peptidesFulfillmentResolvedAt: new Date().toISOString(),
+          }).catch(() => false);
+          console.log(`[AutoGen] Operator-reviewed duplicate order ${order.id} remains terminal under HOLD; no alert, generation or delivery`);
+          continue;
+        }
+
+        // Historical duplicate-paid rows can legitimately have no local link
+        // because one sibling order already owns and delivered the report. Do
+        // not turn those terminal duplicates into a fresh MISSING_REPORT on
+        // every cycle. Keep them held/manual and record the owning artifact.
+        if (!meta?.peptidesReportId) {
+          const sibling = await storage.hasAnyPeptidesReportForEmail(email).catch(() => ({ exists: false } as any));
+          if (sibling.exists && String(sibling.existingOrderId || "") !== String(order.id)) {
+            const [siblingOrder, siblingReport] = await Promise.all([
+              storage.getOrder(String(sibling.existingOrderId || "")).catch(() => undefined),
+              storage.getBurnoutReport(String(sibling.existingReportId || "")).catch(() => undefined),
+            ]);
+            const siblingDelivery = siblingOrder
+              ? await readDeliveredReportImmutability(siblingOrder).catch(() => null)
+              : null;
+            const siblingProven = Boolean(
+              siblingOrder
+              && siblingReport
+              && siblingDelivery?.immutable
+              && String(siblingDelivery.reportId || "") === String(sibling.existingReportId || ""),
+            );
+            if (siblingProven) await storage.setOrderMetadataIfPeptidesReportMatches(order.id, null, {
+              peptidesEmailHold: true,
+              peptidesEmailHoldReason: "DUPLICATE_ORDER_REPORT_EXISTS",
+              peptidesManualFulfillment: true,
+              peptidesManualFulfillmentState: "DUPLICATE_ORDER_TERMINAL_NO_REGENERATION",
+              peptidesFulfillmentState: "RESOLVED_DUPLICATE_ORDER",
+              peptidesFulfillmentIncidentCode: "DUPLICATE_ORDER_REPORT_EXISTS",
+              peptidesFulfillmentIncidentDetail: `Rapport ${sibling.existingReportId} deja rattache a la commande soeur ${sibling.existingOrderId}.`,
+              peptidesFulfillmentResolvedAt: new Date().toISOString(),
+            }).catch(() => false);
+            if (siblingProven) {
+              console.log(`[AutoGen] Historical duplicate order ${order.id} resolved by delivered sibling report ${sibling.existingReportId}; no alert, generation or delivery`);
+              continue;
+            }
+            console.warn(`[AutoGen] Sibling report ${sibling.existingReportId} is not proven delivered for duplicate order ${order.id}; incident evaluation remains active`);
+          }
+        }
+
         // Evaluate paid fulfillment before honoring a pre-existing hold: legacy
         // empty reports and unsubscribed recipients must become durable,
         // operator-visible incidents rather than disappear forever.
@@ -16983,23 +17045,25 @@ export async function registerRoutes(
         });
         if (fulfillmentIncident) {
           const invalidReportId = String(meta?.peptidesReportId || "");
+          const incidentWasNew = shouldAlertPeptidesFulfillmentIncident(meta || {}, fulfillmentIncident.code);
           const incidentPersisted = await persistPeptidesFulfillmentIncident(
             order,
             fulfillmentIncident,
             fulfillmentIncident.code === "INVALID_EMPTY_OR_MEDICAL_REVIEW_REPORT"
               ? {
                   peptidesPreviousInvalidReportId: invalidReportId,
-                  peptidesReportId: "",
                   peptidesEmailHold: true,
-                  peptidesEmailHoldReason: "INVALID_REPORT_REGENERATING_REQUIRES_MANUAL_RELEASE",
+                  peptidesEmailHoldReason: "INVALID_REPORT_REQUIRES_MANUAL_REPAIR",
                   peptidesManualFulfillment: true,
-                  peptidesManualFulfillmentState: "AUTO_REGENERATING_REQUIRES_MANUAL_RELEASE",
-                  peptidesFulfillmentState: "REGENERATING",
+                  peptidesManualFulfillmentState: "LINKED_REPORT_REQUIRES_MANUAL_REPAIR",
+                  peptidesFulfillmentState: "ACTION_REQUIRED",
                 }
               : {},
           );
           if (!incidentPersisted) continue;
-          console.error(`[AutoGen] Peptides fulfillment incident ${fulfillmentIncident.code} for ${email}`);
+          if (incidentWasNew) {
+            console.error(`[AutoGen] Peptides fulfillment incident ${fulfillmentIncident.code} for ${email}`);
+          }
           if (fulfillmentIncident.code === "INVALID_EMPTY_OR_MEDICAL_REVIEW_REPORT") {
             continue;
           }
@@ -17008,7 +17072,11 @@ export async function registerRoutes(
           const deliveryState = String(meta?.peptidesDeliveryState || "");
           const held = meta?.peptidesEmailHold === true || meta?.peptidesEmailHold === "true";
           const manual = meta?.peptidesManualFulfillment === true || meta?.peptidesManualFulfillment === "true";
-          if (!["SENDING", "UNKNOWN"].includes(deliveryState) && !held && !manual && invariantReport?.report) {
+          const recoveredMissingReport = String(meta?.peptidesFulfillmentIncidentCode || "") === "MISSING_REPORT"
+            && Boolean(meta?.peptidesReportId);
+          if (!["SENDING", "UNKNOWN"].includes(deliveryState)
+            && ((!held && !manual) || recoveredMissingReport)
+            && invariantReport?.report) {
             const { validatePeptidesReport } = await import("./peptidesReportValidator");
             const strict = validatePeptidesReport(invariantReport.report as any);
             if (strict.ok && strict.warnings.length === 0) {
@@ -17399,7 +17467,11 @@ export async function registerRoutes(
           continue;
         }
 
-        const resumeResponseId = String(freshMeta?.peptidesGenerationResponseId || "").trim();
+        const journaledResponseId = await storage.recoverPeptidesGenerationResponseIdFromBudget(order.id);
+        const resumeResponseId = String(freshMeta?.peptidesGenerationResponseId || journaledResponseId || "").trim();
+        if (journaledResponseId && !freshMeta?.peptidesGenerationResponseId) {
+          console.warn(`[AutoGen] Recovered durable provider response ${journaledResponseId} from budget ledger for ${email}; no new provider call`);
+        }
         const generationClaim = resumeResponseId
           ? await storage.claimPeptidesGenerationResume(
               order.id,

@@ -385,7 +385,13 @@ export async function persistStoredPeptidesRecoveryUnderHold(input: {
                 'peptidesApprovedBy', 'stored_response_recovery',
                 'peptidesHashGateApprovalRequired', true,
                 'peptidesReleaseAuditVerdict', 'PENDING_INDEPENDENT_AUDIT',
-                'peptidesEmailHold', true
+                'peptidesEmailHold', true,
+                'peptidesEmailHoldReason', 'STORED_RESPONSE_RECOVERY_NO_DELIVERY',
+                'peptidesManualFulfillment', true,
+                'peptidesManualFulfillmentState', 'STORED_RESPONSE_RECOVERY_UNDER_HOLD',
+                'peptidesFulfillmentState', 'RESOLVED_UNDER_HOLD',
+                'peptidesFulfillmentResolvedAt', NOW()::text,
+                'peptidesFulfillmentIncidentResolvedAt', NOW()::text
               ),
               updated_at = NOW()
         WHERE id = $4

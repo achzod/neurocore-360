@@ -222,6 +222,9 @@ test("apply inserts and CAS-links atomically while retaining HOLD", async () => 
   const update = client.calls.find((call) => /UPDATE orders/.test(call.text));
   assert.ok(update);
   assert.match(update.text, /peptidesEmailHold', true/);
+  assert.match(update.text, /peptidesManualFulfillment', true/);
+  assert.match(update.text, /STORED_RESPONSE_RECOVERY_UNDER_HOLD/);
+  assert.match(update.text, /RESOLVED_UNDER_HOLD/);
   assert.match(update.text, /peptidesEmailScheduledAt/);
   assert.match(update.text, /generation_plus_24h_v1/);
   assert.match(update.text, /peptidesGenerationResponseId', ''/);
