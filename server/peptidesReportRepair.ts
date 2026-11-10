@@ -727,12 +727,20 @@ function cleanExpertPeptideFields(report: RepairableReport): void {
       .replace(/([A-Za-zÀ-ÿ)]),(\d)/g, "$1, $2")
       .replace(/(\d),\s+(\d)/g, "$1,$2");
 
-    const vialMatch = String(peptide.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2").match(/vial(?: de)?\s*(\d+(?:\.\d+)?)\s*mg\s*\+\s*(\d+(?:\.\d+)?)\s*ml/i);
-    const doseMatch = Array.from(String(peptide.dosage || "").replace(/(\d),(\d)/g, "$1.$2").matchAll(/(\d+(?:\.\d+)?)\s*mg/gi))
-      .map((match) => Number(match[1]))
-      .filter(Number.isFinite);
+    const normalizedReconstitution = String(peptide.reconstitution || "").replace(/(\d),(\d)/g, "$1.$2");
+    const vialMatch = normalizedReconstitution.match(/vial(?: de)?\s*(\d+(?:\.\d+)?)\s*mg\s*\+\s*(\d+(?:\.\d+)?)\s*ml/i);
+    const doseMatch = Array.from(String(peptide.dosage || "").replace(/(\d),(\d)/g, "$1.$2").matchAll(/(\d+(?:\.\d+)?)\s*(mg|mcg|µg|ug)\b/gi))
+      .map((match) => {
+        const value = Number(match[1]);
+        return /^mg$/i.test(match[2]) ? value : value / 1000;
+      })
+      .filter((value) => Number.isFinite(value) && value > 0);
+    const completeU100 = /\b(?:pour|dose(?:\s+de)?|administration(?:\s+de)?)\s+\d+(?:\.\d+)?\s*(?:mg|mcg|µg|ug)\b/i.test(normalizedReconstitution)
+      && /\d+(?:\.\d+)?\s*unit[ée]s?(?:\s+U-?100)?\b/i.test(normalizedReconstitution)
+      && /\bsoit\s+\d+(?:\.\d+)?\s*ml\b/i.test(normalizedReconstitution);
+    const injectable = /sous[- ]?cutan|intramuscul|\bSC\b|\bIM\b/i.test(String(peptide.route || ""));
 
-    if (/retatrutide/i.test(peptide.name || "") && vialMatch && doseMatch.length > 0) {
+    if (injectable && vialMatch && doseMatch.length > 0 && (!completeU100 || /retatrutide/i.test(peptide.name || ""))) {
       const vialMg = Number(vialMatch[1]);
       const solventMl = Number(vialMatch[2]);
       const targetDoseMg = Math.max(...doseMatch);
