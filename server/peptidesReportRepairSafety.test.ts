@@ -27,6 +27,37 @@ test("standard repair deduplicates order wording and restores missing rationale 
   assert.match(source, /peptide\.whyThisPeptide \|\| peptide\.purpose/);
 });
 
+test("repair deterministically completes U-100 arithmetic for injectable microgram doses", () => {
+  const repaired = repairPeptidesReportContent({
+    qualityVersion: "expert-standard-v1",
+    clientName: "Alex",
+    tier: "solo",
+    peptides: [{
+      name: "AOD-9604",
+      purpose: "Composition corporelle",
+      whyThisPeptide: "Axe retenu",
+      dosage: "300 mcg par injection",
+      timing: "le matin",
+      route: "sous-cutanée",
+      cycleDuration: "12 semaines",
+      reconstitution: "Vial de 5 mg + 2 ml de BAC water.",
+      vialsNeeded: "1 vial de 5 mg",
+      priceEstimate: "33.20 USD",
+      purchaseUrl: "https://www.peptaura.com/product/example",
+    }],
+    sections: Array.from({ length: 15 }, (_, index) => ({
+      id: `section-${index}`,
+      title: `Section ${index}`,
+      content: (`Contenu opérationnel personnalisé ${index}. `).repeat(60),
+    })),
+    weeklySchedule: "300 mcg le matin.",
+    shoppingList: "1 vial de 5 mg.",
+    bloodMarkers: [],
+    promoCodesGenerated: [],
+  } as any, { pep_name: "Alex" }, "solo");
+  assert.match(repaired.peptides[0].reconstitution, /Pour 0\.3mg = 12\.0 unites U-100 \(soit 0\.12 ml\)/);
+});
+
 test("medical recovery preserves a complete source report instead of injecting another client profile", () => {
   const sections = Array.from({ length: 15 }, (_, index) => ({
     id: `section-${index}`,
