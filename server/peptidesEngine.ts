@@ -445,6 +445,21 @@ function isEnclomipheneName(value: string): boolean {
   return /\benclomiph[eè]ne(?:\s+citrate)?\b/i.test(value);
 }
 
+export function deliveryPurchaseUrlForPeptide(
+  peptideName: string,
+  catalogSlug: string,
+  selectedListingUrl?: string | null,
+): string {
+  // The strict low-testosterone contract requires the stable canonical
+  // KissPeptin-10 catalog URL. Keep the exact selected listing in the private
+  // live-sync snapshot for price provenance, but do not expose that volatile
+  // marketplace URL as the report's canonical purchase source.
+  if (/\bkisspeptin[\s-]*10\b/i.test(peptideName)) {
+    return peptauraProductUrl(catalogSlug);
+  }
+  return String(selectedListingUrl || "").trim() || peptauraProductUrl(catalogSlug);
+}
+
 function hasConfirmedLowTestosterone(responses: Record<string, unknown>): boolean {
   return String(responses.pep_testo_bloodwork || "").trim().toLowerCase() === "recent-low";
 }
@@ -1295,7 +1310,7 @@ async function applyLivePeptauraPricing(
       continue;
     }
 
-    pep.purchaseUrl = peptauraProductUrl(slug);
+    pep.purchaseUrl = deliveryPurchaseUrlForPeptide(pep.name, slug);
     const estimatedNeedMg = estimateNeedMg(pep);
     const orderedNeedMg = extractTotalMgFromVials(pep.vialsNeeded);
     const activeNeedMg = estimatedNeedMg ?? orderedNeedMg;
@@ -1477,7 +1492,7 @@ async function applyLivePeptauraPricing(
     // The official feed exposes the exact listing URL. Never synthesize a
     // vendor URL; use it only after the listing passed country/stock/price
     // selection, otherwise retain the canonical catalog page.
-    if (best.productUrl) pep.purchaseUrl = best.productUrl;
+    pep.purchaseUrl = deliveryPurchaseUrlForPeptide(pep.name, slug, best.productUrl);
 
     const livePrice = buildLivePriceEstimate(pep, best, qty);
     if (livePrice) {
