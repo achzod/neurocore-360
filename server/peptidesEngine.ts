@@ -441,6 +441,13 @@ function peptauraProductUrl(slug: string): string {
   return `https://www.peptaura.com/catalog/${encodeURIComponent(slug).replace(/%2B/g, "+")}`;
 }
 
+/** An inactive conditional card must never reappear as a purchase instruction. */
+export function buildActiveEnclomipheneStockReminder(peptides: PeptidesReport["peptides"]): string[] {
+  return peptides.some((pep) => !isConditionalInactivePeptide(pep) && isEnclomipheneName(pep.name))
+    ? [`Avant de payer Enclomiphene, verifie une derniere fois le stock sur ${ENCLOMIPHENE_SOURCE_URL}.`]
+    : [];
+}
+
 function isEnclomipheneName(value: string): boolean {
   return /\benclomiph[eè]ne(?:\s+citrate)?\b/i.test(value);
 }
@@ -1689,9 +1696,7 @@ async function applyLivePeptauraPricing(
       }))
     ),
     ...(bacWaterLine ? [bacWaterLine] : []),
-    ...(report.peptides.some((pep) => isEnclomipheneName(pep.name))
-      ? [`Avant de payer Enclomiphene, verifie une derniere fois le stock sur ${ENCLOMIPHENE_SOURCE_URL}.`]
-      : []),
+    ...buildActiveEnclomipheneStockReminder(report.peptides),
     ...shippingBreakdown.map((line) => {
       const minimum = line.minimumOrderUsd == null
         ? "aucun minimum affiche"
