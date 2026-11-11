@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {buildActiveEnclomipheneStockReminder, ENCLOMIPHENE_SOURCE_URL} from "./peptidesEngine";
+import {findConditionalInactiveOperationalMentions} from "./peptidesReportValidator";
+const inactive:any={name:"Enclomiphene Citrate",activationStatus:"conditional-inactive",dosage:"",timing:"",vialsNeeded:"",priceEstimate:"",reconstitution:"",activationRequirements:["condition A","condition B"]};
+const active:any={...inactive,activationStatus:"active"};
+test("conditional inactive card generates no stock purchase instruction",()=>assert.deepEqual(buildActiveEnclomipheneStockReminder([inactive]),[]));
+test("active card retains exactly the original stock reminder",()=>assert.deepEqual(buildActiveEnclomipheneStockReminder([active]),[`Avant de payer Enclomiphene, verifie une derniere fois le stock sur ${ENCLOMIPHENE_SOURCE_URL}.`]));
+test("inactive other cards do not create an oral-source reminder",()=>assert.deepEqual(buildActiveEnclomipheneStockReminder([{...inactive,name:"KissPeptin-10"}]),[]));
+test("empty stack creates no reminder",()=>assert.deepEqual(buildActiveEnclomipheneStockReminder([]),[]));
+test("active and inactive duplicates do not duplicate reminder",()=>assert.equal(buildActiveEnclomipheneStockReminder([active,inactive,active]).length,1));
+test("a retained reminder would be a real conditional exposure, corrected one is not",()=>{const report:any={peptides:[inactive],sections:[],weeklySchedule:"",shoppingList:buildActiveEnclomipheneStockReminder([inactive]).join(" ")};assert.deepEqual(findConditionalInactiveOperationalMentions(report),[]);report.shoppingList=buildActiveEnclomipheneStockReminder([active]).join(" ");assert.ok(findConditionalInactiveOperationalMentions(report).length>0);});
