@@ -1,3 +1,5 @@
+import { parseExplicitAdministrationsPerWeek } from "./peptidesReservePlanning";
+
 export interface PeptideVialPlanningInput {
   name?: string;
   dosage?: string;
@@ -116,20 +118,19 @@ export function parsePeptideCadence(input: PeptideVialPlanningInput): { cycleDay
   if (!Number.isFinite(cycleDays) || cycleDays <= 0) return null;
 
   let administrationsPerWeek = 0;
-  const frequencyToken = "\\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze";
-  const explicit = dosage.match(new RegExp(`(${frequencyToken})\\s*(?:fois|injections?|jours?|soirs?)\\s*(?:par|\\/)\\s*semaine`, "i"));
-  if (explicit) administrationsPerWeek = parseCount(explicit[1]);
-  else if (/(?:\bpar\s+|\/)semaine\b/i.test(dosage)) administrationsPerWeek = 1;
+  const explicit = parseExplicitAdministrationsPerWeek(dosage);
+  if (explicit != null) administrationsPerWeek = explicit;
+  else if (/(?:\bpar\s+|\/\s*)semaine\b/i.test(dosage)) administrationsPerWeek = 1;
   else if (/une fois par semaine|hebdomadaire|1x\s*\/\s*sem/i.test(dosage)) administrationsPerWeek = 1;
   else if (/deux fois par semaine/i.test(dosage)) administrationsPerWeek = 2;
   else if (/trois fois par semaine/i.test(dosage)) administrationsPerWeek = 3;
   else if (/quatre fois par semaine/i.test(dosage)) administrationsPerWeek = 4;
   else if (/cinq fois par semaine/i.test(dosage)) administrationsPerWeek = 5;
   else if (/six fois par semaine/i.test(dosage)) administrationsPerWeek = 6;
-  else if (/chaque\s+(?:jour|soir|matin)|tous\s+les\s+(?:jours|soirs|matins)|par\s+jour|au coucher|quotidien/i.test(dosage)) administrationsPerWeek = 7;
+  else if (/chaque\s+(?:jour|soir|matin)|tous\s+les\s+(?:jours|soirs|matins)|(?:par\s+|\/\s*)jour\b|au coucher|quotidien/i.test(dosage)) administrationsPerWeek = 7;
   else if (consecutive) administrationsPerWeek = 7;
 
-  if (!Number.isFinite(administrationsPerWeek) || administrationsPerWeek <= 0 || administrationsPerWeek > 14) return null;
+  if (!Number.isFinite(administrationsPerWeek) || administrationsPerWeek <= 0 || administrationsPerWeek > 21) return null;
   return { cycleDays, administrationsPerWeek };
 }
 
@@ -144,11 +145,16 @@ export function estimatePharmacologicalNeedMg(input: PeptideVialPlanningInput): 
   const dosage = String(input.dosage || "").replace(/(\d),(\d)/g, "$1.$2");
   const cadence = parsePeptideCadence(input);
   if (!cadence) return null;
-  const perAdministration = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg|ug|µg)\s*(?:par\s*(?:injection|jour|prise)|\/\s*(?:injection|jour))/i)
+  const perAdministration = dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg|ug|µg)\s*(?:par\s*|\/\s*)(injection|administration|prise)\b/i)
+    || dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg|ug|µg)\s*(?:par\s*|\/\s*)(jour|semaine)\b/i)
     || dosage.match(/(\d+(?:\.\d+)?)\s*(mg|mcg|ug|µg)\b(?!\s*\/\s*kg)/i);
   if (!perAdministration) return null;
   const doseMg = toMg(Number(perAdministration[1]), perAdministration[2]);
   if (!Number.isFinite(doseMg) || doseMg <= 0) return null;
+  // A total per day/week is not a per-administration dose.
+  const dosePeriod = perAdministration[3]?.toLowerCase();
+  if (dosePeriod === "jour") return doseMg * cadence.cycleDays;
+  if (dosePeriod === "semaine") return doseMg * cadence.cycleDays / 7;
   const administrations = Math.max(1, Math.ceil((cadence.cycleDays / 7) * cadence.administrationsPerWeek - 1e-9));
   return doseMg * administrations;
 }

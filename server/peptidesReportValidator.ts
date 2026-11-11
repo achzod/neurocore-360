@@ -13,7 +13,7 @@ import {
   auditClientFacingText,
   collectClientFacingStrings,
 } from "./clientFacingQuality";
-import { calculateReserveTargetMg } from "./peptidesReservePlanning";
+import { calculateReserveTargetMg, parseExplicitAdministrationsPerWeek } from "./peptidesReservePlanning";
 import { parsePeptideCadence } from "./peptidesVialPlanning";
 import { validateGeneratedPeptideStack } from "./peptidesGenerationGate";
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
@@ -809,6 +809,9 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   const dose = (p.dosage || "").replace(/(\d),(\d)/g, "$1.$2");
   const cycle = (p.cycleDuration || "").replace(/(\d),(\d)/g, "$1.$2");
 
+  const explicitFrequency = parseExplicitAdministrationsPerWeek(dose);
+  if (explicitFrequency != null && !Number.isFinite(explicitFrequency)) return null;
+
   // Progressive weekly with range: "0.25 mg par semaine (semaines 1 a 4), puis 0.5 mg par semaine (semaines 5 a 8)"
   let weeksFromCycle = 0;
   const wkMatchEarly = cycle.match(/(\d+)\s*semaines?\b/i);
@@ -875,16 +878,16 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // scale correctly. "150 mcg semaine 1, 200 mcg semaine 2" combined with
   // "300 mcg par injection le soir" = daily injections, scale ×7.
   const detectInjPerWeek = (txt: string): number => {
-    if (/\b1\s*(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|\b1\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 1;
-    if (/\b(?:2|deux)\s*(?:fois|injections?|jours?)\s*(?:par|\/)\s*semaine|\b2\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 2;
-    if (/\b(?:3|trois)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b3\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 3;
-    if (/\b(?:4|quatre)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b4\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 4;
-    if (/\b(?:5|cinq)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b5\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 5;
-    if (/\b(?:6|six)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b6\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 6;
+    if (/\b1\s*(?:fois|injection|administration)\s*(?:par|\/)\s*semaine|hebdomadaire|\b1\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 1;
+    if (/\b(?:2|deux)\s*(?:fois|injections?|administrations?|jours?)\s*(?:par|\/)\s*semaine|\b2\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 2;
+    if (/\b(?:3|trois)\s*(?:fois|injections?|administrations?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b3\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 3;
+    if (/\b(?:4|quatre)\s*(?:fois|injections?|administrations?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b4\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 4;
+    if (/\b(?:5|cinq)\s*(?:fois|injections?|administrations?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b5\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 5;
+    if (/\b(?:6|six)\s*(?:fois|injections?|administrations?|jours?|soirs?)\s*(?:par|\/)\s*semaine|\b6\s*x\s*\/?\s*sem(?:aine)?\b/i.test(txt)) return 6;
     if (/chaque\s+(?:soir|matin|jour)|tous\s+les\s+(?:soirs?|jours?)|\bpar\s+(?:injection|jour|soir)\b|\ble\s+soir\b|\bavant\s+le\s+coucher\b|7\s*(?:jours?|soirs?)\s*\/?\s*7|\b1x\/jour\b/i.test(txt)) return 7;
     return 1;
   };
-  const injectionsPerWeekTit = detectInjPerWeek(dose);
+  const injectionsPerWeekTit = explicitFrequency ?? detectInjPerWeek(dose);
 
   // Reverse titration syntax used by natural French:
   // "semaine 1 a 1 mg, semaine 2 a 2 mg, semaines 4 a 12 a 8 mg".
@@ -995,7 +998,8 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // matches. Fallback to "first number with unit", but skip values that obviously refer to
   // body weight ("X kg") or to mcg/kg context.
   const valueMatch =
-    dose.match(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\s*par\s*(administration|injection|jour|semaine)/i) ||
+    dose.match(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\s*(?:par\s*|\/\s*)(administration|injection|prise)\b/i) ||
+    dose.match(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\s*(?:par\s*|\/\s*)(jour|semaine)\b/i) ||
     dose.match(/(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b(?!\s*\/\s*kg)/i);
   if (!valueMatch) return null;
   const doseVal = parseFloat(valueMatch[1].replace(",", "."));
@@ -1004,17 +1008,18 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   if (doseMg <= 0) return null;
 
   let perWeek = 0;
-  const twiceDaily = /(?:\b2\s*|\bdeux\s+)(?:fois|injections?)\s*(?:par|\/)\s*jour/i.test(dose);
-  const everyDay = /chaque jour|chaque soir|tous les jours|\b7\s*(?:soirs?|jours?)\s*\/?\s*7|\b1x\/jour\b|(?:\b1\s*|\bune\s+)(?:fois|injection)\s*(?:par|\/)\s*jour|par jour\b|au coucher\b/i.test(dose);
-  const fivePerWeek = /\b(?:5|cinq)\s*(?:soirs?|jours?|fois)\s*(?:par|\/)\s*semaine/i.test(dose);
-  const fourPerWeek = /\b(?:4|quatre)\s*(?:soirs?|jours?|fois)\s*(?:par|\/)\s*semaine/i.test(dose);
-  const threePerWeek = /\b(?:3|trois)\s*(?:fois|soirs?|jours?|injections?)\s*(?:par|\/)\s*semaine/i.test(dose);
-  const twoPerWeek = /\b(?:2|deux)\s*(?:fois|soirs?|jours?|injections?)\s*(?:par|\/)\s*semaine/i.test(dose);
-  const explicitOncePerWeek = /(?:\b1\s*|\bune\s+)(?:fois|injection)\s*(?:par|\/)\s*semaine|hebdomadaire|1x\/sem/i.test(dose);
+  const twiceDaily = /(?:\b2\s*|\bdeux\s+)(?:fois|injections?|administrations?)\s*(?:par|\/)\s*jour/i.test(dose);
+  const everyDay = /chaque jour|chaque soir|tous les jours|\b7\s*(?:soirs?|jours?)\s*\/?\s*7|\b1x\/jour\b|(?:\b1\s*|\bune\s+)(?:fois|injection|administration)\s*(?:par|\/)\s*jour|par jour\b|au coucher\b/i.test(dose);
+  const fivePerWeek = /\b(?:5|cinq)\s*(?:soirs?|jours?|fois|injections?|administrations?)\s*(?:par|\/)\s*semaine/i.test(dose);
+  const fourPerWeek = /\b(?:4|quatre)\s*(?:soirs?|jours?|fois|injections?|administrations?)\s*(?:par|\/)\s*semaine/i.test(dose);
+  const threePerWeek = /\b(?:3|trois)\s*(?:fois|soirs?|jours?|injections?|administrations?)\s*(?:par|\/)\s*semaine/i.test(dose);
+  const twoPerWeek = /\b(?:2|deux)\s*(?:fois|soirs?|jours?|injections?|administrations?)\s*(?:par|\/)\s*semaine/i.test(dose);
+  const explicitOncePerWeek = /(?:\b1\s*|\bune\s+)(?:fois|injection|administration)\s*(?:par|\/)\s*semaine|hebdomadaire|1x\/sem/i.test(dose);
   const genericEachWeek = /chaque\s+semaine/i.test(dose);
   const barePerWeek = /\bpar\s+semaine\b/i.test(dose);
 
-  if (twiceDaily) perWeek = 14;
+  if (explicitFrequency != null) perWeek = explicitFrequency;
+  else if (twiceDaily) perWeek = 14;
   else if (fivePerWeek) perWeek = 5;
   else if (fourPerWeek) perWeek = 4;
   else if (threePerWeek) perWeek = 3;
@@ -1023,6 +1028,8 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   else if (everyDay) perWeek = 7;
   else if (genericEachWeek) perWeek = 1;
   else if (barePerWeek) perWeek = 1;
+  else if (valueMatch[3]?.toLowerCase() === "semaine") perWeek = 1;
+  else if (valueMatch[3]?.toLowerCase() === "jour") perWeek = 7;
   else return null;
 
   if (!weeks && days) weeks = Math.ceil(days / 7);
@@ -1031,7 +1038,7 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // A value explicitly stated "par semaine" is already the weekly total.
   // Do not multiply it again by a separate frequency phrase in the prose.
   const cadence = String(valueMatch[3] || "").toLowerCase();
-  const total = doseMg * (cadence === "semaine" ? 1 : perWeek) * weeks;
+  const total = doseMg * (cadence === "semaine" ? 1 : cadence === "jour" ? 7 : perWeek) * weeks;
   return total >= 0.5 ? total : null;
 }
 
@@ -1512,6 +1519,15 @@ export function checkPeptide(
     issues.push(
       `format de reconstitution ${reconstitutionVialMg}mg different du vial commande ${orderedVialMg}mg`
     );
+  }
+
+  const explicitCadence = parseExplicitAdministrationsPerWeek(String(p.dosage || ""));
+  if (explicitCadence != null && !Number.isFinite(explicitCadence)) {
+    issues.push("cadence explicite contradictoire, negative ou non supportee: calcul bloque");
+  }
+  const absoluteDoseText = String(p.dosage || "").replace(/\b\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|ug)\s*\/\s*kg\b/gi, "");
+  if (/\/\s*kg\b/i.test(String(p.dosage || "")) && !/\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|ug)\b/i.test(absoluteDoseText)) {
+    issues.push("dose absolue absente: unite par kg seule incalculable");
   }
 
   const totalMgOrdered = extractTotalMgFromVials(p.vialsNeeded);
@@ -2108,8 +2124,8 @@ export function validatePeptidesReport(report: PeptidesReport | null | undefined
       .reduce((max, p) => {
       const txt = `${p.dosage || ""} ${p.timing || ""}`;
       if (/chaque jour|tous les jours|7\s*(?:jours?|soirs?)\s*\/?\s*7|\b1x\/jour\b|par jour\b/i.test(txt)) return Math.max(max, 7);
-      const m = txt.match(/(\d)\s*(?:fois|injections?|jours?|soirs?)\s*(?:par|\/)\s*semaine/i);
-      if (m) return Math.max(max, parseInt(m[1], 10));
+      const explicit = parseExplicitAdministrationsPerWeek(txt);
+      if (explicit != null && Number.isFinite(explicit)) return Math.max(max, Math.min(7, explicit));
       return max;
       }, 0);
     const hasRestDayMention = /repos|off|pause|aucune\s+injection|hors\s+protocole/i.test(c);

@@ -58,7 +58,7 @@ import {
   planOperationalVials,
 } from "./peptidesVialPlanning";
 import { derivePeptidesStackPolicy } from "./peptidesStackPolicy";
-import { calculateReserveTargetMg } from "./peptidesReservePlanning";
+import { calculateReserveTargetMg, calculateReservePackageCount } from "./peptidesReservePlanning";
 import {
   packagingOverstockLimitForPeptide,
   parseGhDuoPackagingOverstockException,
@@ -1278,7 +1278,7 @@ async function applyLivePeptauraPricing(
         continue;
       }
       const bottleMg = 30 * 12.5;
-      const bottleCount = Math.max(1, Math.ceil(needMg / bottleMg));
+      const bottleCount = calculateReservePackageCount(pep, needMg, bottleMg);
       const totalGbp = Math.round(source.priceGbp * bottleCount * 100) / 100;
       pep.purchaseUrl = ENCLOMIPHENE_SOURCE_URL;
       pep.reconstitution = "Aucune reconstitution, solution liquide de 30 ml concentree a 12,5 mg/ml";
