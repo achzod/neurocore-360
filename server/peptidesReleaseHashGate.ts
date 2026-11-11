@@ -54,7 +54,7 @@ function stableReportContent(value: unknown): unknown {
       .map(([key, nested]) => {
         const normalized = key === "content"
           ? normalizeLiveTimestampProse(record.id, nested)
-          : key === "blockedVendors" && Array.isArray(nested)
+          : (key === "blockedVendors" || key === "availableVendors") && Array.isArray(nested)
             ? [...nested].sort((a, b) => String(a).localeCompare(String(b)))
             : nested;
         return [key, stableReportContent(normalized)];
