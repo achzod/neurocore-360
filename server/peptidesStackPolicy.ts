@@ -9,6 +9,7 @@ export interface PeptidesStackPolicy {
   testosteroneBloodworkStatus: string;
   conditionalHpgPhase: boolean;
   secretagogueAxisRequired: boolean;
+  secretagogueDiabetesReviewRequired: boolean;
 }
 
 function normalizeGoalList(value: unknown): string[] {
@@ -38,7 +39,16 @@ export function derivePeptidesStackPolicy(
     testosteroneGoal && testosteroneBloodworkStatus === "recent-low";
   const conditionalHpgPhase =
     testosteroneGoal && ["old", "never"].includes(testosteroneBloodworkStatus);
-  const secretagogueAxisRequired = goals.includes("gh-antiaging");
+  // A longevity objective does not authorize an automatic GH-secretagogue
+  // prescription in a profile declaring diabetes. Keep the requested axis
+  // visible, but do not contradict the prompt's glucose-risk exclusion by
+  // requiring the very pair the report deliberately excluded. This is a
+  // manual-review boundary, not a statement that diabetes is an absolute
+  // contraindication or that a non-GH alternative is clinically validated.
+  const secretagogueDiabetesReviewRequired = normalizeGoalList(responses.pep_conditions)
+    .includes("diabetes");
+  const secretagogueAxisRequired = goals.includes("gh-antiaging")
+    && !secretagogueDiabetesReviewRequired;
   // The HPG axis is operational only when a recent panel confirms low
   // testosterone. Old/missing panels keep the documented conditional phase;
   // a recent-normal panel explicitly excludes a pharmacological HPG phase.
@@ -84,5 +94,6 @@ export function derivePeptidesStackPolicy(
     testosteroneBloodworkStatus,
     conditionalHpgPhase,
     secretagogueAxisRequired,
+    secretagogueDiabetesReviewRequired,
   };
 }

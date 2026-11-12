@@ -1321,11 +1321,15 @@ async function applyLivePeptauraPricing(
     const estimatedNeedMg = estimateNeedMg(pep);
     const orderedNeedMg = extractTotalMgFromVials(pep.vialsNeeded);
     const activeNeedMg = estimatedNeedMg ?? orderedNeedMg;
-    if (activeNeedMg == null || activeNeedMg <= 0) {
+    if (activeNeedMg == null || !Number.isFinite(activeNeedMg) || activeNeedMg <= 0) {
       failures.push(`${pep.name}: quantite totale incalculable depuis le dosage et la duree`);
       continue;
     }
     const targetNeedMg = calculateReserveTargetMg(pep, activeNeedMg);
+    if (!Number.isFinite(targetNeedMg) || targetNeedMg < activeNeedMg) {
+      failures.push(`${pep.name}: reserve incalculable, cadence explicite absente ou ambigue; aucun achat automatique autorise`);
+      continue;
+    }
     const fetchedSnapshot = await fetchPeptauraProductSnapshot(slug, forceFresh);
     const cachedSnapshotAgeMs = cachedSnapshot
       ? Date.now() - new Date(cachedSnapshot.fetchedAt).getTime()
@@ -2507,6 +2511,7 @@ RÈGLES ABSOLUES:
 3. Ajuste les dosages au poids (${weight} kg) en mcg/kg.
 4. Construis un stack total de ${minimumStackCards} a ${stackPolicy.maximumMolecules} cartes pour ce profil, avec au moins ${stackPolicy.minimumMolecules} molecules ACTIVES distinctes couvrant les axes actifs suivants: ${stackPolicy.activeGoals.join(", ") || "aucun axe actif"}. Les objectifs distincts detectes sont: ${stackPolicy.goals.join(", ") || "objectif unique non code"}.${stackPolicy.conditionalHpgPhase ? " Ajoute EN PLUS exactement deux cartes HPG conditional-inactive, Enclomiphene Citrate et KissPeptin-10: elles ne comptent jamais parmi les molecules actives ni dans la couverture des axes actifs." : ""} Sur un dossier mono-axe actif, vise une seule molecule par defaut; une deuxieme n'est permise que si elle couvre un besoin complementaire explicitement documente, jamais pour remplir un quota. Un dossier multi-axe actif ne doit jamais retomber silencieusement a deux molecules pour faciliter le stock ou la validation. Chaque molecule active doit couvrir un besoin attribuable et complementaire; aucun ajout gadget, doublon mecanistique ou molecule contre-indiquee n'est autorise. Si une molecule echoue au stock live, remplace-la par une alternative compatible couvrant le meme axe au lieu de supprimer l'axe. Si aucune alternative sure et achetable n'existe, explique explicitement l'exclusion dans le rapport au lieu de promettre un resultat. Un bonus n'est autorise que s'il respecte le budget et s'il apparait partout: justification, reconstitution, calendrier, shopping list et tableau peptides.
 4B. Chaque carte porte activationStatus et coveredAxes. Pour une molecule active, coveredAxes contient uniquement les codes exacts qu'elle couvre parmi: ${stackPolicy.activeGoals.join(", ") || "aucun"}. Chaque axe actif doit apparaitre dans coveredAxes d'au moins une molecule active distincte; une meme molecule ne peut pas satisfaire deux axes pour le minimum. N'attribue jamais un axe par simple mention narrative. Utilise "conditional-inactive" uniquement pour une phase documentee mais non active; coveredAxes vaut alors [], fournis au moins deux activationRequirements, un evidenceSummary explicite et conserve l'acces source. Mets dosage, timing, route, cycleDuration, reconstitution, vialsNeeded et priceEstimate a la chaine vide: aucun achat, calcul ou calendrier operationnel n'est autorise pour cette carte.
+${stackPolicy.secretagogueDiabetesReviewRequired ? "4C. Diabete declare: ne force ni CJC-1295 sans DAC ni Ipamorelin pour satisfaire gh-antiaging. Aucune activation automatique de secretagogue GH: documente la limite glycemique et la revue necessaire. Une piste non-GH ne devient pas une equivalence clinique validee par simple attribution de cet axe. Ne modifie pas un traitement deja declare et ne presume ni sa dose ni une glycemie controlee. Toute ambiguite de dose actuelle reste un verrou avant execution, pas une autorisation de recommencer une titration." : ""}
 5. Utilise UNIQUEMENT le catalogue Peptaura. URLs réelles.
 6. Pour le choix du fournisseur (pays de livraison ${peptauraContext.country}, ${budgetNote}) : suis STRICTEMENT CONTEXTE PEPTAURA LIVE. Recommande un fournisseur qui livre vers ${peptauraContext.country}, evite tout fournisseur liste comme bloque, et rappelle que le client doit verifier ${peptauraContext.shippingUrl} avant de payer.
 6b. Stock live et quantite achetable: ne choisis une molecule que si le besoin total calcule peut etre couvert par les formats live avec au maximum 30% de marge quand le packaging live l'impose. Exemple: si le plus petit format live est 5 mg, le besoin total doit etre au moins 3.85 mg pour commander 1 vial; si le besoin coherent du protocole est plus bas, retire cette molecule et choisis une alternative dont le format Peptaura passe. Ne rallonge jamais une cure uniquement pour consommer un vial.

@@ -135,6 +135,17 @@ export function validateGeneratedPeptideStack(
     return issues;
   }
   const activeItems = items.filter((peptide) => !isGeneratedConditionalInactive(peptide));
+  if (policy.secretagogueDiabetesReviewRequired) {
+    const reviewRequired = activeItems.filter((peptide) =>
+      /\b(?:cjc[ -]?1295|ipamorelin|sermorelin|tesamorelin|ghrp[ -]?[26]|hexarelin|mk[ -]?677|ibutamoren|somatropin|hgh)\b/i
+        .test(normalizeCoverageText(peptide.name))
+    );
+    if (reviewRequired.length > 0) {
+      issues.push(
+        "SECRETAGOGUE_DIABETES_REVIEW_GATE: diabete declare, activation automatique GH bloquee; revue explicite requise.",
+      );
+    }
+  }
   const distinctActiveNames = new Set(
     activeItems
       .map((peptide) => normalizeCoverageText(peptide.name).replace(/[^a-z0-9]+/g, ""))

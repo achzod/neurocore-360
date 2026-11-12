@@ -32,6 +32,7 @@ test("three distinct goals require attributable coverage without gadget molecule
       testosteroneBloodworkStatus: "",
       conditionalHpgPhase: false,
       secretagogueAxisRequired: false,
+      secretagogueDiabetesReviewRequired: false,
     },
   );
 });
@@ -95,4 +96,27 @@ test("final retry cannot collapse to two molecules", () => {
   assert.match(engine, /SECRETAGOGUE_AXIS_GATE/);
   assert.match(engine, /Enclomiphene et KissPeptin-10 doivent rester dans le stack/);
   assert.match(engine, /Sur un dossier mono-axe actif, vise une seule molecule par defaut/);
+});
+
+test("declared diabetes does not force the GH pair for a longevity objective", () => {
+  for (const conditions of [["diabetes"], "diabetes", ["DIABETES"]]) {
+    const policy = derivePeptidesStackPolicy({
+      pep_primary_goal: "fatloss",
+      pep_secondary_goals: ["gh-antiaging", "cognitive", "testo-boost", "libido"],
+      pep_testo_bloodwork: "recent-normal",
+      pep_conditions: conditions,
+    });
+    assert.equal(policy.secretagogueAxisRequired, false);
+    assert.equal(policy.secretagogueDiabetesReviewRequired, true);
+    assert.deepEqual(policy.activeGoals, ["fatloss", "gh-antiaging", "cognitive", "libido"]);
+    assert.equal(policy.minimumMolecules, 4);
+  }
+});
+
+test("GH request without declared diabetes retains its existing coverage gate", () => {
+  for (const conditions of [undefined, [], ["none"], ["thyroid"]]) {
+    const policy = derivePeptidesStackPolicy({pep_primary_goal: "gh-antiaging", pep_conditions: conditions});
+    assert.equal(policy.secretagogueAxisRequired, true);
+    assert.equal(policy.secretagogueDiabetesReviewRequired, false);
+  }
 });
