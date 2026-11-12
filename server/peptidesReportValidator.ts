@@ -283,7 +283,7 @@ function validateReportPersonalization(
       advanced: /\b(?:avance|stacks? complexes?)\b/i,
     } as Record<string, RegExp>)[String(profile.experience || "").toLowerCase()] || null],
     ["injection", profile.injectionComfort, ({
-      fine: /\b(?:a l'aise|aucun probleme|confortable)\b/i,
+      fine: /\b(?:(?<!\b(?:mal|pas)\s)(?<!\bpas du tout\s)a l['’]aise|aucun probleme|confortable)\b/i,
       anxious: /\b(?:anxieux|apprehension|injection)\b/i,
       "very-anxious": /\b(?:tres anxieux|alternative|apprehension forte)\b/i,
       refuse: /\b(?:refuse|sans injection|non injectable)\b/i,
