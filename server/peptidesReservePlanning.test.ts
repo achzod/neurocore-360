@@ -18,7 +18,7 @@ const base = {
 
 test("an unparsed optional cadence is not silently converted to scheduled administrations", () => {
   const target = calculateReserveTargetMg({
-    dosage: "1 mg au maximum, une seule fois par semaine et uniquement si necessaire",
+    dosage: "1 mg au maximum, plusieurs fois par semaine et uniquement si necessaire",
     cycleDuration: "8 semaines",
   }, 8);
   assert.ok(Number.isNaN(target));
