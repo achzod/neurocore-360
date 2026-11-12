@@ -14,7 +14,7 @@ function doseToMg(value: number, unit: string): number {
 /** null = no explicit count; NaN = unsafe/contradictory. No NL phase inference. */
 export function parseExplicitAdministrationsPerWeek(dosage: string): number | null {
   const words: Record<string, number> = { un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, onze: 11, douze: 12, treize: 13, quatorze: 14 };
-  const pattern = /(?<![\w.,-])(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze)\s*(?:fois|injections?|administrations?|jours?|soirs?)\s*(?:par|\/)\s*(semaine|jour)\b/gi;
+  const pattern = /(?<![\w.,-])(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze)\s*(?:seul(?:e)?\s+)?(?:fois|injections?|administrations?|jours?|soirs?)\s*(?:par|\/)\s*(semaine|jour)\b/gi;
   const frequencies: number[] = [];
   for (const match of dosage.matchAll(pattern)) {
     const prefix = dosage.slice(Math.max(0, (match.index || 0) - 30), match.index);

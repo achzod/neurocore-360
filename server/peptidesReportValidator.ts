@@ -894,7 +894,7 @@ export function estimateNeedMg(p: PeptidesPeptide): number | null {
   // The previous estimator only understood "1 mg semaine 1" and silently
   // accepted severe under-orders such as 20 mg for a real 79 mg cycle.
   const reverseProgressive = Array.from(
-    dose.matchAll(/semaines?\s*(\d+)(?:\s*(?:à|a|-|et)\s*(\d+))?\s*(?:à|a|:)\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
+    dose.matchAll(/semaines?\s*(\d+)(?:\s*(?:à|a|-|et)\s*(\d+))?\s*(?:à|a|:)\s*(?:dose\s+(?:test\s+)?de\s+)?(\d+(?:[.,]\d+)?)\s*(mg|mcg|µg|ug)\b/gi)
   ).filter((match) => {
     const start = parseInt(match[1], 10);
     const end = match[2] ? parseInt(match[2], 10) : start;
