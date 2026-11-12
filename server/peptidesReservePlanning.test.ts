@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { calculateReserveTargetMg } from "./peptidesReservePlanning";
+import { readFileSync } from "node:fs";
 import { checkPeptide } from "./peptidesReportValidator";
 import { deriveReportCycleWeeks, extractLiveReportCosts } from "./peptidesReportRepair";
 
@@ -14,6 +15,18 @@ const base = {
   reconstitution: "Vial 5 mg + 2 ml de BAC water",
   whyThisPeptide: "Choix personnalisé suffisamment détaillé pour le profil et les objectifs déclarés du client.",
 };
+
+test("an unparsed optional cadence is not silently converted to scheduled administrations", () => {
+  const target = calculateReserveTargetMg({
+    dosage: "1 mg au maximum, une seule fois par semaine et uniquement si necessaire",
+    cycleDuration: "8 semaines",
+  }, 8);
+  assert.ok(Number.isNaN(target));
+  const engine = readFileSync(new URL("./peptidesEngine.ts", import.meta.url), "utf8");
+  assert.match(engine, /!Number\.isFinite\(activeNeedMg\)/);
+  assert.match(engine, /!Number\.isFinite\(targetNeedMg\)/);
+  assert.match(engine, /reserve incalculable, cadence explicite absente ou ambigue; aucun achat automatique autorise/);
+});
 
 test("calcule la réserve Esteban depuis le besoin actif et la semaine maximale", () => {
   assert.equal(calculateReserveTargetMg({ dosage: "200 mcg deux fois par jour, soit 400 mcg/jour", cycleDuration: "8 semaines" }, 22.4), 28);
