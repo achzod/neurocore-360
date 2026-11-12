@@ -279,7 +279,7 @@ function validateReportPersonalization(
       none: /\b(?:debutant|premiere utilisation|jamais utilise|aucune experience)\b/i,
       read: /\b(?:lu|regarde|theorique|contenu)\b/i,
       tried: /\b(?:deja utilise|1\s*(?:a|-|à)\s*2 peptides)\b/i,
-      regular: /\b(?:regulier|3\+? peptides)\b/i,
+      regular: /\b(?:regulier(?:e)?s?|3\+? peptides)\b/i,
       advanced: /\b(?:avance|stacks? complexes?)\b/i,
     } as Record<string, RegExp>)[String(profile.experience || "").toLowerCase()] || null],
     ["injection", profile.injectionComfort, ({
