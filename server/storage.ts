@@ -810,6 +810,7 @@ export class MemStorage implements IStorage {
       || String(metadata.peptidesReportId || "")
       || (input.expectedGenerationClaimId
         && (String(metadata.peptidesGenerationClaimId || "") !== input.expectedGenerationClaimId
+          || !Number.isFinite(Date.parse(String(metadata.peptidesGenerationLeaseUntil || "")))
           || Date.parse(String(metadata.peptidesGenerationLeaseUntil || "")) <= Date.now()))
       || String(metadata.peptidesResponsesSha256 || "") !== input.expectedResponsesSha256
       || hashPeptidesManualMutationPayload(metadata.peptidesResponses || {}) !== input.expectedResponsesSha256
@@ -831,8 +832,11 @@ export class MemStorage implements IStorage {
         ...metadata,
         peptidesReportId: record.id,
         peptidesGenerationState: "SUCCEEDED",
+        peptidesGenerationPreviousError: metadata.peptidesGenerationLastError || metadata.peptidesGenerationPreviousError || "",
+        peptidesGenerationLastError: "",
         peptidesGenerationLeaseUntil: "",
         peptidesGenerationNextRetryAt: "",
+        peptidesGenerationCompletedResponseId: metadata.peptidesGenerationResponseId || metadata.peptidesGenerationCompletedResponseId || "",
         peptidesGenerationResponseId: "",
         peptidesGenerationCompletedAt: generatedAt.toISOString(),
         peptidesEmailScheduledAt: new Date(generatedAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
@@ -1377,6 +1381,8 @@ export class MemStorage implements IStorage {
       ...meta,
       peptidesReportId: reportId,
       peptidesGenerationState: "SUCCEEDED",
+      peptidesGenerationPreviousError: meta.peptidesGenerationLastError || meta.peptidesGenerationPreviousError || "",
+      peptidesGenerationLastError: "",
       peptidesGenerationLeaseUntil: "",
       peptidesGenerationNextRetryAt: "",
       peptidesGenerationCompletedResponseId: meta.peptidesGenerationResponseId || meta.peptidesGenerationCompletedResponseId || "",
@@ -1544,6 +1550,13 @@ export class MemStorage implements IStorage {
       ...meta,
       peptidesReportId: reportId,
       peptidesGenerationState: "SUCCEEDED",
+      peptidesGenerationPreviousError: meta.peptidesGenerationLastError || meta.peptidesGenerationPreviousError || "",
+      peptidesGenerationLastError: "",
+      peptidesGenerationLeaseUntil: "",
+      peptidesGenerationNextRetryAt: "",
+      peptidesGenerationPreviousResponseId: meta.peptidesGenerationResponseId || meta.peptidesGenerationCompletedResponseId || meta.peptidesGenerationPreviousResponseId || "",
+      peptidesGenerationCompletedResponseId: "",
+      peptidesGenerationResponseId: "",
       peptidesGenerationCompletedAt: new Date().toISOString(),
       peptidesEmailHold: true,
       peptidesEmailHoldReason: "REPORT_LINK_REQUIRES_MANUAL_VERIFICATION",
@@ -1581,6 +1594,13 @@ export class MemStorage implements IStorage {
       ...nextMeta,
       peptidesReportId: nextReportId,
       peptidesGenerationState: "SUCCEEDED",
+      peptidesGenerationPreviousError: meta.peptidesGenerationLastError || meta.peptidesGenerationPreviousError || "",
+      peptidesGenerationLastError: "",
+      peptidesGenerationLeaseUntil: "",
+      peptidesGenerationNextRetryAt: "",
+      peptidesGenerationPreviousResponseId: meta.peptidesGenerationResponseId || meta.peptidesGenerationCompletedResponseId || meta.peptidesGenerationPreviousResponseId || "",
+      peptidesGenerationCompletedResponseId: "",
+      peptidesGenerationResponseId: "",
       peptidesGenerationCompletedAt: new Date().toISOString(),
       peptidesEmailHold: true,
       peptidesEmailHoldReason: "REPORT_RELINK_REQUIRES_MANUAL_VERIFICATION",
@@ -2923,6 +2943,7 @@ export class PgStorage implements IStorage {
         || String(metadata.peptidesReportId || "")
         || (input.expectedGenerationClaimId
           && (String(metadata.peptidesGenerationClaimId || "") !== input.expectedGenerationClaimId
+            || !Number.isFinite(Date.parse(String(metadata.peptidesGenerationLeaseUntil || "")))
             || Date.parse(String(metadata.peptidesGenerationLeaseUntil || "")) <= Date.now()))
         || String(metadata.peptidesResponsesSha256 || "") !== input.expectedResponsesSha256
         || hashPeptidesManualMutationPayload(metadata.peptidesResponses || {}) !== input.expectedResponsesSha256
@@ -2943,9 +2964,11 @@ export class PgStorage implements IStorage {
             SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
                   'peptidesReportId', $1::text,
                   'peptidesGenerationState', 'SUCCEEDED',
+                  'peptidesGenerationPreviousError', COALESCE(NULLIF(metadata->>'peptidesGenerationLastError', ''), metadata->>'peptidesGenerationPreviousError', ''),
+                  'peptidesGenerationLastError', '',
                   'peptidesGenerationLeaseUntil', '',
                   'peptidesGenerationNextRetryAt', '',
-                  'peptidesGenerationCompletedResponseId', COALESCE(metadata->>'peptidesGenerationResponseId', metadata->>'peptidesGenerationCompletedResponseId', ''),
+                  'peptidesGenerationCompletedResponseId', COALESCE(NULLIF(metadata->>'peptidesGenerationResponseId', ''), metadata->>'peptidesGenerationCompletedResponseId', ''),
                   'peptidesGenerationResponseId', '',
                   'peptidesGenerationCompletedAt', NOW()::text,
                   'peptidesEmailScheduledAt', (NOW() + INTERVAL '24 hours')::text,
@@ -4686,9 +4709,11 @@ export class PgStorage implements IStorage {
          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
                'peptidesReportId', $1::text,
                'peptidesGenerationState', 'SUCCEEDED',
+               'peptidesGenerationPreviousError', COALESCE(NULLIF(metadata->>'peptidesGenerationLastError', ''), metadata->>'peptidesGenerationPreviousError', ''),
+               'peptidesGenerationLastError', '',
                'peptidesGenerationLeaseUntil', '',
                'peptidesGenerationNextRetryAt', '',
-               'peptidesGenerationCompletedResponseId', COALESCE(metadata->>'peptidesGenerationResponseId', metadata->>'peptidesGenerationCompletedResponseId', ''),
+               'peptidesGenerationCompletedResponseId', COALESCE(NULLIF(metadata->>'peptidesGenerationResponseId', ''), metadata->>'peptidesGenerationCompletedResponseId', ''),
                'peptidesGenerationResponseId', '',
                'peptidesGenerationCompletedAt', NOW()::text,
                'peptidesEmailScheduledAt', (NOW() + INTERVAL '24 hours')::text,
@@ -4985,6 +5010,13 @@ export class PgStorage implements IStorage {
          SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
                'peptidesReportId', $1::text,
                'peptidesGenerationState', 'SUCCEEDED',
+               'peptidesGenerationPreviousError', COALESCE(NULLIF(metadata->>'peptidesGenerationLastError', ''), metadata->>'peptidesGenerationPreviousError', ''),
+               'peptidesGenerationLastError', '',
+               'peptidesGenerationLeaseUntil', '',
+               'peptidesGenerationNextRetryAt', '',
+               'peptidesGenerationPreviousResponseId', COALESCE(NULLIF(metadata->>'peptidesGenerationResponseId', ''), NULLIF(metadata->>'peptidesGenerationCompletedResponseId', ''), metadata->>'peptidesGenerationPreviousResponseId', ''),
+               'peptidesGenerationCompletedResponseId', '',
+               'peptidesGenerationResponseId', '',
                'peptidesGenerationCompletedAt', NOW()::text,
                'peptidesEmailHold', true,
                'peptidesEmailHoldReason', 'REPORT_LINK_REQUIRES_MANUAL_VERIFICATION',
@@ -5031,6 +5063,13 @@ export class PgStorage implements IStorage {
              ) || jsonb_build_object(
                'peptidesReportId', $1::text,
                'peptidesGenerationState', 'SUCCEEDED',
+               'peptidesGenerationPreviousError', COALESCE(NULLIF(metadata->>'peptidesGenerationLastError', ''), metadata->>'peptidesGenerationPreviousError', ''),
+               'peptidesGenerationLastError', '',
+               'peptidesGenerationLeaseUntil', '',
+               'peptidesGenerationNextRetryAt', '',
+               'peptidesGenerationPreviousResponseId', COALESCE(NULLIF(metadata->>'peptidesGenerationResponseId', ''), NULLIF(metadata->>'peptidesGenerationCompletedResponseId', ''), metadata->>'peptidesGenerationPreviousResponseId', ''),
+               'peptidesGenerationCompletedResponseId', '',
+               'peptidesGenerationResponseId', '',
                'peptidesGenerationCompletedAt', NOW()::text,
                'peptidesEmailHold', true,
                'peptidesEmailHoldReason', 'REPORT_RELINK_REQUIRES_MANUAL_VERIFICATION',

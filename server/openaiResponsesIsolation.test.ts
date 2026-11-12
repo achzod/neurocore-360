@@ -12,10 +12,11 @@ test("AI usage stdout-only mode defaults off and requires explicit true", () => 
   assert.equal(isAIUsagePersistenceDisabled({ AI_USAGE_PERSISTENCE_DISABLED: "TRUE" }), true);
 });
 
-test("gpt-5.5 report profiles do not request unsupported reasoning mode", () => {
+test("report profiles preserve their configured medium-reasoning and mode contracts", () => {
   for (const profile of ["discovery", "premium", "blood", "vision", "extraction", "peptides"] as const) {
-    assert.equal(openAIProfileMetadata(profile).reasoningEffort, "high");
-    assert.equal(openAIProfileMetadata(profile).reasoningMode, "standard");
+    assert.equal(openAIProfileMetadata(profile).reasoningEffort, "medium");
+    const expectedMode = ["premium", "blood", "peptides"].includes(profile) ? "pro" : "standard";
+    assert.equal(openAIProfileMetadata(profile).reasoningMode, expectedMode);
   }
 });
 
