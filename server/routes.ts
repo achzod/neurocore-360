@@ -116,6 +116,7 @@ import {
 import {
   buildPeptidesFulfillmentIncidentPatch,
   evaluatePeptidesFulfillmentInvariant,
+  peptidesFulfillmentResolutionTimestamp,
   shouldAlertPeptidesFulfillmentIncident,
 } from "./peptidesFulfillmentInvariant";
 import {
@@ -16968,7 +16969,9 @@ export async function registerRoutes(
           await storage.setOrderMetadataIfPeptidesReportMatches(order.id, null, {
             peptidesFulfillmentState: "RESOLVED_DUPLICATE_ORDER",
             peptidesFulfillmentIncidentCode: "DUPLICATE_ORDER_REPORT_EXISTS",
-            peptidesFulfillmentResolvedAt: new Date().toISOString(),
+            peptidesFulfillmentResolvedAt: peptidesFulfillmentResolutionTimestamp(
+              meta || {}, "RESOLVED_DUPLICATE_ORDER", "DUPLICATE_ORDER_REPORT_EXISTS",
+            ),
           }).catch(() => false);
           console.log(`[AutoGen] Operator-reviewed duplicate order ${order.id} remains terminal under HOLD; no alert, generation or delivery`);
           continue;
@@ -17002,7 +17005,9 @@ export async function registerRoutes(
               peptidesFulfillmentState: "RESOLVED_DUPLICATE_ORDER",
               peptidesFulfillmentIncidentCode: "DUPLICATE_ORDER_REPORT_EXISTS",
               peptidesFulfillmentIncidentDetail: `Rapport ${sibling.existingReportId} deja rattache a la commande soeur ${sibling.existingOrderId}.`,
-              peptidesFulfillmentResolvedAt: new Date().toISOString(),
+              peptidesFulfillmentResolvedAt: peptidesFulfillmentResolutionTimestamp(
+                meta || {}, "RESOLVED_DUPLICATE_ORDER", "DUPLICATE_ORDER_REPORT_EXISTS",
+              ),
             }).catch(() => false);
             if (siblingProven) {
               console.log(`[AutoGen] Historical duplicate order ${order.id} resolved by delivered sibling report ${sibling.existingReportId}; no alert, generation or delivery`);

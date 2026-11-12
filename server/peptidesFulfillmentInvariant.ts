@@ -96,6 +96,21 @@ export function buildPeptidesFulfillmentIncidentPatch(
   };
 }
 
+export function peptidesFulfillmentResolutionTimestamp(
+  metadata: Record<string, unknown>,
+  state: string,
+  incidentCode: string,
+  nowIso = new Date().toISOString(),
+): string {
+  const previous = metadata.peptidesFulfillmentResolvedAt;
+  const sameResolution = metadata.peptidesFulfillmentState === state
+    && metadata.peptidesFulfillmentIncidentCode === incidentCode;
+  return sameResolution && typeof previous === "string"
+    && Number.isFinite(Date.parse(previous))
+    ? previous
+    : nowIso;
+}
+
 function dateMs(value: Date | string | null | undefined): number | null {
   if (!value) return null;
   const timestamp = value instanceof Date ? value.getTime() : new Date(value).getTime();
