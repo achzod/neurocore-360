@@ -25,3 +25,15 @@ test('without numeric frequency a ponctual phrase never authorizes a default cou
  assert.ok(Number.isNaN(parseExplicitAdministrationsPerWeek('dose test puis plusieurs fois par semaine selon besoin')));
  assert.equal(estimateNeedMg({dosage:'1 mg plusieurs fois par semaine',cycleDuration:'4 semaines'}),null);
 });
+
+test('avec uses the same strict arithmetic checks as plus, including later triplets',async()=>{
+ const {validateU100Reconstitution,checkPeptide}=await import('./peptidesReportValidator');
+ const complete='Vial de 12 mg avec 2 ml de BAC water. Pour 3 mg = 50 unités U-100, soit 0,50 ml. Pour 1,5 mg = 25 unités, soit 0,25 ml.';
+ assert.deepEqual(validateU100Reconstitution(complete),[]);
+ assert.equal(checkPeptide({name:'Synthetic fixture',route:'SC',reconstitution:complete,dosage:'3 mg par semaine',cycleDuration:'4 semaines'} as any).includes('calcul complet de reconstitution U-100 absent'),false);
+ const bad=complete.replace('25 unités','70 unités');
+ assert.ok(validateU100Reconstitution(bad).some(e=>e.includes('conversion U-100 incoherente')));
+ assert.ok(validateU100Reconstitution(complete.replace('2 ml de BAC','4 ml de BAC')).some(e=>e.includes('maximum 3 ml')));
+ assert.ok(validateU100Reconstitution(complete.replace('2 ml de BAC','0 ml de BAC')).some(e=>e.includes('non positif')));
+ assert.ok(checkPeptide({name:'Synthetic fixture',route:'SC',reconstitution:'Vial de 12 mg avec 2 ml de BAC water. Pour 3 mg = 50 unités.',dosage:'3 mg par semaine',cycleDuration:'4 semaines'} as any).includes('calcul complet de reconstitution U-100 absent'));
+});
