@@ -1848,6 +1848,16 @@ ${sorted
     },
   });
 
+  // Page d'envoi de vidéo FormCheck : lien personnel reçu par email après paiement.
+  // Route SPA réelle (pas de 404), jamais indexée.
+  ssrSimplePage(["/formcheck/upload"], {
+    title: "Envoyer ma vidéo FormCheck | APEXLABS",
+    desc: "Envoie la vidéo de ta série pour recevoir ton analyse technique FormCheck en PDF par email.",
+    canonical: `${BASE_URL}/offers/formcheck`,
+    robots: "noindex, follow",
+    cacheControl: INTERACTIVE_FLOW_CACHE_CONTROL,
+  });
+
   ssrSimplePage(["/cgv"], {
     title: "Conditions Générales de Vente | APEXLABS by Achzod",
     desc: "Conditions Générales de Vente APEXLABS by Achzod: modalités d'achat, livraison numérique, droit de rétractation, support.",

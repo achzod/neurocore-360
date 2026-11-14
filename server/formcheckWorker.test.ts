@@ -99,6 +99,15 @@ test("a good analysis is annotated, rendered, emailed with the PDF, then the cre
   assert.equal(calls.reject, undefined);
 });
 
+test("each error gets its own annotated image, even when two errors share a frame", async () => {
+  const base = analysis();
+  const twoOnSameFrame = { ...base, errors: [base.errors[0], { ...base.errors[0], title: "Dos", annotations: [base.errors[0].annotations[0], base.errors[0].annotations[0]] }] };
+  const { deps, calls } = fakeDeps({ vision: async () => twoOnSameFrame });
+  assert.equal(await processFormcheckJob(job(), deps), "delivered");
+  assert.deepEqual(calls.annotate, [[1, 1], [2, 2]]);
+  assert.equal(calls.saveAnnotated.length, 1, "une seule image stockée par frame");
+});
+
 test("an unusable video is rejected: credit released, client asked to reshoot, no PDF", async () => {
   const { deps, calls } = fakeDeps({ vision: async () => analysis({ exploitable: false, rejection_reason: "Tes pieds sont hors cadre." }) });
   assert.equal(await processFormcheckJob(job(), deps), "rejected");

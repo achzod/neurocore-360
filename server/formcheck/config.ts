@@ -131,16 +131,22 @@ export function validateVideoDuration(durationS: number | null): VideoRejection 
   return null;
 }
 
-/** Nombre de frames selon la durée : 8 à 12, réparties sur toute la série. */
+/**
+ * Nombre de frames selon la durée : 16 à 20, réparties sur toute la série.
+ * Assez dense pour suivre chaque phase et estimer le tempo rep par rep,
+ * en gardant un coût raisonnable (environ 800 tokens d'entrée par image).
+ */
+export const FORMCHECK_MIN_FRAMES = 16;
+export const FORMCHECK_MAX_FRAMES = 20;
 export function frameCountForDuration(durationS: number): number {
-  if (durationS <= 15) return 8;
-  if (durationS <= 30) return 10;
-  return 12;
+  if (durationS <= 15) return 16;
+  if (durationS <= 30) return 18;
+  return 20;
 }
 
 /** Horodatages en secondes, centrés dans N tranches égales (évite 0 et la fin). */
 export function computeFrameTimestamps(durationS: number, count = frameCountForDuration(durationS)): number[] {
-  const n = Math.max(8, Math.min(12, Math.round(count)));
+  const n = Math.max(FORMCHECK_MIN_FRAMES, Math.min(FORMCHECK_MAX_FRAMES, Math.round(count)));
   const start = durationS * 0.02;
   const span = durationS * 0.96;
   return Array.from({ length: n }, (_, i) => Number((start + (span * (i + 0.5)) / n).toFixed(3)));

@@ -283,7 +283,7 @@ export function registerFormcheckRoutes(app: Express) {
         if (durationError) return res.status(422).json({ error: durationError.code, message: durationError.message });
 
         const frames = await extractFrames(file.path, probe.durationS!);
-        if (frames.length < 8) {
+        if (frames.length < 12) {
           return res.status(422).json({ error: "UNREADABLE", message: "Impossible d'extraire des images nettes de cette vidéo. Refilme ta série avec l'appareil photo de ton téléphone et renvoie-la." });
         }
 

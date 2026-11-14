@@ -90,16 +90,21 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
 
   // 2. Annotation des frames fautives, PDF, envoi.
   try {
+    // Une image annotée par erreur (même si deux erreurs tombent sur la même frame),
+    // avec uniquement les formes de cette erreur et son numéro.
     const annotatedByIndex = new Map<number, Buffer>();
+    const errorImages: Array<Buffer | null> = [];
     for (let i = 0; i < analysis.errors.length; i++) {
       const error = analysis.errors[i];
       const frame = frames.find((f) => f.index === error.frame_index);
-      if (!frame || annotatedByIndex.has(frame.index) || error.annotations.length === 0) continue;
-      // Une frame peut porter plusieurs erreurs : on regroupe leurs formes.
-      const shapes = analysis.errors.filter((e) => e.frame_index === frame.index).flatMap((e) => e.annotations);
-      const annotated = await deps.annotate(frame.jpeg, shapes, i + 1);
-      annotatedByIndex.set(frame.index, annotated);
-      await deps.saveAnnotated(job.id, frame.index, annotated);
+      if (!frame) { errorImages.push(null); continue; }
+      if (error.annotations.length === 0) { errorImages.push(frame.jpeg); continue; }
+      const annotated = await deps.annotate(frame.jpeg, error.annotations, i + 1);
+      errorImages.push(annotated);
+      if (!annotatedByIndex.has(frame.index)) {
+        annotatedByIndex.set(frame.index, annotated);
+        await deps.saveAnnotated(job.id, frame.index, annotated);
+      }
     }
     const html = buildFormcheckReportHtml({
       analysisId: job.id,
@@ -108,6 +113,7 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
       createdAt: deps.now(),
       analysis,
       frames: frames.map((f) => ({ ...f, annotated: annotatedByIndex.get(f.index) || f.annotated })),
+      errorImages,
     });
     const pdf = job.pdf && job.pdf.length > 0 ? job.pdf : await deps.renderPdf(html);
     if (!job.pdf) await deps.savePdf(job.id, pdf);

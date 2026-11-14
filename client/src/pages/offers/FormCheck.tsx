@@ -55,9 +55,12 @@ const DELIVERABLES = [
   "Le nombre de répétitions et ton tempo estimé",
   "L'amplitude du mouvement et la symétrie quand l'angle de vue le permet",
   "Ta proximité de l'échec (répétitions en réserve)",
-  "Tes erreurs repérées sur les images, entourées et annotées",
+  "Chaque phase du mouvement passée au crible : mise en place, départ, milieu, verrouillage, descente",
+  "Trajectoire de la charge, gainage, compensations, position de la tête et des pieds",
+  "Jusqu'à 6 erreurs montrées sur tes images annotées, avec le pourquoi et comment corriger",
+  "Des exercices correctifs et un plan de correction sur 4 semaines",
   "Tes 3 corrections prioritaires avec une consigne simple à te répéter",
-  "Tes points forts et tes consignes pour la prochaine séance",
+  "Tes points forts et tes consignes pour la prochaine séance et la prochaine vidéo",
 ];
 
 const FILMING_TIPS = [

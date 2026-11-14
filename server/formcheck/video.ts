@@ -83,7 +83,7 @@ export async function probeVideo(filePath: string) {
 export interface ExtractedFrame { index: number; timestampS: number; jpeg: Buffer }
 
 /**
- * Extrait 8 à 12 frames JPEG réparties sur la série, côté le plus long à 1024 px.
+ * Extrait 16 à 20 frames JPEG réparties sur la série, côté le plus long à 1024 px.
  * ffmpeg applique la rotation des vidéos iPhone automatiquement.
  */
 export async function extractFrames(filePath: string, durationS: number): Promise<ExtractedFrame[]> {

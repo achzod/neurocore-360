@@ -21,7 +21,7 @@ import {
 } from "./formcheck/config";
 import { decideFormcheckOutcome, FORMCHECK_ANALYSIS_SCHEMA, buildFormcheckPrompt, FORMCHECK_INSTRUCTIONS, normalizeFormcheckAnalysis } from "./formcheck/analysis";
 import { angleDegrees, annotateFrame, buildAnnotationSvg } from "./formcheck/annotate";
-import { buildFormcheckReportHtml, scoreVerdict } from "./formcheck/report";
+import { buildFormcheckReportHtml, jpegSize, scoreVerdict } from "./formcheck/report";
 import { buildAccessEmail, buildReportEmail, buildReshootEmail } from "./formcheck/emails";
 import { parseFfmpegProbe } from "./formcheck/video";
 
@@ -40,9 +40,32 @@ export const goodAnalysis = () => normalizeFormcheckAnalysis({
   range_of_motion: { rating: "complète", comment: "Hanches sous les genoux." },
   symmetry: { assessable: false, comment: "Vue de profil stricte." },
   intensity: { reps_in_reserve: 2, proximity_to_failure: "proche", comment: "Vitesse qui chute sur la dernière rep." },
+  subscores: { mise_en_place: 80, execution: 70, stabilite: 75, controle: 72 },
+  phases: [
+    { phase: "mise_en_place", verdict: "bon", frame_index: 0, comment: "Pieds largeur de hanches." },
+    { phase: "depart", verdict: "à corriger", frame_index: 3, comment: "Genoux qui partent en premier." },
+    { phase: "milieu", verdict: "correct", frame_index: 4, comment: "Passage du point difficile tenu." },
+    { phase: "verrouillage", verdict: "bon", frame_index: 6, comment: "Hanches tendues." },
+    { phase: "descente", verdict: "correct", frame_index: 8, comment: "Descente un peu rapide." },
+  ],
+  rhythm: { rating: "correct", comment: "Enchaînement régulier." },
+  compensations: { rating: "à corriger", items: ["Bascule du buste vers l'avant"], comment: "Le buste compense en fin de série." },
+  bar_path: { rating: "bon", comment: "Barre au-dessus du milieu du pied." },
+  bracing: { rating: "correct", comment: "Tronc tenu." },
+  breathing: { visible: false, comment: "Inspire avant chaque descente." },
+  head_position: { rating: "bon", comment: "Regard neutre." },
+  feet: { rating: "bon", comment: "Appuis stables." },
+  plan_4_weeks: [1, 2, 3, 4].map((week) => ({ week, focus: `Focus semaine ${week}`, actions: ["Tempo 3 s en descente"], load_advice: "70 % de ta charge" })),
+  next_video_instructions: ["Filme de profil, à hauteur de hanche"],
   errors: [{
     title: "Genoux qui avancent tôt",
     description: "Tu casses aux genoux avant les hanches.",
+    why: "La charge part sur l'avant du pied.",
+    how_to_fix: "Initie le mouvement en poussant les hanches en arrière.",
+    cues: ["Fesses en arrière"],
+    corrective_exercises: [{ name: "Box squat", prescription: "3 x 5, tempo 3 s", why: "Apprend à initier par les hanches." }],
+    progression: "Semaine 1 au box squat, puis retour au squat libre.",
+    phase: "depart",
     severity: "modérée",
     frame_index: 3,
     annotations: [
@@ -102,13 +125,13 @@ test("upload limits: mp4/mov only, 200 MB, 60 s", () => {
   }
 });
 
-test("8 to 12 frames are spread over the whole set, inside the video", () => {
-  assert.equal(frameCountForDuration(7), 8);
-  assert.equal(frameCountForDuration(20), 10);
-  assert.equal(frameCountForDuration(60), 12);
+test("16 to 20 frames are spread over the whole set, inside the video", () => {
+  assert.equal(frameCountForDuration(7), 16);
+  assert.equal(frameCountForDuration(20), 18);
+  assert.equal(frameCountForDuration(60), 20);
   for (const duration of [3, 7.1, 20.5, 45, 60]) {
     const ts = computeFrameTimestamps(duration);
-    assert.ok(ts.length >= 8 && ts.length <= 12);
+    assert.ok(ts.length >= 16 && ts.length <= 20);
     assert.ok(ts[0] > 0 && ts[ts.length - 1] < duration);
     for (let i = 1; i < ts.length; i++) assert.ok(ts[i] > ts[i - 1]);
     // couvre au moins 85 % de la série
@@ -137,9 +160,17 @@ test("strict JSON schema requires every field and forbids extra keys", () => {
     if (node?.type === "array") walk(node.items, `${where}[]`);
   };
   walk(FORMCHECK_ANALYSIS_SCHEMA, "root");
-  for (const key of ["exercise_recognized", "matches_declared_exercise", "reps_count", "tempo", "range_of_motion", "symmetry", "intensity", "errors", "strengths", "priority_corrections", "next_session_cues", "score", "safety_note"]) {
-    assert.ok(key in (FORMCHECK_ANALYSIS_SCHEMA as any).properties, key);
+  const props = (FORMCHECK_ANALYSIS_SCHEMA as any).properties;
+  for (const key of ["exercise_recognized", "matches_declared_exercise", "reps_count", "subscores", "phases", "tempo", "rhythm", "range_of_motion", "symmetry", "compensations", "intensity", "bar_path", "bracing", "breathing", "head_position", "feet", "errors", "strengths", "priority_corrections", "plan_4_weeks", "next_session_cues", "next_video_instructions", "score", "safety_note"]) {
+    assert.ok(key in props, key);
   }
+  assert.ok("reps" in props.tempo.properties, "tempo rep par rep");
+  for (const key of ["description", "why", "how_to_fix", "cues", "corrective_exercises", "progression", "frame_index", "annotations", "phase"]) {
+    assert.ok(key in props.errors.items.properties, `errors.${key}`);
+  }
+  assert.deepEqual(props.phases.items.properties.phase.enum, ["mise_en_place", "depart", "milieu", "verrouillage", "descente"]);
+  // Pas de mot-clé non supporté par le mode strict d'OpenAI.
+  assert.doesNotMatch(JSON.stringify(FORMCHECK_ANALYSIS_SCHEMA), /"(minItems|maxItems|minimum|maximum|pattern|format|default|oneOf|allOf)"/);
 });
 
 test("prompt is French, tutoiement, and forbids medical diagnosis", () => {
@@ -149,6 +180,11 @@ test("prompt is French, tutoiement, and forbids medical diagnosis", () => {
   assert.match(prompt, /exactement 3 corrections prioritaires/);
   assert.match(prompt, /frame 7 = 8\.0 s/);
   assert.match(prompt, /coordonnées relatives/);
+  assert.match(prompt, /0 à 6 erreurs/);
+  assert.match(prompt, /exactement 5 entrées/);
+  assert.match(prompt, /exactement 4 semaines/);
+  assert.match(prompt, /pourquoi c'est un problème/);
+  assert.doesNotMatch(prompt + FORMCHECK_INSTRUCTIONS, /[\u2013\u2014]/);
 });
 
 test("normalization clamps model output so the PDF never breaks", () => {
@@ -159,11 +195,20 @@ test("normalization clamps model output so the PDF never breaks", () => {
     errors: [{ title: "Dos rond — fin de série", severity: "grave", frame_index: 99, annotations: [{ type: "angle", points: [{ x: 2, y: -1 }], radius: 1, label: "x" }, { type: "line", points: [{ x: 0.1, y: 0.1 }, { x: 0.9, y: 0.9 }], radius: 0, label: "Barre" }] }],
     priority_corrections: [{ title: "a" }, { title: "b" }, { title: "c" }, { title: "d" }],
   }, 8);
+  const many = normalizeFormcheckAnalysis({ errors: Array.from({ length: 9 }, (_, i) => ({ title: `E${i}`, corrective_exercises: Array.from({ length: 5 }, () => ({ name: "x" })) })), plan_4_weeks: Array.from({ length: 6 }, () => ({ focus: "f" })) }, 8);
+  assert.equal(many.errors.length, 6, "6 erreurs maximum");
+  assert.equal(many.errors[0].corrective_exercises.length, 3);
+  assert.deepEqual(many.plan_4_weeks.map((w) => w.week), [1, 2, 3, 4]);
   assert.equal(raw.score, 100);
   assert.equal(raw.confidence, 1);
   assert.equal(raw.errors[0].frame_index, 7);
   assert.equal(raw.errors[0].severity, "modérée");
-  assert.equal(raw.errors[0].title, "Dos rond , fin de série");
+  assert.equal(raw.errors[0].title, "Dos rond, fin de série");
+  assert.equal(raw.errors[0].phase, "toute_la_serie");
+  assert.equal(raw.phases.length, 5, "les 5 phases sont toujours présentes");
+  assert.equal(raw.phases[2].verdict, "non visible");
+  assert.equal(raw.symmetry.rating, "non évaluable");
+  assert.equal(raw.subscores.execution, 100, "sous-score absent : repris du score global");
   assert.equal(raw.errors[0].annotations.length, 1, "un angle sans 3 points est retiré");
   assert.equal(raw.priority_corrections.length, 3);
   assert.match(raw.safety_note, /avis médical/);
@@ -202,6 +247,29 @@ test("annotation SVG draws circle, line, arrow and angle with measured degrees",
   assert.match(buildAnnotationSvg(100, 100, [{ type: "circle", points: [{ x: 0.5, y: 0.5 }], radius: 0.1, label: "<b>" }]), /&lt;b&gt;/);
 });
 
+test("annotations stay readable on vertical videos: thick strokes, big labels, no overlap", () => {
+  const svg = buildAnnotationSvg(576, 1024, [
+    { type: "circle", points: [{ x: 0.5, y: 0.5 }], radius: 0.08, label: "Bas du dos" },
+    { type: "arrow", points: [{ x: 0.4, y: 0.48 }, { x: 0.55, y: 0.5 }], radius: 0, label: "Hanches" },
+  ], 1);
+  const width = Number(svg.match(/stroke="#FCDD00" stroke-width="(\d+)"/)![1]);
+  assert.ok(width >= 7, `trait ${width}`);
+  const fonts = [...svg.matchAll(/font-size="(\d+)"/g)].map((m) => Number(m[1]));
+  assert.ok(Math.min(...fonts) >= 30, `police ${fonts}`);
+  const rects = [...svg.matchAll(/<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)"/g)].map((m) => m.slice(1).map(Number));
+  assert.equal(rects.length, 2);
+  const [a, b] = rects;
+  const overlap = a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
+  assert.equal(overlap, false, "les libellés ne se chevauchent pas");
+  for (const [x, , w] of rects) assert.ok(x >= 0 && x + w <= 576, "libellé dans l'image");
+});
+
+test("jpegSize reads the frame orientation for the PDF layout", async () => {
+  const vertical = await sharp({ create: { width: 360, height: 640, channels: 3, background: "#808080" } }).jpeg().toBuffer();
+  assert.deepEqual(jpegSize(vertical), { width: 360, height: 640 });
+  assert.equal(jpegSize(Buffer.from([1, 2, 3])), null);
+});
+
 test("annotateFrame composes the overlay onto a real JPEG with sharp", async () => {
   const base = await sharp({ create: { width: 640, height: 360, channels: 3, background: "#808080" } }).jpeg().toBuffer();
   const out = await annotateFrame(base, [{ type: "circle", points: [{ x: 0.5, y: 0.5 }], radius: 0.1, label: "Genou" }], 1);
@@ -230,12 +298,29 @@ test("PDF HTML is light, branded, and shows annotated captures and corrections",
   assert.match(html, /#FCDD00/);
   // Le noir sert uniquement d'accent (pastilles numérotées), jamais de fond de page ou de bloc.
   const darkBackgrounds = html.match(/\.[a-z-]+ \{[^}]*background: #0A0A0A/gi) || [];
-  assert.deepEqual(darkBackgrounds.map((rule) => rule.split(" ")[0]), [".c-num"]);
+  // Le noir sert d'accent (logo, pastilles numérotées) et de fond à la seule page finale coaching.
+  assert.deepEqual(darkBackgrounds.map((rule) => rule.split(" ")[0]), [".logo-pill", ".c-num", ".cta"]);
+  // Logo officiel Achzod en SVG inline : en-tête de la première page et page CTA.
+  const logos = html.match(/<svg[^>]*viewBox="0 0 38\.047 30\.012"[^>]*>.*?<\/svg>/g) || [];
+  assert.equal(logos.length, 2);
+  for (const logo of logos) assert.equal((logo.match(/<path /g) || []).length, 2);
+  assert.ok(html.indexOf("viewBox=\"0 0 38.047 30.012\"") < html.indexOf("Synthèse"), "logo en en-tête");
+  assert.ok(html.lastIndexOf("viewBox=\"0 0 38.047 30.012\"") > html.indexOf('class="cta"'), "logo sur la page CTA");
   assert.match(html, /74<small>\/100<\/small>/);
   assert.match(html, /Tes 3 corrections prioritaires/);
   assert.match(html, /Image 4 sur 10/);
   assert.match(html, /data:image\/jpeg;base64,AQID/, "la capture annotée remplace la frame brute");
   assert.match(html, /ne constitue ni un diagnostic, ni un avis médical/);
+  const plain = html.replace(/&#39;/g, "'");
+  for (const part of ["Tableau de bord", "Phase par phase", "Mise en place", "Verrouillage", "Descente", "Tempo et rythme, rep par rep", "Pourquoi c'est un problème", "Comment corriger", "Exercices correctifs", "Box squat", "Progression", "Tes 4 prochaines semaines", "Pour une analyse encore plus précise", "Trajectoire de la charge", "Pieds et appuis"]) {
+    assert.ok(plain.includes(part), part);
+  }
+  // Dernière page : appel au coaching avec les 3 formules et le lien du site.
+  const ctaAt = html.indexOf('class="cta"');
+  assert.ok(ctaAt > html.indexOf("La série image par image"), "le CTA est en dernier");
+  assert.match(html.slice(ctaAt), /href="https:\/\/achzodcoaching\.com"/);
+  for (const name of ["Essential", "Elite", "Private Lab"]) assert.ok(html.slice(ctaAt).includes(name), name);
+  assert.doesNotMatch(html, /[\u2013\u2014]/);
   assert.equal(scoreVerdict(90), "Technique solide");
   assert.equal(scoreVerdict(40), "Technique à reconstruire");
 });
@@ -253,6 +338,18 @@ test("client emails are French, accented, without em dash, and never promise any
   }
   assert.match(mails[0].text, /60 s maximum/);
   assert.match(mails[2].subject, /crédit non utilisé/);
+  // Le mail de rapport se termine par l'appel au coaching Achzod.
+  assert.match(mails[1].html, /href="https:\/\/achzodcoaching\.com"/);
+  for (const name of ["Essential", "Elite", "Private Lab"]) assert.ok(mails[1].html.includes(name), name);
+  assert.match(mails[1].text, /achzodcoaching\.com/);
+  // Logo en PNG servi par le site (Gmail et Outlook n'affichent pas le SVG inline).
+  assert.match(mails[1].html, /<img src="https:\/\/x\/images\/formcheck\/achzod-logo-email\.png"[^>]*alt="ACHZOD"/);
+  assert.match(mails[1].html, /achzod-logo-email-light\.png/);
+  assert.doesNotMatch(mails[1].html, /<svg|data:image/);
+  for (const file of ["achzod-logo-email.png", "achzod-logo-email-light.png"]) {
+    const png = readFileSync(path.join(root, "client/public/images/formcheck", file));
+    assert.equal(png.subarray(1, 4).toString(), "PNG", file);
+  }
 });
 
 test("ffmpeg probe parsing reads duration, size and video stream", () => {
@@ -273,7 +370,7 @@ test("frame extraction works end to end on a generated video", { skip: spawnSync
     const probe = await probeVideo(file);
     assert.ok(Math.abs((probe.durationS || 0) - 12) < 0.2);
     const frames = await extractFrames(file, probe.durationS!);
-    assert.equal(frames.length, 8);
+    assert.equal(frames.length, 16);
     const meta = await sharp(frames[0].jpeg).metadata();
     assert.equal(meta.width, 1024);
   } finally {
