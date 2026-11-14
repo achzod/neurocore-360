@@ -1263,7 +1263,7 @@ ${sorted
     },
     formcheck: {
       title: "FormCheck - Analyse Vidéo de Tes Mouvements | APEXLABS",
-      desc: "Envoie ta vidéo de squat, soulevé de terre ou développé couché. Reçois une analyse biomécanique détaillée et des corrections actionnables. Par ACHZOD.",
+      desc: "Filme ta série, envoie la vidéo et reçois ton analyse technique en PDF : note sur 100, erreurs annotées, 3 corrections prioritaires. Dès 9,90 €. Par ACHZOD.",
     },
     "peptides-engine": {
       title: "Peptides Engine - Protocole Peptides Personnalisé | APEXLABS",
@@ -1591,7 +1591,7 @@ ${sorted
       {
         question: "C'est un paiement unique ou un abonnement ?",
         answer:
-          "Discovery Scan est gratuit. Anabolic Bioscan, Ultimate Scan, Blood Analysis et Peptides Engine sont des paiements uniques. FormCheck est un abonnement mensuel résiliable à tout moment : Solo coûte 9,90 € le premier mois puis 14,90 €/mois, Pro 29,90 € le premier mois puis 39,90 €/mois, et Coach 99 €/mois.",
+          "Discovery Scan est gratuit. Anabolic Bioscan, Ultimate Scan, Blood Analysis et Peptides Engine sont des paiements uniques. FormCheck est vendu en packs à paiement unique, sans abonnement : 1 analyse à 9,90 €, 3 analyses à 24,90 € ou 6 analyses à 44,90 €.",
       },
       {
         question: "Pourquoi APEXLABS demande autant de contexte ?",

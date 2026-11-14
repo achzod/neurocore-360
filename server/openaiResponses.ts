@@ -668,6 +668,8 @@ function isRetryable(error: any): boolean {
 
 export interface OpenAITextRequest {
   profile: OpenAIReportProfile;
+  /** Optional model override (e.g. FORMCHECK_MODEL). Defaults to OPENAI_REPORT_MODEL. */
+  model?: string;
   instructions: string;
   input: string | any[];
   safetyId?: string;
@@ -717,7 +719,7 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
   }
   const client = getOpenAIClient();
   const profile = PROFILE_CONFIG[request.profile];
-  const model = OPENAI_REPORT_MODEL;
+  const model = String(request.model || "").trim() || OPENAI_REPORT_MODEL;
   const background = request.background ?? Boolean(profile.mode === "pro");
   const attempts = request.profile === "discovery" || request.profile === "peptides"
     ? 1

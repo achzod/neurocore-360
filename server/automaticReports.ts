@@ -31,6 +31,7 @@ interface ReportStats {
     last24hCents: number;
   };
   healthStatus: "GOOD" | "WARNING" | "CRITICAL";
+  formcheck?: Record<string, number> | null;
 }
 
 let lastReportTime: Date | null = null;
@@ -171,11 +172,20 @@ async function gatherStats(): Promise<ReportStats> {
     console.error("[Reports] Revenue query failed (non-fatal):", err);
   }
 
+  // FormCheck V2 (tables séparées, non bloquant)
+  let formcheck: Record<string, number> | null = null;
+  try {
+    const { getFormcheckOpsStats } = await import("./formcheck/store");
+    formcheck = await getFormcheckOpsStats(6);
+  } catch (err) {
+    console.error("[Reports] FormCheck stats failed (non-fatal):", err);
+  }
+
   // Santé du système
   let healthStatus: "GOOD" | "WARNING" | "CRITICAL" = "GOOD";
   if (failed > 0 || generatingStuck > 3) {
     healthStatus = "CRITICAL";
-  } else if (needsReview > 0 || generatingStuck > 0) {
+  } else if (needsReview > 0 || generatingStuck > 0 || (formcheck?.needs_review ?? 0) > 0) {
     healthStatus = "WARNING";
   }
 
@@ -197,6 +207,7 @@ async function gatherStats(): Promise<ReportStats> {
       last24hCents,
     },
     healthStatus,
+    formcheck,
   };
 }
 
@@ -287,6 +298,7 @@ function generateReportHTML(stats: ReportStats): string {
     ${generateStatsHTML(stats)}
     ${generateScheduleHTML(stats)}
     ${generateRevenueHTML(stats)}
+    ${generateFormcheckHTML(stats)}
 
     <!-- Footer -->
     <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid ${
@@ -307,6 +319,28 @@ function generateReportHTML(stats: ReportStats): string {
 </body>
 </html>
 `;
+}
+
+/**
+ * Section FormCheck V2
+ */
+function generateFormcheckHTML(stats: ReportStats): string {
+  const f = stats.formcheck;
+  if (!f) return "";
+  const row = (label: string, value: string | number) =>
+    `<div style="display:flex;justify-content:space-between;padding:4px 0;color:${COLORS.textMuted};font-size:14px;"><span>${label}</span><strong style="color:${COLORS.text};">${value}</strong></div>`;
+  return `
+    <div style="background: ${COLORS.background}; border: 1px solid ${COLORS.border}; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 18px; font-weight: 700;">FormCheck (6h)</h2>
+      ${row("Achats", f.purchases ?? 0)}
+      ${row("Revenus", `${((f.revenue_cents ?? 0) / 100).toFixed(2)}€`)}
+      ${row("Vidéos reçues", f.uploaded ?? 0)}
+      ${row("Rapports livrés", f.delivered ?? 0)}
+      ${row("Vidéos à refilmer", f.rejected ?? 0)}
+      ${row("En file", f.pending ?? 0)}
+      ${row("À vérifier (total)", f.needs_review ?? 0)}
+    </div>
+  `;
 }
 
 /**
@@ -507,7 +541,12 @@ LIVRAISONS:
 REVENUS:
 - Total: ${(stats.revenue.totalCents / 100).toFixed(2)}€
 - 24h: ${(stats.revenue.last24hCents / 100).toFixed(2)}€
-
+${stats.formcheck ? `
+FORMCHECK (6h):
+- Achats: ${stats.formcheck.purchases ?? 0} (${((stats.formcheck.revenue_cents ?? 0) / 100).toFixed(2)}€)
+- Rapports livrés: ${stats.formcheck.delivered ?? 0}, à refilmer: ${stats.formcheck.rejected ?? 0}, en file: ${stats.formcheck.pending ?? 0}
+- À vérifier (total): ${stats.formcheck.needs_review ?? 0}
+` : ""}
 ---
 Dashboard admin: https://apexlabs.achzodcoaching.com/admin
 `;

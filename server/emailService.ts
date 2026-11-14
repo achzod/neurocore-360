@@ -12,6 +12,7 @@ import {
 import { createPeptidesPreviewCheckoutToken } from "./peptidesPreviewConversion";
 import { buildReportAccessUrl } from "./auth";
 import {
+  FORMCHECK_TRANSACTIONAL_EMAIL_TYPES,
   isCriticalTransactionalEmail,
   shouldBlockForMarketingUnsubscribe,
 } from "./emailDeliveryPolicy";
@@ -597,7 +598,10 @@ async function sendEmailWithTracking(
     if (sendpulseTaskId) result.id = sendpulseTaskId;
     const liveLookupMetadata: Record<string, any> = {};
     let liveMatchedRecord: SendPulseLiveRecord | null = null;
-    const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail";
+    const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail"
+      // FormCheck : le worker relance sur échec, une vérification live manquante
+      // provoquerait des doublons de rapport.
+      || FORMCHECK_TRANSACTIONAL_EMAIL_TYPES.has(trackingData.emailType);
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
     if (result.result && sendpulseTaskId) {
@@ -3494,6 +3498,48 @@ export async function sendAdminEmailNewAudit(
     return result.result === true;
   } catch (error) {
     console.error("[SendPulse] ❌ Error sending admin email:", error);
+    return false;
+  }
+}
+
+/**
+ * FormCheck V2 : envoi transactionnel (HTML déjà construit, pièces jointes optionnelles)
+ * via le même rail SendPulse, avec repli Brevo pour les emails critiques.
+ */
+export async function sendFormcheckTransactionalEmail(input: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  emailType: string;
+  metadata?: Record<string, any>;
+  attachments?: Record<string, Buffer>;
+}): Promise<boolean> {
+  try {
+    const attachments_binary = input.attachments
+      ? Object.fromEntries(Object.entries(input.attachments).map(([name, buf]) => [name, buf.toString("base64")]))
+      : undefined;
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(input.html),
+        text: input.text,
+        subject: input.subject,
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email: input.to }],
+        ...(attachments_binary ? { attachments_binary } : {}),
+      },
+      {
+        emailType: input.emailType,
+        recipientEmail: input.to,
+        auditType: "FORMCHECK",
+        metadata: input.metadata,
+        bccAdmin: false,
+        allowProviderFallback: true,
+      },
+    );
+    return result.result === true;
+  } catch (error) {
+    console.error(`[FormCheck] ${input.emailType} send failed:`, error);
     return false;
   }
 }
