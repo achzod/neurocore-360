@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   classifyPeptidesPreviewProviderOutcome,
+  classifyPreviewDeliveryFailure,
+  collectPreviewCandidatePages,
   choosePeptidesPreviewFollowupStage,
   isEligiblePreviewFollowupEmail,
 } from "./peptidesPreviewFollowupRules";
@@ -78,4 +80,96 @@ test("provider ambiguity fails closed instead of retrying a possible send", () =
   assert.equal(classifyPeptidesPreviewProviderOutcome({ result: false, error: "unsubscribed" }), "confirmed_failed");
   assert.equal(classifyPeptidesPreviewProviderOutcome({ result: false, error: "TypeError: fetch failed" }), "reconcile_required");
   assert.equal(classifyPeptidesPreviewProviderOutcome({ result: false, error: "database connection reset after provider call" }), "reconcile_required");
+});
+
+for (const error of [
+  '{"eventType":"hard_fail","smtpAnswerCode":550,"smtpAnswerData":"Bad recipients"}',
+  '{"smtp_answer_code":555,"smtpAnswerData":"Unsubscribed"}',
+  'Bad recipients',
+]) {
+  test("permanent provider rejection suppresses recipient: " + error, () => {
+    const failed = { ...tracking("J1", "2026-09-20T00:00:00Z", "failed"), sendpulseError: error };
+    assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-19T00:00:00Z"), [failed], now), null);
+  });
+}
+
+test("a result-email hard failure also suppresses later marketing", () => {
+  const failed = { ...tracking("J1", "2026-09-20T00:00:00Z", "failed"), emailType: "peptidesPreviewResult", metadata: { sendpulseSmtpAnswerCode: 550 } };
+  assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-19T00:00:00Z"), [failed], now), null);
+});
+
+test("temporary SMTP 450 waits then permits only a bounded retry", () => {
+  const failed = { ...tracking("J1", "2026-09-25T09:00:00Z", "failed"), sendpulseError: '{"eventType":"soft_fail","smtpAnswerCode":450}' };
+  assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-21T00:00:00Z"), [failed], now), "J1");
+  assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-21T00:00:00Z"), [failed, { ...failed, sentAt: "2026-09-25T08:00:01Z" }], now), null);
+});
+
+test("three failed attempts stop permanently instead of looping every two hours", () => {
+  const failed = [18, 19, 20].map((day) => tracking("J1", "2026-09-" + day + "T00:00:00Z", "failed"));
+  assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-17T00:00:00Z"), failed, now), null);
+});
+
+test("claim and provider pairs count as one attempt each", () => {
+  const rows = [20, 21].flatMap((day) => [
+    { ...tracking("J1", "2026-09-" + day + "T00:00:00Z", "failed"), metadata: { previewFollowupClaim: true, providerTaskId: "task-" + day } },
+    { ...tracking("J1", "2026-09-" + day + "T00:00:01Z", "failed"), sendpulseTaskId: "task-" + day },
+  ]);
+  assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-17T00:00:00Z"), rows, now), "J1");
+});
+
+test("pending reconciliation at any stage blocks the whole recipient", () => {
+  const rows = [tracking("J1", "2026-09-20T00:00:00Z"), tracking("J7", "2026-09-20T00:00:00Z", "pending")];
+  assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-17T00:00:00Z"), rows, now), null);
+});
+
+test("legacy malformed or null errors do not crash selection", () => {
+  for (const value of ["null", "[]", "{", "plain failure"]) {
+    const failed = { ...tracking("J1", "2026-09-20T00:00:00Z", "failed"), sendpulseError: value };
+    assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-19T00:00:00Z"), [failed], now), "J1");
+  }
+});
+
+test("mixed unlinked legacy provider and claims cannot evade three-attempt cap", () => {
+  const rows = [
+    { ...tracking("J1", "2026-09-20T00:00:00Z", "failed"), id: "legacy-provider-1" },
+    { ...tracking("J1", "2026-09-21T00:00:00Z", "failed"), id: "legacy-provider-2" },
+    { ...tracking("J1", "2026-09-22T00:00:00Z", "failed"), id: "claim-1", metadata: { previewFollowupClaim: true } },
+  ];
+  assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-17T00:00:00Z"), rows, now), null);
+});
+
+test("writer providerError round trip blocks a terminal rejection without provider sibling", () => {
+  for (const providerError of [JSON.stringify({eventType:"hard_fail",smtpAnswerCode:550,smtpAnswerData:"Bad recipients"}), {eventType:"hard_fail",smtpAnswerCode:550,smtpAnswerData:"Bad recipients"}]) {
+    const row = {...tracking("J1", "2026-09-20T00:00:00Z", "failed"), sendpulseError:"provider_send_failed", metadata:{previewFollowupClaim:true,providerError}};
+    assert.equal(classifyPreviewDeliveryFailure(row), "recipient_suppressed");
+    assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-17T00:00:00Z"),[row],now),null);
+  }
+});
+
+test("provider policy/account holds are not labelled invalid recipients", () => {
+  assert.equal(classifyPreviewDeliveryFailure({...tracking("J1","2026-09-20T00:00:00Z","auth_failed")}),"reconcile_required");
+  assert.equal(classifyPreviewDeliveryFailure({...tracking("J1","2026-09-20T00:00:00Z","failed"),sendpulseError:'{"smtpAnswerCode":550,"smtpAnswerData":"5.7.1 policy rejection"}'}),"reconcile_required");
+  assert.equal(classifyPreviewDeliveryFailure({...tracking("J1","2026-09-20T00:00:00Z","bounced"),sendpulseError:'{"smtpAnswerCode":450}'}),"retryable");
+});
+
+test("accepted transient task must be reconciled, never blindly resent", () => {
+  const row={...tracking("J1","2026-09-20T00:00:00Z","failed"),sendpulseTaskId:"already-accepted",sendpulseError:'{"eventType":"soft_fail","smtpAnswerCode":450}'};
+  assert.equal(classifyPreviewDeliveryFailure(row),"reconcile_required");
+  assert.equal(choosePeptidesPreviewFollowupStage(new Date("2026-09-17T00:00:00Z"),[row],now),null);
+});
+
+test("pagination crosses 1000 blocked records to reach newer eligible leads", async () => {
+  const rows=Array.from({length:1100},(_,i)=>i);const offsets:number[]=[];
+  const found=await collectPreviewCandidatePages(async(offset,limit)=>{offsets.push(offset);return rows.slice(offset,offset+limit);},(x)=>x<1000?null:x);
+  assert.deepEqual(offsets,[0,500,1000]);assert.equal(found.length,100);assert.equal(found[0],1000);
+});
+
+test("both metadata-only provider identities require reconciliation for 450",()=>{
+ for(const key of ["providerTaskId","reconciledProviderTaskId"]){const row={...tracking("J1","2026-09-20T00:00:00Z","failed"),metadata:{[key]:"accepted-task",providerError:{smtpAnswerCode:450}},sendpulseError:"provider_send_failed"};assert.equal(classifyPreviewDeliveryFailure(row),"reconcile_required");}
+});
+test("typed bounce events retain safe holds without confusing soft bounce",()=>{
+ const row={...tracking("J1","2026-09-20T00:00:00Z","failed"),deliveryEvents:["bounce"]};
+ assert.equal(classifyPreviewDeliveryFailure(row),"reconcile_required");
+ assert.equal(classifyPreviewDeliveryFailure({...row,sendpulseError:'{"eventType":"soft_bounce","smtpAnswerCode":450}'}),"retryable");
+ assert.equal(classifyPreviewDeliveryFailure({...row,deliveryEvents:["unsubscribe"]}),"recipient_suppressed");
 });

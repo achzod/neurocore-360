@@ -5,6 +5,7 @@ import { sendPeptidesPreviewFollowupEmail } from "./emailService";
 import {
   PEPTIDES_PREVIEW_FOLLOWUP_START_AT,
   classifyPeptidesPreviewProviderOutcome,
+  collectPreviewCandidatePages,
   choosePeptidesPreviewFollowupStage,
   isEligiblePreviewFollowupEmail,
   normalizePreviewFollowupEmail,
@@ -128,7 +129,8 @@ function mapCandidate(row: PreviewLeadRow, now: Date): PeptidesPreviewFollowupCa
 }
 
 async function loadCandidates(now: Date): Promise<PeptidesPreviewFollowupCandidate[]> {
-  const rows = await pool.query<PreviewLeadRow>(
+  return collectPreviewCandidatePages(async (offset, limit) => {
+    const rows = await pool.query<PreviewLeadRow>(
     `SELECT bp.id,
             bp.email,
             COALESCE(NULLIF(bp.responses->>'capturedAt', '')::timestamptz, bp.last_activity_at) AS captured_at,
@@ -138,11 +140,15 @@ async function loadCandidates(now: Date): Promise<PeptidesPreviewFollowupCandida
                 'emailType', et.email_type,
                 'sentAt', et.sent_at,
                 'sendpulseStatus', et.sendpulse_status,
-                'sendpulseTaskId', et.sendpulse_task_id
+                'sendpulseTaskId', et.sendpulse_task_id,
+                'sendpulseError', et.sendpulse_error,
+                'id', et.id,
+                'metadata', et.metadata,
+                'deliveryEvents', (SELECT jsonb_agg(ct.event_type) FROM cta_tracking ct WHERE ct.email_tracking_id = et.id AND ct.event_type IN ('bounce', 'unsubscribe', 'spam'))
               ) ORDER BY et.sent_at DESC)
                 FROM email_tracking et
                WHERE LOWER(et.recipient_email) = LOWER(REPLACE(bp.email, 'peptides-preview::', ''))
-                 AND et.email_type LIKE 'peptidesPreviewFollowup%'
+                 AND (et.email_type LIKE 'peptidesPreviewFollowup%' OR LOWER(COALESCE(et.sendpulse_status, '')) IN ('failed', 'bounced', 'hard_bounce', 'unsubscribed', 'spam', 'auth_failed') OR EXISTS (SELECT 1 FROM cta_tracking bounced WHERE bounced.email_tracking_id = et.id AND bounced.event_type = 'bounce'))
             ), '[]'::jsonb) AS tracking
        FROM burnout_progress bp
       WHERE bp.email LIKE 'peptides-preview::%'
@@ -171,7 +177,7 @@ async function loadCandidates(now: Date): Promise<PeptidesPreviewFollowupCandida
            WHERE LOWER(blocked.recipient_email) = LOWER(REPLACE(bp.email, 'peptides-preview::', ''))
              AND (
                LOWER(COALESCE(blocked.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
-               OR LOWER(COALESCE(blocked.sendpulse_error, '')) LIKE ANY(ARRAY['%unsubscribe%', '%spam%', '%bounce%'])
+               OR LOWER(COALESCE(blocked.sendpulse_error, '')) LIKE ANY(ARRAY['%unsubscribe%'])
              )
         )
         AND NOT EXISTS (
@@ -180,7 +186,7 @@ async function loadCandidates(now: Date): Promise<PeptidesPreviewFollowupCandida
              AND EXISTS (
                SELECT 1 FROM cta_tracking ct
                 WHERE ct.email_tracking_id = tracked.id
-                  AND ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+                  AND ct.event_type IN ('unsubscribe', 'spam')
              )
         )
         AND NOT EXISTS (
@@ -195,11 +201,12 @@ async function loadCandidates(now: Date): Promise<PeptidesPreviewFollowupCandida
              AND unresolved.email_type LIKE 'peptidesPreviewFollowup%'
              AND LOWER(COALESCE(unresolved.sendpulse_status, '')) = 'pending'
         )
-      ORDER BY captured_at ASC
-      LIMIT 500`,
-    [PEPTIDES_PREVIEW_FOLLOWUP_START_AT, now.toISOString()],
-  );
-  return rows.rows.map((row) => mapCandidate(row, now)).filter((row): row is PeptidesPreviewFollowupCandidate => Boolean(row));
+      ORDER BY captured_at ASC, bp.id ASC
+      LIMIT $3 OFFSET $4`,
+    [PEPTIDES_PREVIEW_FOLLOWUP_START_AT, now.toISOString(), limit, offset],
+    );
+    return rows.rows;
+  }, (row) => mapCandidate(row, now));
 }
 
 async function candidateStillEligible(candidate: PeptidesPreviewFollowupCandidate, client: PoolClient): Promise<boolean> {
@@ -233,7 +240,7 @@ async function candidateStillEligible(candidate: PeptidesPreviewFollowupCandidat
          WHERE LOWER(blocked.recipient_email) = LOWER($1)
            AND (
              LOWER(COALESCE(blocked.sendpulse_status, '')) IN ('unsubscribed', 'auth_failed')
-             OR LOWER(COALESCE(blocked.sendpulse_error, '')) LIKE ANY(ARRAY['%unsubscribe%', '%spam%', '%bounce%'])
+             OR LOWER(COALESCE(blocked.sendpulse_error, '')) LIKE ANY(ARRAY['%unsubscribe%'])
            )
       )
       AND NOT EXISTS (
@@ -242,12 +249,25 @@ async function candidateStillEligible(candidate: PeptidesPreviewFollowupCandidat
            AND EXISTS (
              SELECT 1 FROM cta_tracking ct
               WHERE ct.email_tracking_id = tracked.id
-                AND ct.event_type IN ('unsubscribe', 'spam', 'bounce')
+                AND ct.event_type IN ('unsubscribe', 'spam')
            )
       ) AS eligible`,
     [candidate.email, `peptidesPreviewFollowup${candidate.stage}`, candidate.capturedAt],
   );
-  return result.rows[0]?.eligible === true;
+  if (result.rows[0]?.eligible !== true) return false;
+  // Reload evidence under the same lock; a dry-run is not send authority.
+  const evidence = await client.query<PeptidesPreviewFollowupTracking>(
+    `SELECT id, email_type AS "emailType", sent_at AS "sentAt",
+            sendpulse_status AS "sendpulseStatus", sendpulse_task_id AS "sendpulseTaskId",
+            sendpulse_error AS "sendpulseError", metadata,
+            (SELECT jsonb_agg(ct.event_type) FROM cta_tracking ct WHERE ct.email_tracking_id = et.id AND ct.event_type IN ('bounce', 'unsubscribe', 'spam')) AS "deliveryEvents"
+       FROM email_tracking et
+      WHERE LOWER(recipient_email) = LOWER($1)
+        AND (email_type LIKE 'peptidesPreviewFollowup%'
+             OR LOWER(COALESCE(sendpulse_status, '')) IN ('failed', 'bounced', 'hard_bounce', 'unsubscribed', 'spam', 'auth_failed') OR EXISTS (SELECT 1 FROM cta_tracking bounced WHERE bounced.email_tracking_id = et.id AND bounced.event_type = 'bounce'))`,
+    [candidate.email],
+  );
+  return choosePeptidesPreviewFollowupStage(new Date(candidate.capturedAt), evidence.rows) === candidate.stage;
 }
 
 async function sendCandidate(candidate: PeptidesPreviewFollowupCandidate): Promise<"sent" | "failed" | "skipped" | "reconcileRequired"> {
@@ -257,7 +277,7 @@ async function sendCandidate(candidate: PeptidesPreviewFollowupCandidate): Promi
   try {
     const lock = await client.query<{ locked: boolean }>("SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS locked", [key]);
     locked = lock.rows[0]?.locked === true;
-    if (!locked || !(await candidateStillEligible(candidate, client))) return "skipped";
+    if (!locked || !(await isPeptidesPreviewFollowupEnabled()) || !(await candidateStillEligible(candidate, client))) return "skipped";
 
     const emailType = `peptidesPreviewFollowup${candidate.stage}`;
     const claimId = randomUUID();
@@ -295,7 +315,8 @@ async function sendCandidate(candidate: PeptidesPreviewFollowupCandidate): Promi
         [claimId, sent ? "success" : reconcileRequired ? "pending" : "failed", sent ? null : reconcileRequired ? "provider_outcome_unknown" : "provider_send_failed", JSON.stringify({
           deliveryState: sent ? "accepted" : reconcileRequired ? "reconcile_required" : "confirmed_failed",
           providerHttpStatus: delivery.httpStatus ?? null,
-          providerError: delivery.error == null ? null : String(delivery.error),
+          providerError: delivery.error == null ? null : typeof delivery.error === "string" ? delivery.error : JSON.stringify(delivery.error),
+          providerTaskId: delivery.id || null,
           completedAt: new Date().toISOString(),
         })],
       );
