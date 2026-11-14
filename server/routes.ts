@@ -91,6 +91,7 @@ import { buildPublicReviewCheckResponse, toPublicReview } from "./reviewPublicRe
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
+import { fulfillFormcheckCheckoutSession, isFormcheckCheckoutSession, registerFormcheckRoutes } from "./formcheck/routes";
 import { signAuthToken } from "./auth";
 import {
   analyzeDiscoveryScan,
@@ -13026,6 +13027,7 @@ export async function registerRoutes(
 
   // ==================== BLOOD TESTS DASHBOARD ROUTES ====================
   registerBloodTestsRoutes(app);
+  registerFormcheckRoutes(app);
 
   // ==================== STRIPE WEBHOOK ====================
   // Idempotency guard: track recently processed Stripe event IDs (TTL 1h)
@@ -13083,6 +13085,11 @@ export async function registerRoutes(
           // Checkout completion is not proof of payment for delayed methods.
           // The later async success event fulfills those orders instead.
           if (!isStripeCheckoutPaid(session)) break;
+          // FormCheck V2 : crédits d'analyse par email, hors table orders.
+          if (isFormcheckCheckoutSession(session)) {
+            await fulfillFormcheckCheckoutSession(session);
+            break;
+          }
           const order = await storage.getOrderByStripeSession(session.id);
           const sessionPlanType = String(session?.metadata?.planType || "");
           const sessionEmail = String(

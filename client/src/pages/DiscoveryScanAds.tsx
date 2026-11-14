@@ -437,15 +437,15 @@ export default function DiscoveryScanAds() {
                 </span>
               </div>
               <h3 className="text-3xl font-black text-white mb-2">FormCheck</h3>
-              <p className="text-xl font-bold text-white/60 mb-6">Bientôt disponible</p>
+              <p className="text-xl font-bold text-white/60 mb-6">Dès 9,90 €</p>
 
               <ul className="space-y-3 mb-8">
                 {[
-                  "Envoie ta vidéo d'exercice par WhatsApp",
-                  "Score de forme 0-100",
-                  "Corrections prioritaires avec angles",
-                  "Exercices correctifs personnalisés",
-                  "20+ exercices supportés",
+                  "Envoie la vidéo de ta série en ligne",
+                  "Note technique sur 100",
+                  "Erreurs annotées sur tes images",
+                  "3 corrections prioritaires",
+                  "Rapport PDF en quelques minutes",
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-white/80">
                     <Check className="text-[#FCDD00] flex-shrink-0 mt-0.5" size={18} />

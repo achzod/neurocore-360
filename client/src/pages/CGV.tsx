@@ -110,9 +110,12 @@ export default function CGV() {
                 </p>
               </div>
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
-                <h4 className="font-semibold text-white">FormCheck (Bientot disponible)</h4>
+                <h4 className="font-semibold text-white">FormCheck : 9,90 € (1 analyse), 24,90 € (3 analyses), 44,90 € (6 analyses)</h4>
                 <p className="mt-1 text-sm text-white/50">
-                  Analyse video de la technique d'exercice avec corrections personnalisees et protocoles de mobilite.
+                  Analyse vidéo automatique de la technique d'exécution d'une série, livrée en rapport PDF par email.
+                  Paiement unique, sans abonnement. Chaque vidéo analysée consomme 1 crédit, uniquement lorsque le
+                  rapport est livré ; une vidéo inexploitable ne consomme pas de crédit. Crédits sans date
+                  d'expiration, non déductibles des coachings. Analyse technique uniquement, sans diagnostic médical.
                 </p>
               </div>
             </div>

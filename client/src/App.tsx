@@ -85,6 +85,7 @@ const AuditPremium = lazy(() => import("@/pages/offers/AuditPremium"));
 const BloodAnalysisOffer = lazy(() => import("@/pages/offers/BloodAnalysisOffer"));
 const ProPanel = lazy(() => import("@/pages/offers/ProPanel"));
 const FormCheck = lazy(() => import("@/pages/offers/FormCheck"));
+const FormCheckUpload = lazy(() => import("@/pages/FormCheckUpload"));
 const DiscoveryScanAds = lazy(() => import("@/pages/DiscoveryScanAds"));
 
 const PAGE_TITLES: Record<string, string> = {
@@ -95,6 +96,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/offers/blood-analysis": "Blood Analysis — Analyse sanguine | APEXLABS",
   "/offers/ultimate-scan": "Ultimate Scan — Le plus complet | APEXLABS",
   "/offers/formcheck": "FormCheck — Analyse vidéo | APEXLABS",
+  "/formcheck/upload": "Envoyer ma vidéo FormCheck | APEXLABS",
   "/offers/peptides-engine": "Peptides Engine — Protocole personnalisé | APEXLABS",
   "/peptides-engine": "Questionnaire Peptides | APEXLABS",
   "/peptides-preview": "Aperçu Peptides Personnalisé | APEXLABS",
@@ -214,6 +216,7 @@ function Router() {
         <Route path="/offers/blood-analysis" component={BloodAnalysisOffer} />
         <Route path="/offers/ultimate-scan" component={ProPanel} />
         <Route path="/offers/formcheck" component={FormCheck} />
+        <Route path="/formcheck/upload" component={FormCheckUpload} />
         <Route path="/offers/peptides-engine" component={PeptidesEngineOffer} />
         <Route path="/peptides-preview" component={PeptidesPreviewPage} />
         <Route path="/peptides-engine" component={PeptidesEnginePage} />

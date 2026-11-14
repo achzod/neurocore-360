@@ -1,0 +1,449 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import test from "node:test";
+import sharp from "sharp";
+
+import {
+  buildFormcheckLineItem,
+  computeFrameTimestamps,
+  estimateFormcheckCostUsd,
+  FORMCHECK_PACKS,
+  frameCountForDuration,
+  getFormcheckAdminEmail,
+  getFormcheckModel,
+  getFormcheckReasoningEffort,
+  resolveFormcheckPack,
+  retryDelayMs,
+  validateUploadedFileMeta,
+  validateVideoDuration,
+} from "./formcheck/config";
+import { decideFormcheckOutcome, detectedExerciseLabel, FORMCHECK_ANALYSIS_SCHEMA, buildFormcheckPrompt, FORMCHECK_INSTRUCTIONS, normalizeFormcheckAnalysis } from "./formcheck/analysis";
+import { angleDegrees, annotateFrame, buildAnnotationSvg } from "./formcheck/annotate";
+import { buildFormcheckReportHtml, jpegSize, scoreVerdict } from "./formcheck/report";
+import { buildAccessEmail, buildReportEmail, buildReshootEmail } from "./formcheck/emails";
+import { parseFfmpegProbe } from "./formcheck/video";
+
+const root = path.resolve(import.meta.dirname, "..");
+const read = (relative: string) => readFileSync(path.join(root, relative), "utf8");
+
+export const goodAnalysis = () => normalizeFormcheckAnalysis({
+  exploitable: true,
+  rejection_reason: "",
+  exercise_detected: { name_fr: "Squat barre haute", is_strength_exercise: true },
+  camera_view: "profil",
+  confidence: 0.82,
+  reps_count: 6,
+  tempo: { eccentric_s: 2, pause_bottom_s: 0, concentric_s: 1, pause_top_s: 0.5, comment: "Descente contrôlée." },
+  range_of_motion: { rating: "complète", comment: "Hanches sous les genoux." },
+  symmetry: { assessable: false, comment: "Vue de profil stricte." },
+  intensity: { reps_in_reserve: 2, proximity_to_failure: "proche", comment: "Vitesse qui chute sur la dernière rep." },
+  subscores: { mise_en_place: 80, execution: 70, stabilite: 75, controle: 72 },
+  phases: [
+    { phase: "mise_en_place", verdict: "bon", frame_index: 0, comment: "Pieds largeur de hanches." },
+    { phase: "depart", verdict: "à corriger", frame_index: 3, comment: "Genoux qui partent en premier." },
+    { phase: "milieu", verdict: "correct", frame_index: 4, comment: "Passage du point difficile tenu." },
+    { phase: "verrouillage", verdict: "bon", frame_index: 6, comment: "Hanches tendues." },
+    { phase: "descente", verdict: "correct", frame_index: 8, comment: "Descente un peu rapide." },
+  ],
+  rhythm: { rating: "correct", comment: "Enchaînement régulier." },
+  compensations: { rating: "à corriger", items: ["Bascule du buste vers l'avant"], comment: "Le buste compense en fin de série." },
+  bar_path: { rating: "bon", comment: "Barre au-dessus du milieu du pied." },
+  bracing: { rating: "correct", comment: "Tronc tenu." },
+  breathing: { visible: false, comment: "Inspire avant chaque descente." },
+  head_position: { rating: "bon", comment: "Regard neutre." },
+  feet: { rating: "bon", comment: "Appuis stables." },
+  plan_4_weeks: [1, 2, 3, 4].map((week) => ({ week, focus: `Focus semaine ${week}`, actions: ["Tempo 3 s en descente"], load_advice: "70 % de ta charge" })),
+  next_video_instructions: ["Filme de profil, à hauteur de hanche"],
+  errors: [{
+    title: "Genoux qui avancent tôt",
+    description: "Tu casses aux genoux avant les hanches.",
+    why: "La charge part sur l'avant du pied.",
+    how_to_fix: "Initie le mouvement en poussant les hanches en arrière.",
+    cues: ["Fesses en arrière"],
+    corrective_exercises: [{ name: "Box squat", prescription: "3 x 5, tempo 3 s", why: "Apprend à initier par les hanches." }],
+    progression: "Semaine 1 au box squat, puis retour au squat libre.",
+    phase: "depart",
+    severity: "modérée",
+    frame_index: 3,
+    annotations: [
+      { type: "circle", points: [{ x: 0.5, y: 0.6 }], radius: 0.06, label: "Genou" },
+      { type: "angle", points: [{ x: 0.4, y: 0.4 }, { x: 0.5, y: 0.6 }, { x: 0.45, y: 0.85 }], radius: 0, label: "Genou" },
+    ],
+  }],
+  strengths: ["Dos gainé", "Pieds stables"],
+  priority_corrections: [
+    { title: "Hanches d'abord", cue: "Fesses en arrière", why: "Répartit la charge." },
+    { title: "Respiration", cue: "Inspire, bloque", why: "Stabilise le tronc." },
+    { title: "Tempo", cue: "Deux secondes en bas", why: "Plus de contrôle." },
+  ],
+  next_session_cues: ["Garde la même charge", "Filme de profil"],
+  score: 74,
+  summary: "Bonne base, corrige l'initiation du mouvement.",
+  safety_note: "Pas de diagnostic médical.",
+}, 10);
+
+test("FormCheck packs are exactly 1/3/6 analyses at 9,90 / 24,90 / 44,90 EUR", () => {
+  assert.deepEqual(
+    Object.values(FORMCHECK_PACKS).map((p) => [p.id, p.credits, p.amountCents]),
+    [["1", 1, 990], ["3", 3, 2490], ["6", 6, 4490]],
+  );
+  assert.equal(resolveFormcheckPack("3")?.credits, 3);
+  assert.equal(resolveFormcheckPack("12"), null);
+  assert.equal(resolveFormcheckPack(undefined), null);
+});
+
+test("checkout uses STRIPE_PRICE_FORMCHECK_* when valid and falls back to inline price_data", () => {
+  const pack = FORMCHECK_PACKS["6"];
+  const inline = buildFormcheckLineItem(pack, {});
+  assert.equal(inline.price, undefined);
+  assert.equal(inline.price_data?.unit_amount, 4490);
+  assert.equal(inline.price_data?.currency, "eur");
+  assert.match(String(inline.price_data?.product_data?.name), /FormCheck : 6 analyses/);
+
+  const configured = buildFormcheckLineItem(pack, { STRIPE_PRICE_FORMCHECK_6: "price_1ABCdef" });
+  assert.deepEqual(configured, { quantity: 1, price: "price_1ABCdef" });
+
+  const malformed = buildFormcheckLineItem(pack, { STRIPE_PRICE_FORMCHECK_6: "  not-a-price " });
+  assert.equal(malformed.price_data?.unit_amount, 4490);
+});
+
+test("upload limits: mp4/mov only, 200 MB, 60 s", () => {
+  assert.equal(validateUploadedFileMeta({ originalName: "serie.MOV", mimeType: "video/quicktime", sizeBytes: 10_000 }), null);
+  assert.equal(validateUploadedFileMeta({ originalName: "serie.mp4", mimeType: "video/mp4", sizeBytes: 200 * 1024 * 1024 }), null);
+  assert.equal(validateUploadedFileMeta({ originalName: "serie.mp4", mimeType: "video/mp4", sizeBytes: 200 * 1024 * 1024 + 1 })?.code, "TOO_LARGE");
+  assert.equal(validateUploadedFileMeta({ originalName: "serie.avi", mimeType: "video/x-msvideo", sizeBytes: 1000 })?.code, "FORMAT");
+  assert.equal(validateUploadedFileMeta({ originalName: "serie.webm", mimeType: "video/webm", sizeBytes: 1000 })?.code, "FORMAT");
+  assert.equal(validateVideoDuration(60.8), null);
+  assert.equal(validateVideoDuration(62)?.code, "TOO_LONG");
+  assert.equal(validateVideoDuration(1)?.code, "TOO_SHORT");
+  assert.equal(validateVideoDuration(null)?.code, "UNREADABLE");
+  for (const message of [validateVideoDuration(62)!.message, validateUploadedFileMeta({ originalName: "a.avi", mimeType: "x", sizeBytes: 1 })!.message]) {
+    assert.doesNotMatch(message, /[\u2013\u2014]/);
+  }
+});
+
+test("16 to 20 frames are spread over the whole set, inside the video", () => {
+  assert.equal(frameCountForDuration(7), 16);
+  assert.equal(frameCountForDuration(20), 18);
+  assert.equal(frameCountForDuration(60), 20);
+  for (const duration of [3, 7.1, 20.5, 45, 60]) {
+    const ts = computeFrameTimestamps(duration);
+    assert.ok(ts.length >= 16 && ts.length <= 20);
+    assert.ok(ts[0] > 0 && ts[ts.length - 1] < duration);
+    for (let i = 1; i < ts.length; i++) assert.ok(ts[i] > ts[i - 1]);
+    // couvre au moins 85 % de la série
+    assert.ok(ts[ts.length - 1] - ts[0] >= duration * 0.85 * ((ts.length - 1) / ts.length));
+  }
+});
+
+test("model, reasoning effort, admin email and retry delays are configurable with safe defaults", () => {
+  assert.equal(getFormcheckModel({ FORMCHECK_MODEL: "gpt-x-vision" }), "gpt-x-vision");
+  assert.equal(getFormcheckModel({}), "gpt-6.1-sol");
+  // Le modèle des autres rapports (OPENAI_REPORT_MODEL) ne change pas celui de FormCheck.
+  assert.equal(getFormcheckModel({ OPENAI_REPORT_MODEL: "gpt-5.6-sol" }), "gpt-6.1-sol");
+  assert.equal(getFormcheckReasoningEffort({}), "high");
+  assert.equal(getFormcheckReasoningEffort({ FORMCHECK_REASONING_EFFORT: "XHIGH" }), "xhigh");
+  assert.equal(getFormcheckReasoningEffort({ FORMCHECK_REASONING_EFFORT: "medium" }), "medium");
+  assert.equal(getFormcheckReasoningEffort({ FORMCHECK_REASONING_EFFORT: "minimal" }), "high", "effort refusé par gpt-6.1-sol : repli sur high");
+  assert.equal(getFormcheckAdminEmail({ ADMIN_NOTIF_EMAIL: "ops@x.fr", ADMIN_NOTIFICATION_EMAIL: "old@x.fr" }), "ops@x.fr");
+  assert.equal(getFormcheckAdminEmail({ ADMIN_NOTIFICATION_EMAIL: "old@x.fr" }), "old@x.fr");
+  assert.ok(retryDelayMs(1) < retryDelayMs(2) && retryDelayMs(2) < retryDelayMs(3));
+});
+
+test("cost estimate uses the official gpt-6.1-sol price (2 $ input, 0,10 $ cached, 10 $ output per 1M)", () => {
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol", { inputTokens: 100_000, outputTokens: 0 }), 0.2);
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol", { inputTokens: 0, outputTokens: 100_000 }), 1);
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol", { inputTokens: 100_000, cachedInputTokens: 100_000, outputTokens: 0 }), 0.01);
+  // Au-delà de 272K tokens d'entrée : x2 sur l'entrée, x1,5 sur la sortie.
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol", { inputTokens: 300_000, outputTokens: 100_000 }), 2.7);
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol-2026-09-29", { inputTokens: 20_000, outputTokens: 10_000 }), 0.14);
+  assert.equal(estimateFormcheckCostUsd("gpt-5.6-sol", { inputTokens: 20_000, outputTokens: 10_000 }), 0.4);
+  assert.equal(estimateFormcheckCostUsd("unknown-model", { inputTokens: 1, outputTokens: 1 }), null);
+});
+
+test("strict JSON schema requires every field and forbids extra keys", () => {
+  const walk = (node: any, where: string) => {
+    if (node?.type === "object") {
+      assert.equal(node.additionalProperties, false, where);
+      assert.deepEqual([...node.required].sort(), Object.keys(node.properties).sort(), where);
+      for (const [key, child] of Object.entries(node.properties)) walk(child, `${where}.${key}`);
+    }
+    if (node?.type === "array") walk(node.items, `${where}[]`);
+  };
+  walk(FORMCHECK_ANALYSIS_SCHEMA, "root");
+  const props = (FORMCHECK_ANALYSIS_SCHEMA as any).properties;
+  assert.deepEqual(Object.keys(props.exercise_detected.properties).sort(), ["is_strength_exercise", "name_fr"]);
+  assert.equal(props.exercise_detected.properties.is_strength_exercise.type, "boolean");
+  assert.ok(!("matches_declared_exercise" in props) && !("exercise_recognized" in props), "plus d'exercice déclaré par le client");
+  for (const key of ["exercise_detected", "reps_count", "subscores", "phases", "tempo", "rhythm", "range_of_motion", "symmetry", "compensations", "intensity", "bar_path", "bracing", "breathing", "head_position", "feet", "errors", "strengths", "priority_corrections", "plan_4_weeks", "next_session_cues", "next_video_instructions", "score", "safety_note"]) {
+    assert.ok(key in props, key);
+  }
+  assert.ok("reps" in props.tempo.properties, "tempo rep par rep");
+  for (const key of ["description", "why", "how_to_fix", "cues", "corrective_exercises", "progression", "frame_index", "annotations", "phase"]) {
+    assert.ok(key in props.errors.items.properties, `errors.${key}`);
+  }
+  assert.deepEqual(props.phases.items.properties.phase.enum, ["mise_en_place", "depart", "milieu", "verrouillage", "descente"]);
+  // Pas de mot-clé non supporté par le mode strict d'OpenAI.
+  assert.doesNotMatch(JSON.stringify(FORMCHECK_ANALYSIS_SCHEMA), /"(minItems|maxItems|minimum|maximum|pattern|format|default|oneOf|allOf)"/);
+});
+
+test("prompt is French, tutoiement, and forbids medical diagnosis", () => {
+  const prompt = buildFormcheckPrompt({ frameTimestamps: [1, 2, 3, 4, 5, 6, 7, 8], durationS: 9 });
+  assert.match(prompt, /Le client n'indique pas l'exercice/);
+  assert.match(prompt, /name_fr = son nom usuel en français/);
+  assert.doesNotMatch(prompt, /déclaré/);
+  assert.match(FORMCHECK_INSTRUCTIONS, /Tu tutoies/);
+  assert.match(FORMCHECK_INSTRUCTIONS, /Interdit : tout diagnostic médical/);
+  assert.match(prompt, /exactement 3 corrections prioritaires/);
+  assert.match(prompt, /frame 7 = 8\.0 s/);
+  assert.match(prompt, /coordonnées relatives/);
+  assert.match(prompt, /0 à 6 erreurs/);
+  assert.match(prompt, /exactement 5 entrées/);
+  assert.match(prompt, /exactement 4 semaines/);
+  assert.match(prompt, /pourquoi c'est un problème/);
+  assert.doesNotMatch(prompt + FORMCHECK_INSTRUCTIONS, /[\u2013\u2014]/);
+});
+
+test("normalization clamps model output so the PDF never breaks", () => {
+  const raw = normalizeFormcheckAnalysis({
+    exploitable: true,
+    score: 140,
+    confidence: 3,
+    errors: [{ title: "Dos rond — fin de série", severity: "grave", frame_index: 99, annotations: [{ type: "angle", points: [{ x: 2, y: -1 }], radius: 1, label: "x" }, { type: "line", points: [{ x: 0.1, y: 0.1 }, { x: 0.9, y: 0.9 }], radius: 0, label: "Barre" }] }],
+    priority_corrections: [{ title: "a" }, { title: "b" }, { title: "c" }, { title: "d" }],
+  }, 8);
+  const many = normalizeFormcheckAnalysis({ errors: Array.from({ length: 9 }, (_, i) => ({ title: `E${i}`, corrective_exercises: Array.from({ length: 5 }, () => ({ name: "x" })) })), plan_4_weeks: Array.from({ length: 6 }, () => ({ focus: "f" })) }, 8);
+  assert.equal(many.errors.length, 6, "6 erreurs maximum");
+  assert.equal(many.errors[0].corrective_exercises.length, 3);
+  assert.deepEqual(many.plan_4_weeks.map((w) => w.week), [1, 2, 3, 4]);
+  assert.equal(raw.score, 100);
+  assert.equal(raw.confidence, 1);
+  assert.equal(raw.errors[0].frame_index, 7);
+  assert.equal(raw.errors[0].severity, "modérée");
+  assert.equal(raw.errors[0].title, "Dos rond, fin de série");
+  assert.equal(raw.errors[0].phase, "toute_la_serie");
+  assert.equal(raw.phases.length, 5, "les 5 phases sont toujours présentes");
+  assert.equal(raw.phases[2].verdict, "non visible");
+  assert.equal(raw.symmetry.rating, "non évaluable");
+  assert.equal(raw.subscores.execution, 100, "sous-score absent : repris du score global");
+  assert.equal(raw.errors[0].annotations.length, 1, "un angle sans 3 points est retiré");
+  assert.equal(raw.priority_corrections.length, 3);
+  assert.match(raw.safety_note, /avis médical/);
+});
+
+test("decision: unusable video or no strength exercise is rejected (credit kept), low confidence is retried", () => {
+  const good = goodAnalysis();
+  assert.equal(good.exercise_detected.name_fr, "Squat barre haute");
+  assert.equal(detectedExerciseLabel(good), "Squat barre haute");
+  assert.deepEqual(decideFormcheckOutcome(good, 0.55), { kind: "deliver" });
+
+  const unusable = { ...good, exploitable: false, rejection_reason: "Tes pieds sont hors cadre." };
+  assert.deepEqual(decideFormcheckOutcome(unusable, 0.55), { kind: "reject", reason: "Tes pieds sont hors cadre." });
+
+  const noStrength = { ...good, exercise_detected: { name_fr: "", is_strength_exercise: false } };
+  const decision = decideFormcheckOutcome(noStrength, 0.55);
+  assert.equal(decision.kind, "reject");
+  assert.match((decision as any).reason, /aucun exercice de musculation/);
+  // Un exercice reconnu mais sans nom ne peut pas être livré non plus.
+  assert.equal(decideFormcheckOutcome({ ...good, exercise_detected: { name_fr: "", is_strength_exercise: true } }, 0.55).kind, "reject");
+  // Tout exercice de musculation reconnu est analysé : plus de rejet « mauvais exercice ».
+  assert.equal(decideFormcheckOutcome({ ...good, exercise_detected: { name_fr: "Soulevé de terre sur blocs", is_strength_exercise: true } }, 0.55).kind, "deliver");
+
+  assert.equal(decideFormcheckOutcome({ ...good, confidence: 0.3 }, 0.55).kind, "retry");
+  assert.equal(decideFormcheckOutcome({ ...good, priority_corrections: good.priority_corrections.slice(0, 2) }, 0.55).kind, "retry");
+  // Normalisation : champ absent = aucun exercice reconnu.
+  assert.equal(normalizeFormcheckAnalysis({ exploitable: true }, 8).exercise_detected.is_strength_exercise, false);
+});
+
+test("annotation SVG draws circle, line, arrow and angle with measured degrees", () => {
+  assert.equal(angleDegrees({ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }), 90);
+  const svg = buildAnnotationSvg(1000, 500, [
+    { type: "circle", points: [{ x: 0.5, y: 0.5 }], radius: 0.05, label: "Genou" },
+    { type: "line", points: [{ x: 0.1, y: 0.1 }, { x: 0.1, y: 0.9 }], radius: 0, label: "Barre" },
+    { type: "arrow", points: [{ x: 0.2, y: 0.2 }, { x: 0.3, y: 0.2 }], radius: 0, label: "Recule" },
+    { type: "angle", points: [{ x: 0.4, y: 0.2 }, { x: 0.5, y: 0.5 }, { x: 0.6, y: 0.5 }], radius: 0, label: "Hanche" },
+  ], 1);
+  assert.match(svg, /<circle cx="500" cy="250" r="50"/);
+  assert.match(svg, /stroke-dasharray/);
+  assert.match(svg, /Hanche \d+°/);
+  assert.match(svg, /#FCDD00/);
+  assert.doesNotMatch(svg, /<script/);
+  assert.match(buildAnnotationSvg(100, 100, [{ type: "circle", points: [{ x: 0.5, y: 0.5 }], radius: 0.1, label: "<b>" }]), /&lt;b&gt;/);
+});
+
+test("annotations stay readable on vertical videos: thick strokes, big labels, no overlap", () => {
+  const svg = buildAnnotationSvg(576, 1024, [
+    { type: "circle", points: [{ x: 0.5, y: 0.5 }], radius: 0.08, label: "Bas du dos" },
+    { type: "arrow", points: [{ x: 0.4, y: 0.48 }, { x: 0.55, y: 0.5 }], radius: 0, label: "Hanches" },
+  ], 1);
+  const width = Number(svg.match(/stroke="#FCDD00" stroke-width="(\d+)"/)![1]);
+  assert.ok(width >= 7, `trait ${width}`);
+  const fonts = [...svg.matchAll(/font-size="(\d+)"/g)].map((m) => Number(m[1]));
+  assert.ok(Math.min(...fonts) >= 30, `police ${fonts}`);
+  const rects = [...svg.matchAll(/<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)"/g)].map((m) => m.slice(1).map(Number));
+  assert.equal(rects.length, 2);
+  const [a, b] = rects;
+  const overlap = a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
+  assert.equal(overlap, false, "les libellés ne se chevauchent pas");
+  for (const [x, , w] of rects) assert.ok(x >= 0 && x + w <= 576, "libellé dans l'image");
+});
+
+test("jpegSize reads the frame orientation for the PDF layout", async () => {
+  const vertical = await sharp({ create: { width: 360, height: 640, channels: 3, background: "#808080" } }).jpeg().toBuffer();
+  assert.deepEqual(jpegSize(vertical), { width: 360, height: 640 });
+  assert.equal(jpegSize(Buffer.from([1, 2, 3])), null);
+});
+
+test("annotateFrame composes the overlay onto a real JPEG with sharp", async () => {
+  const base = await sharp({ create: { width: 640, height: 360, channels: 3, background: "#808080" } }).jpeg().toBuffer();
+  const out = await annotateFrame(base, [{ type: "circle", points: [{ x: 0.5, y: 0.5 }], radius: 0.1, label: "Genou" }], 1);
+  const meta = await sharp(out).metadata();
+  assert.equal(meta.format, "jpeg");
+  assert.equal(meta.width, 640);
+  // le pixel sur le cercle n'est plus gris
+  const { data, info } = await sharp(out).raw().toBuffer({ resolveWithObject: true });
+  const px = (x: number, y: number) => data.subarray((y * info.width + x) * info.channels, (y * info.width + x) * info.channels + 3);
+  const onRing = px(320 + 64, 180);
+  assert.ok(onRing[0] > 180 && onRing[1] > 160 && onRing[2] < 120, `pixel ${[...onRing]}`);
+});
+
+test("PDF HTML is light, branded, and shows annotated captures and corrections", () => {
+  const analysis = goodAnalysis();
+  const frame = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+  const html = buildFormcheckReportHtml({
+    analysisId: "abcdef12-0000-0000-0000-000000000000",
+    email: "client@example.com",
+    createdAt: new Date("2026-11-14T10:00:00Z"),
+    analysis,
+    frames: Array.from({ length: 10 }, (_, index) => ({ index, timestampS: index * 2 + 1, jpeg: frame, annotated: index === 3 ? Buffer.from([1, 2, 3]) : null })),
+  });
+  assert.match(html, /body \{[^}]*background: #FFFFFF/);
+  assert.match(html, /#FCDD00/);
+  // Le noir sert uniquement d'accent (pastilles numérotées), jamais de fond de page ou de bloc.
+  const darkBackgrounds = html.match(/\.[a-z-]+ \{[^}]*background: #0A0A0A/gi) || [];
+  // Le noir sert d'accent (logo, pastilles numérotées) et de fond à la seule page finale coaching.
+  assert.deepEqual(darkBackgrounds.map((rule) => rule.split(" ")[0]), [".logo-pill", ".c-num", ".cta"]);
+  // Logo officiel Achzod en SVG inline : en-tête de la première page et page CTA.
+  const logos = html.match(/<svg[^>]*viewBox="0 0 38\.047 30\.012"[^>]*>.*?<\/svg>/g) || [];
+  assert.equal(logos.length, 2);
+  for (const logo of logos) assert.equal((logo.match(/<path /g) || []).length, 2);
+  assert.ok(html.indexOf("viewBox=\"0 0 38.047 30.012\"") < html.indexOf("Exercice détecté"), "logo en en-tête");
+  // L'exercice affiché est celui détecté par le modèle.
+  assert.match(html, /<div class="kicker">Exercice détecté<\/div><h1>Squat barre haute<\/h1>/);
+  assert.match(html, /<title>FormCheck : Squat barre haute<\/title>/);
+  assert.ok(html.lastIndexOf("viewBox=\"0 0 38.047 30.012\"") > html.indexOf('class="cta"'), "logo sur la page CTA");
+  assert.match(html, /74<small>\/100<\/small>/);
+  assert.match(html, /Tes 3 corrections prioritaires/);
+  assert.match(html, /Image 4 sur 10/);
+  assert.match(html, /data:image\/jpeg;base64,AQID/, "la capture annotée remplace la frame brute");
+  assert.match(html, /ne constitue ni un diagnostic, ni un avis médical/);
+  const plain = html.replace(/&#39;/g, "'");
+  for (const part of ["Tableau de bord", "Phase par phase", "Mise en place", "Verrouillage", "Descente", "Tempo et rythme, rep par rep", "Pourquoi c'est un problème", "Comment corriger", "Exercices correctifs", "Box squat", "Progression", "Tes 4 prochaines semaines", "Pour une analyse encore plus précise", "Trajectoire de la charge", "Pieds et appuis"]) {
+    assert.ok(plain.includes(part), part);
+  }
+  // Dernière page : appel au coaching avec les 3 formules et le lien du site.
+  const ctaAt = html.indexOf('class="cta"');
+  assert.ok(ctaAt > html.indexOf("La série image par image"), "le CTA est en dernier");
+  assert.match(html.slice(ctaAt), /href="https:\/\/achzodcoaching\.com"/);
+  for (const name of ["Essential", "Elite", "Private Lab"]) assert.ok(html.slice(ctaAt).includes(name), name);
+  assert.doesNotMatch(html, /[\u2013\u2014]/);
+  assert.equal(scoreVerdict(90), "Technique solide");
+  assert.equal(scoreVerdict(40), "Technique à reconstruire");
+});
+
+test("client emails are French, accented, without em dash, and never promise anything free", () => {
+  const mails = [
+    buildAccessEmail({ uploadUrl: "https://x/u?token=t", credits: 3, available: 3 }),
+    buildReportEmail({ exerciseLabel: "Squat barre haute", score: 74, summary: "Bonne base.", pdfUrl: "https://x/p", uploadUrl: "https://x/u", available: 2 }),
+    buildReshootEmail({ reason: "Pieds hors cadre.", uploadUrl: "https://x/u" }),
+  ];
+  assert.match(mails[1].subject, /Squat barre haute/);
+  assert.match(mails[1].html, /Exercice détecté : <strong>Squat barre haute<\/strong>/);
+  assert.match(mails[1].text, /Exercice détecté : Squat barre haute/);
+  assert.match(mails[2].html, /analyser ta vidéo de façon fiable/);
+  for (const mail of mails) {
+    assert.doesNotMatch(mail.html + mail.text + mail.subject, /[\u2013\u2014]/);
+    assert.doesNotMatch(mail.html + mail.text, /gratuit|WhatsApp/i);
+    assert.match(mail.html, /#FCDD00/);
+  }
+  assert.match(mails[0].text, /60 s maximum/);
+  assert.match(mails[2].subject, /crédit non utilisé/);
+  // Le mail de rapport se termine par l'appel au coaching Achzod.
+  assert.match(mails[1].html, /href="https:\/\/achzodcoaching\.com"/);
+  for (const name of ["Essential", "Elite", "Private Lab"]) assert.ok(mails[1].html.includes(name), name);
+  assert.match(mails[1].text, /achzodcoaching\.com/);
+  // Logo en PNG servi par le site (Gmail et Outlook n'affichent pas le SVG inline).
+  assert.match(mails[1].html, /<img src="https:\/\/x\/images\/formcheck\/achzod-logo-email\.png"[^>]*alt="ACHZOD"/);
+  assert.match(mails[1].html, /achzod-logo-email-light\.png/);
+  assert.doesNotMatch(mails[1].html, /<svg|data:image/);
+  for (const file of ["achzod-logo-email.png", "achzod-logo-email-light.png"]) {
+    const png = readFileSync(path.join(root, "client/public/images/formcheck", file));
+    assert.equal(png.subarray(1, 4).toString(), "PNG", file);
+  }
+});
+
+test("ffmpeg probe parsing reads duration, size and video stream", () => {
+  const stderr = `Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'a.mov':
+  Duration: 00:00:21.53, start: 0.000000, bitrate: 3345 kb/s
+  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 3200 kb/s, 25 fps`;
+  assert.deepEqual(parseFfmpegProbe(stderr), { durationS: 21.53, hasVideo: true, width: 1920, height: 1080 });
+  assert.deepEqual(parseFfmpegProbe("Invalid data found when processing input"), { durationS: null, hasVideo: false, width: null, height: null });
+});
+
+test("frame extraction works end to end on a generated video", { skip: spawnSync("ffmpeg", ["-version"]).status !== 0 && "ffmpeg absent" }, async () => {
+  const { probeVideo, extractFrames } = await import("./formcheck/video");
+  const dir = mkdtempSync(path.join(tmpdir(), "formcheck-test-"));
+  try {
+    const file = path.join(dir, "serie.mp4");
+    const gen = spawnSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=duration=12:size=1280x720:rate=25", "-pix_fmt", "yuv420p", file]);
+    assert.equal(gen.status, 0, String(gen.stderr));
+    const probe = await probeVideo(file);
+    assert.ok(Math.abs((probe.durationS || 0) - 12) < 0.2);
+    const frames = await extractFrames(file, probe.durationS!);
+    assert.equal(frames.length, 16);
+    const meta = await sharp(frames[0].jpeg).metadata();
+    assert.equal(meta.width, 1024);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("Stripe webhook routes FormCheck sessions to credit fulfillment before the orders table", () => {
+  const routes = read("server/routes.ts");
+  const webhook = routes.slice(routes.indexOf('app.post("/api/stripe/webhook"'));
+  const branch = webhook.indexOf("isFormcheckCheckoutSession(session)");
+  assert.ok(branch > 0);
+  assert.ok(branch > webhook.indexOf("if (!isStripeCheckoutPaid(session)) break;"));
+  assert.ok(branch < webhook.indexOf("storage.getOrderByStripeSession(session.id)"));
+  assert.match(routes, /registerFormcheckRoutes\(app\)/);
+});
+
+test("FormCheck never creates Stripe prices or touches deployment config", () => {
+  const sources = ["server/formcheck/routes.ts", "server/formcheck/config.ts", "server/formcheck/worker.ts"].map(read).join("\n");
+  assert.doesNotMatch(sources, /prices\.create|products\.create/);
+  assert.doesNotMatch(sources, /render\.com\/v1|api\.render\.com/);
+  assert.match(read("server/formcheck/routes.ts"), /rm\(file\.path/, "la vidéo est supprimée après extraction");
+});
+
+test("the client no longer chooses the exercise: no picker, no field sent, no server validation", () => {
+  const routes = read("server/formcheck/routes.ts");
+  assert.doesNotMatch(routes, /EXERCISE_REQUIRED|resolveExercise|FORMCHECK_EXERCISES|req\.body\?\.exercise/);
+  assert.doesNotMatch(read("server/formcheck/config.ts"), /FORMCHECK_EXERCISES|resolveExercise/);
+  const page = read("client/src/pages/FormCheckUpload.tsx");
+  assert.doesNotMatch(page, /formcheck-exercise"|form\.append\("exercise"|Choisis l'exercice/);
+  assert.match(page, /reconnaît automatiquement/);
+  const offer = read("client/src/pages/offers/FormCheck.tsx");
+  assert.doesNotMatch(offer, /[Tt]u choisis l'exercice|choisir « Autre exercice »|mauvais exercice/);
+  assert.match(offer, /reconnu automatiquement/);
+});
+
+test("the upload page is a real noindex SPA route (no 404) and is routed client side", () => {
+  const staticServer = read("server/static.ts");
+  const block = staticServer.slice(staticServer.indexOf('ssrSimplePage(["/formcheck/upload"]'));
+  assert.ok(block.length > 0 && staticServer.includes('ssrSimplePage(["/formcheck/upload"]'));
+  assert.match(block.slice(0, 400), /robots: "noindex, follow"/);
+  assert.match(read("client/src/App.tsx"), /<Route path="\/formcheck\/upload" component=\{FormCheckUpload\} \/>/);
+});

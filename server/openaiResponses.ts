@@ -27,7 +27,7 @@ export type OpenAIReportProfile =
   | "extraction"
   | "peptides";
 
-type ReasoningEffort = "low" | "medium" | "high";
+type ReasoningEffort = "low" | "medium" | "high" | "xhigh" | "max";
 
 /** Discovery has one reasoning contract across generation, recovery and ops. */
 export const DISCOVERY_REASONING_EFFORT = "medium" as const;
@@ -668,6 +668,10 @@ function isRetryable(error: any): boolean {
 
 export interface OpenAITextRequest {
   profile: OpenAIReportProfile;
+  /** Optional model override (e.g. FORMCHECK_MODEL). Defaults to OPENAI_REPORT_MODEL. */
+  model?: string;
+  /** Optional reasoning effort override (e.g. FORMCHECK_REASONING_EFFORT). Defaults to the profile effort. */
+  reasoningEffort?: ReasoningEffort;
   instructions: string;
   input: string | any[];
   safetyId?: string;
@@ -717,7 +721,8 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
   }
   const client = getOpenAIClient();
   const profile = PROFILE_CONFIG[request.profile];
-  const model = OPENAI_REPORT_MODEL;
+  const model = String(request.model || "").trim() || OPENAI_REPORT_MODEL;
+  const effort: ReasoningEffort = request.reasoningEffort || profile.effort;
   const background = request.background ?? Boolean(profile.mode === "pro");
   const attempts = request.profile === "discovery" || request.profile === "peptides"
     ? 1
@@ -729,7 +734,7 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
     let budgetReservation: AICostBudgetReservation | null = null;
     try {
       console.log(
-        `[OpenAIResponses] Starting${label}: ${request.profile}/${model}, effort=${profile.effort}, mode=${profile.mode || "standard"}, attempt=${attempt}/${attempts}`
+        `[OpenAIResponses] Starting${label}: ${request.profile}/${model}, effort=${effort}, mode=${profile.mode || "standard"}, attempt=${attempt}/${attempts}`
       );
 
       const textConfig: Record<string, unknown> = { verbosity: profile.verbosity };
@@ -774,7 +779,7 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
           throw new Error(`OpenAI durable response reservation missing (${request.resumeResponseId})`);
         }
       }
-      const reasoningConfig: Record<string, unknown> = { effort: profile.effort };
+      const reasoningConfig: Record<string, unknown> = { effort };
       if (profile.mode) reasoningConfig.mode = profile.mode;
 
       let response: any;
@@ -939,7 +944,7 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
         responseId: response.id,
         model: providerModel,
         profile: request.profile,
-        reasoningEffort: profile.effort,
+        reasoningEffort: effort,
         reasoningMode: profile.mode || "standard",
         usage,
       };

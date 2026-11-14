@@ -1,4 +1,4 @@
-import { pgTable, varchar, text, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, timestamp, jsonb, integer, real, customType, primaryKey } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -156,3 +156,66 @@ export const emailTracking = pgTable("email_tracking", {
   sentAt: timestamp("sent_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// ==================== FORMCHECK V2 ====================
+// Crédits d'analyse vidéo attribués par email après paiement Stripe Checkout.
+// Les tables sont aussi créées au démarrage (CREATE TABLE IF NOT EXISTS) par
+// server/formcheck/store.ts, avec exactement les mêmes colonnes.
+const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
+
+export const formcheckPurchases = pgTable("formcheck_purchases", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }).notNull().unique(),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
+  email: varchar("email", { length: 255 }).notNull(),
+  packId: varchar("pack_id", { length: 8 }).notNull(),
+  credits: integer("credits").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("eur"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const formcheckAccounts = pgTable("formcheck_accounts", {
+  email: varchar("email", { length: 255 }).primaryKey(),
+  creditsTotal: integer("credits_total").notNull().default(0),
+  creditsUsed: integer("credits_used").notNull().default(0),
+  creditsReserved: integer("credits_reserved").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const formcheckAnalyses = pgTable("formcheck_analyses", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  // Exercice détecté par l'analyse (le client ne le choisit plus).
+  exerciseLabel: varchar("exercise_label", { length: 120 }),
+  // queued | processing | retry | delivered | rejected | needs_review
+  status: varchar("status", { length: 20 }).notNull().default("queued"),
+  // reserved | consumed | released
+  creditState: varchar("credit_state", { length: 20 }).notNull().default("reserved"),
+  attempts: integer("attempts").notNull().default(0),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).defaultNow().notNull(),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  durationS: real("duration_s"),
+  videoMeta: jsonb("video_meta"),
+  result: jsonb("result"),
+  score: integer("score"),
+  decisionReason: text("decision_reason"),
+  lastError: text("last_error"),
+  model: varchar("model", { length: 80 }),
+  responseId: varchar("response_id", { length: 120 }),
+  costUsd: real("cost_usd"),
+  pdf: bytea("pdf"),
+  adminAlertedAt: timestamp("admin_alerted_at", { withTimezone: true }),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const formcheckFrames = pgTable("formcheck_frames", {
+  analysisId: varchar("analysis_id", { length: 36 }).notNull().references(() => formcheckAnalyses.id, { onDelete: "cascade" }),
+  frameIndex: integer("frame_index").notNull(),
+  timestampS: real("timestamp_s").notNull(),
+  jpeg: bytea("jpeg").notNull(),
+  annotated: bytea("annotated"),
+}, (table) => [primaryKey({ columns: [table.analysisId, table.frameIndex] })]);

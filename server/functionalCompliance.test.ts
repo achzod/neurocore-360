@@ -47,12 +47,33 @@ test("public stats expose rounded display aggregates only", () => {
 
 test("FormCheck public copy is fully accented and localized", () => {
   const formCheck = read("client/src/pages/offers/FormCheck.tsx");
-  for (const forbidden of ["Packs & Tarifs", "Ideal athletes serieux", "Analyses illimitees", "Commencer a 9,90€", "10 analyses/mois"]) {
+  for (const forbidden of ["Packs & Tarifs", "Ideal athletes serieux", "Analyses illimitees", "Analyses illimitées", "Commencer a 9,90€", "10 analyses/mois", "WhatsApp", "wa.me", "gratuit", "abonnement mensuel", "premier mois"]) {
     assert.doesNotMatch(formCheck, new RegExp(forbidden.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
   }
   assert.match(formCheck, /Formules et tarifs/);
   assert.match(formCheck, /Idéal pour les athlètes sérieux/);
-  assert.match(formCheck, /Analyses illimitées/);
+  assert.match(formCheck, /Questions fréquentes/);
+  assert.match(formCheck, /Paiement unique, sans abonnement/);
+  assert.match(formCheck, /n'est pas déductible des formules de coaching/);
+});
+
+test("FormCheck sells exactly the 3 paid packs everywhere it is priced", () => {
+  const formCheck = read("client/src/pages/offers/FormCheck.tsx");
+  const config = read("server/formcheck/config.ts");
+  for (const [price, cents] of [["9,90 €", 990], ["24,90 €", 2490], ["44,90 €", 4490]] as const) {
+    assert.match(formCheck, new RegExp(price));
+    assert.match(config, new RegExp(`amountCents: ${cents}`));
+  }
+  assert.match(formCheck, /\/api\/formcheck\/checkout/);
+
+  const pricing = read("client/src/components/Pricing.tsx");
+  const formCheckTier = pricing.slice(pricing.indexOf('name: "FormCheck"'), pricing.indexOf("];", pricing.indexOf('name: "FormCheck"')));
+  assert.match(formCheckTier, /price: "9,90"/);
+  assert.match(formCheckTier, /24,90 €/);
+  assert.match(formCheckTier, /44,90 €/);
+  assert.doesNotMatch(formCheckTier, /WhatsApp|1er mois|gratuite|illimit/i);
+  assert.doesNotMatch(pricing, /cursor-not-allowed/);
+  assert.match(pricing, /data-testid="pricing-formcheck-cta"/);
 });
 
 test("Blood Analysis requires and records explicit health-data consent", () => {
@@ -86,6 +107,7 @@ test("medical disclaimer and corrected subscription FAQ are present", () => {
   const disclaimer = read("client/src/components/MedicalDisclaimer.tsx");
   const faq = read("client/src/pages/FAQ.tsx");
   assert.match(disclaimer, /ne remplace ni un diagnostic, ni une prescription/);
-  assert.match(faq, /FormCheck est différent : c'est un abonnement mensuel/);
+  assert.match(faq, /FormCheck est aussi un paiement unique, sans abonnement : 1 analyse vidéo à 9,90€, 3 analyses à 24,90€ ou 6 analyses à 44,90€/);
+  assert.doesNotMatch(faq, /FormCheck est différent : c'est un abonnement mensuel/);
   assert.match(faq, /Peptides Engine \(Solo 199€/);
 });

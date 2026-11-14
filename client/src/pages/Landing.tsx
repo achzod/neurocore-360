@@ -76,10 +76,10 @@ const OFFERS: Offer[] = [
   {
     id: 'formcheck',
     title: "FORMCHECK",
-    subtitle: "L'analyse biomecanique que tu aurais voulu avoir a chaque serie",
-    description: "Tu filmes ta serie. Tu envoies sur WhatsApp. Tu recois un rapport que meme ton kine du sport ne te ferait pas entre deux rendez-vous. Score sur 100, corrections biomecaniques avec mecanismes articulaires, analyse rep par rep, tempo et controle, compensations detectees, plan d'action en 3 points. Tous les exercices de ta salle supportes ,  squat, bench, deadlift, row, pull-up, et 50+ autres. Detection automatique.",
-    features: ["Corrections biomecaniques precisees", "Analyse rep par rep", "Compensations detectees", "50+ exercices supportes"],
-    price: "1ere analyse gratuite",
+    subtitle: "L'analyse technique que tu aurais voulu avoir à chaque série",
+    description: "Tu filmes ta série, tu envoies la vidéo, tu reçois ton rapport PDF par email en quelques minutes. Note sur 100, répétitions et tempo, amplitude, proximité de l'échec, erreurs entourées sur les images de ta vidéo et 3 corrections prioritaires pour ta prochaine séance. Squat, développé couché, soulevé de terre, rowing, tractions et les autres grands mouvements.",
+    features: ["Captures annotées de ta vidéo", "Tempo et répétitions", "3 corrections prioritaires", "Rapport PDF en quelques minutes"],
+    price: "Dès 9,90 €",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true,
@@ -931,9 +931,9 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
               {offer.id === 'formcheck' ? (
                 <a
                   href={offer.href || "/offers/formcheck"}
-                  className="px-6 py-4 bg-[#25D366] text-black font-mono text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-[#25D366]/80 transition-colors font-bold"
+                  className="px-6 py-4 bg-[#FCDD00] text-black font-mono text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-[#FCDD00]/80 transition-colors font-bold"
                 >
-                  Commencer sur WhatsApp
+                  Voir les packs
                   <span>&gt;</span>
                 </a>
               ) : (

@@ -158,3 +158,27 @@ export const buildReportAccessUrl = (
   url.searchParams.set("access", signReportAccessToken(resource, resourceId, email));
   return url.toString();
 };
+
+// ==================== FORMCHECK V2 ====================
+// Lien d'accès envoyé par email après paiement : donne accès à la page d'upload
+// et aux rapports de cette adresse uniquement. Valable 1 an, renvoyable.
+type FormcheckAccessPayload = { tokenType: "formcheck_access"; email: string };
+
+export const signFormcheckAccessToken = (email: string): string => jwt.sign(
+  { tokenType: "formcheck_access", email: email.trim().toLowerCase() } satisfies FormcheckAccessPayload,
+  getAuthSecret(),
+  { issuer: "apexlabs", audience: "formcheck-access", expiresIn: "365d" },
+);
+
+export const verifyFormcheckAccessToken = (token: string): string | null => {
+  try {
+    const payload = jwt.verify(token, getAuthSecret(), {
+      issuer: "apexlabs",
+      audience: "formcheck-access",
+    }) as FormcheckAccessPayload;
+    if (payload.tokenType !== "formcheck_access" || typeof payload.email !== "string" || !payload.email) return null;
+    return payload.email;
+  } catch {
+    return null;
+  }
+};

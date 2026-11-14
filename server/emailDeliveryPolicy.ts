@@ -6,12 +6,21 @@ const normalizeEmailPolicyText = (value: unknown): string =>
     .replace(/\s+/g, " ")
     .trim();
 
+/** FormCheck : accès payé, rapport payé, demande de refilmer, incident. Jamais bloqués par un désabonnement marketing. */
+export const FORMCHECK_TRANSACTIONAL_EMAIL_TYPES = new Set([
+  "sendFormcheckAccessEmail",
+  "sendFormcheckReportEmail",
+  "sendFormcheckReshootEmail",
+  "sendFormcheckIssueEmail",
+]);
+
 export const isCriticalTransactionalEmail = (emailType: string, subject: string): boolean => {
   const normalized = normalizeEmailPolicyText(subject);
   return emailType === "sendMagicLinkEmail"
     || emailType === "sendReportReadyEmail"
     || emailType === "sendBloodAnalysisHtmlEmail"
     || emailType === "sendPeptidesOrderConfirmation"
+    || FORMCHECK_TRANSACTIONAL_EMAIL_TYPES.has(emailType)
     || (emailType === "sendCTAEmail" && (
       normalized.includes("protocole peptides")
       || normalized.includes("commande recue")

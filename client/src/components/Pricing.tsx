@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Check, X, Sparkles, Zap, Crown, Camera, FileText, Brain, ArrowRight, MessageCircle } from "lucide-react";
+import { Check, X, Sparkles, Zap, Crown, Camera, FileText, Brain, ArrowRight, Video } from "lucide-react";
 
 interface PricingTier {
   name: string;
@@ -82,24 +82,24 @@ const tiers: PricingTier[] = [
   },
   {
     name: "FormCheck",
-    price: "9,90€",
-    period: "1er mois",
-    description: "Analyse biomécanique de tes exercices par vidéo WhatsApp. A partir de 10 analyses/mois.",
+    price: "9,90",
+    period: "one-time",
+    description: "Analyse technique de ta série en vidéo, rapport PDF annoté par email. Packs de 1, 3 ou 6 analyses.",
     badge: "NOUVEAU",
     features: [
-      { text: "Score de forme 0-100", included: true },
-      { text: "Détection auto d'exercice", included: true },
-      { text: "Corrections prioritaires", included: true },
-      { text: "Rapport HTML complet", included: true },
-      { text: "10 à illimité analyses/mois", included: true },
-      { text: "100% via WhatsApp", included: true },
-      { text: "1ere analyse gratuite", included: true },
-      { text: "Sans engagement", included: true },
+      { text: "Note technique sur 100", included: true },
+      { text: "Exercice reconnu automatiquement", included: true },
+      { text: "Erreurs annotées sur tes images", included: true },
+      { text: "3 corrections prioritaires", included: true },
+      { text: "Rapport PDF en quelques minutes", included: true },
+      { text: "3 analyses : 24,90 €", included: true },
+      { text: "6 analyses : 44,90 €", included: true },
+      { text: "Sans abonnement", included: true },
     ],
-    cta: "Decouvrir FormCheck",
+    cta: "Découvrir FormCheck",
     href: "/offers/formcheck#packs",
-    icon: <MessageCircle className="w-5 h-5" />,
-    gradient: "from-orange-500 to-red-500",
+    icon: <Video className="w-5 h-5" />,
+    gradient: "from-yellow-400 to-amber-500",
   },
 ];
 
@@ -157,7 +157,7 @@ export function Pricing() {
                       tier.popular
                         ? "bg-primary text-black"
                         : tier.name === "FormCheck"
-                        ? "bg-gray-500 text-white"
+                        ? "bg-[#FCDD00] text-black"
                         : "bg-violet-500 text-white"
                     }`}
                   >
@@ -184,7 +184,7 @@ export function Pricing() {
                       <span className="text-xl font-bold text-white">€</span>
                     </div>
                     {tier.period === "one-time" && (
-                      <span className="text-white/40 text-xs">paiement unique</span>
+                      <span className="text-white/40 text-xs">{tier.name === "FormCheck" ? "1 analyse, paiement unique" : "paiement unique"}</span>
                     )}
                   </div>
                 </div>
@@ -213,11 +213,14 @@ export function Pricing() {
 
               {/* CTA */}
               {tier.name === "FormCheck" ? (
-                <span
-                  className="w-full py-4 rounded font-semibold text-sm flex items-center justify-center gap-2 bg-white/5 text-white/40 cursor-not-allowed"
+                <a
+                  href={tier.href}
+                  data-testid="pricing-formcheck-cta"
+                  className="w-full py-4 rounded font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 bg-white/10 text-white hover:bg-white/20"
                 >
                   {tier.cta}
-                </span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
               ) : (
                 <Link href={tier.href}>
                   <button

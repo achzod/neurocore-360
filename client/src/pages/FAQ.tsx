@@ -53,7 +53,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "C'est un paiement unique ou un abonnement ?",
-    answer: "Discovery Scan est gratuit. Anabolic Bioscan (59€), Ultimate Scan (79€), Blood Analysis (99€ pour 2 crédits) et Peptides Engine (Solo 199€, Coached 299€, Tracked 399€) sont des paiements uniques. FormCheck est différent : c'est un abonnement mensuel résiliable à tout moment. Solo coûte 9,90€ le premier mois puis 14,90€/mois, Pro 29,90€ le premier mois puis 39,90€/mois, et Coach 99€/mois. Le tarif de renouvellement est donc indiqué dès le départ, sans frais cachés."
+    answer: "Discovery Scan est gratuit. Anabolic Bioscan (59€), Ultimate Scan (79€), Blood Analysis (99€ pour 2 crédits) et Peptides Engine (Solo 199€, Coached 299€, Tracked 399€) sont des paiements uniques. FormCheck est aussi un paiement unique, sans abonnement : 1 analyse vidéo à 9,90€, 3 analyses à 24,90€ ou 6 analyses à 44,90€. Un crédit n'est utilisé que lorsque ton rapport est livré, et FormCheck n'est pas déductible des coachings."
   },
   {
     question: "Le rapport remplace-t-il un médecin ?",

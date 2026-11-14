@@ -27,27 +27,17 @@ test.describe("Offer pages smoke tests", () => {
     await expect(page.getByRole("button", { name: /Lancer mon Ultimate Scan/i })).toBeVisible();
   });
 
-  test("FormCheck exposes working WhatsApp CTAs", async ({ page }) => {
+  test("FormCheck shows the 3 paid packs with Stripe checkout and no WhatsApp", async ({ page }) => {
     await page.goto("/offers/formcheck");
 
-    await expect(page.getByText("Indisponible pour le moment")).toHaveCount(0);
+    await expect(page.getByTestId("formcheck-hero-cta")).toBeVisible();
+    await expect(page.getByTestId("formcheck-pack-1")).toContainText("9,90 €");
+    await expect(page.getByTestId("formcheck-pack-3")).toContainText("24,90 €");
+    await expect(page.getByTestId("formcheck-pack-6")).toContainText("44,90 €");
+    await expect(page.locator('#packs a[href*="wa.me"]')).toHaveCount(0);
 
-    const heroCta = page.getByTestId("formcheck-whatsapp-hero");
-    await expect(heroCta).toBeVisible();
-    await expect(heroCta).toHaveAttribute("href", /^https:\/\/wa\.me\/971585210514\?text=.+/);
-    await expect(heroCta).toHaveAttribute("target", "_blank");
-
-    const finalCta = page.getByTestId("formcheck-whatsapp-final");
-    await expect(finalCta).toBeVisible();
-    await expect(finalCta).toHaveAttribute("href", /^https:\/\/wa\.me\/971585210514\?text=.+/);
-
-    await expect(page.getByTestId("formcheck-whatsapp-pack-essai")).toHaveAttribute(
-      "href",
-      /^https:\/\/wa\.me\/971585210514\?text=.+/
-    );
-    await expect(page.getByTestId("formcheck-whatsapp-pack-solo")).toHaveAttribute(
-      "href",
-      /^https:\/\/wa\.me\/971585210514\?text=.+/
-    );
+    // Sans email, le checkout ne part pas et un message clair s'affiche.
+    await page.getByTestId("formcheck-checkout-1").click();
+    await expect(page.getByRole("alert")).toContainText("email");
   });
 });
