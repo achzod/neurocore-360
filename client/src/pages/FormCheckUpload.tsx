@@ -14,8 +14,8 @@ const MAX_BYTES = 200 * 1024 * 1024;
 const MAX_SECONDS = 60;
 
 type Balance = { total: number; used: number; reserved: number; available: number };
-type AnalysisRow = { id: string; exercise_label: string; status: string; score: number | null; decision_reason: string | null; created_at: string };
-type Me = { email: string; balance: Balance; analyses: AnalysisRow[]; exercises: Record<string, string> };
+type AnalysisRow = { id: string; exercise_label: string | null; status: string; score: number | null; decision_reason: string | null; created_at: string };
+type Me = { email: string; balance: Balance; analyses: AnalysisRow[] };
 
 const STATUS_LABEL: Record<string, string> = {
   queued: "En file d'attente",
@@ -48,7 +48,6 @@ export default function FormCheckUpload() {
   const [status, setStatus] = useState<"init" | "confirming" | "ready" | "no-access">("init");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [exercise, setExercise] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [accessEmail, setAccessEmail] = useState("");
@@ -144,12 +143,11 @@ export default function FormCheckUpload() {
   };
 
   const submit = () => {
-    if (!token || !file || !exercise) return;
+    if (!token || !file) return;
     setError(null);
     setMessage(null);
     setProgress(0);
     const form = new FormData();
-    form.append("exercise", exercise);
     form.append("video", file);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/formcheck/upload");
@@ -251,19 +249,9 @@ export default function FormCheckUpload() {
 
             {me.balance.available > 0 ? (
               <div className="mt-8 rounded-sm border border-white/10 bg-white/[0.03] p-8">
-                <label className="block text-sm font-semibold text-white/80" htmlFor="formcheck-exercise">Exercice filmé</label>
-                <select
-                  id="formcheck-exercise"
-                  data-testid="formcheck-exercise"
-                  value={exercise}
-                  onChange={(e) => setExercise(e.target.value)}
-                  className="mt-2 w-full rounded-sm border border-white/15 bg-black px-4 py-3 text-white focus:border-[#FCDD00] focus:outline-none"
-                >
-                  <option value="">Choisis l'exercice</option>
-                  {Object.entries(me.exercises).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
+                <p className="text-sm text-white/60" data-testid="formcheck-auto-exercise">
+                  Pas besoin d'indiquer l'exercice : l'analyse le reconnaît automatiquement sur ta vidéo.
+                </p>
 
                 <label className="mt-6 block text-sm font-semibold text-white/80" htmlFor="formcheck-video">Vidéo d'une série (60 s maximum, .mp4 ou .mov, 200 Mo maximum)</label>
                 <input
@@ -279,6 +267,7 @@ export default function FormCheckUpload() {
                 <ul className="mt-6 space-y-2 text-sm text-white/60">
                   <li>Téléphone posé et stable, corps entier et charge visibles du début à la fin.</li>
                   <li>De profil pour le squat, le soulevé de terre, le hip thrust et le développé couché.</li>
+                  <li>Une seule série d'un exercice de musculation par vidéo.</li>
                   <li>Ton crédit n'est utilisé que si le rapport est livré.</li>
                 </ul>
 
@@ -286,7 +275,7 @@ export default function FormCheckUpload() {
                   type="button"
                   data-testid="formcheck-submit"
                   onClick={submit}
-                  disabled={!file || !exercise || progress !== null}
+                  disabled={!file || progress !== null}
                   className="mt-8 flex w-full items-center justify-center gap-2 py-4 font-bold text-black disabled:opacity-50"
                   style={{ backgroundColor: ACCENT }}
                 >
@@ -309,7 +298,7 @@ export default function FormCheckUpload() {
                   {me.analyses.map((a) => (
                     <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
                       <div>
-                        <div className="font-semibold">{a.exercise_label}{a.status === "delivered" && a.score !== null ? ` : ${a.score}/100` : ""}</div>
+                        <div className="font-semibold">{a.exercise_label || (a.status === "rejected" || a.status === "needs_review" ? "Vidéo" : "Exercice en cours de détection")}{a.status === "delivered" && a.score !== null ? ` : ${a.score}/100` : ""}</div>
                         <div className="text-sm text-white/50">
                           {new Date(a.created_at).toLocaleString("fr-FR")} · {STATUS_LABEL[a.status] || a.status}
                         </div>

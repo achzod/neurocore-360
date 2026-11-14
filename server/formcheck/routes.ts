@@ -14,12 +14,10 @@ import { createCheckoutSessionWithPaymentMethodFallback } from "../stripeCheckou
 import { isStripeCheckoutPaid } from "../stripePurchaseTracking";
 import {
   buildFormcheckLineItem,
-  FORMCHECK_EXERCISES,
   FORMCHECK_MAX_BYTES,
   FORMCHECK_PACKS,
   FORMCHECK_PLAN_TYPE,
   isFormcheckWorkerEnabled,
-  resolveExercise,
   resolveFormcheckPack,
   validateUploadedFileMeta,
   validateVideoDuration,
@@ -163,7 +161,6 @@ export function registerFormcheckRoutes(app: Express) {
   app.get("/api/formcheck/packs", (_req, res) => {
     res.json({
       packs: Object.values(FORMCHECK_PACKS).map(({ id, credits, amountCents, label, priceLabel }) => ({ id, credits, amountCents, label, priceLabel })),
-      exercises: FORMCHECK_EXERCISES,
     });
   });
 
@@ -235,7 +232,7 @@ export function registerFormcheckRoutes(app: Express) {
     try {
       const email = (req as any).formcheckEmail as string;
       const [balance, analyses] = await Promise.all([store.getFormcheckBalance(email), store.listAnalysesForEmail(email)]);
-      res.json({ email, balance, analyses, exercises: FORMCHECK_EXERCISES });
+      res.json({ email, balance, analyses });
     } catch (error) {
       console.error("[FormCheck] me error:", error);
       res.status(500).json({ error: "FORMCHECK_UNAVAILABLE" });
@@ -271,8 +268,7 @@ export function registerFormcheckRoutes(app: Express) {
       const file = (req as any).file as { path: string; originalname: string; mimetype: string; size: number } | undefined;
       try {
         const email = (req as any).formcheckEmail as string;
-        const exercise = resolveExercise(req.body?.exercise);
-        if (!exercise) return res.status(400).json({ error: "EXERCISE_REQUIRED", message: "Choisis l'exercice filmé." });
+        // Pas de choix d'exercice : le modèle l'identifie à partir des images (un éventuel champ « exercise » est ignoré).
         if (!file) return res.status(400).json({ error: "VIDEO_REQUIRED", message: "Ajoute ta vidéo." });
 
         const metaError = validateUploadedFileMeta({ originalName: file.originalname, mimeType: file.mimetype, sizeBytes: file.size });
@@ -289,8 +285,6 @@ export function registerFormcheckRoutes(app: Express) {
 
         const analysisId = await store.reserveCreditAndEnqueue({
           email,
-          exerciseKey: exercise.key,
-          exerciseLabel: exercise.label,
           durationS: probe.durationS!,
           videoMeta: { originalName: file.originalname.slice(0, 200), sizeBytes: file.size, mimeType: file.mimetype, width: probe.width, height: probe.height, frameCount: frames.length },
           frames,

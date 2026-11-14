@@ -2,7 +2,7 @@
  * FormCheck V2 : prompt, schéma JSON strict, normalisation et décision.
  * L'appel réseau est isolé dans runFormcheckVisionAnalysis (injectable pour les tests).
  */
-import { getFormcheckMinConfidence, getFormcheckModel } from "./config";
+import { estimateFormcheckCostUsd, getFormcheckMinConfidence, getFormcheckModel, getFormcheckReasoningEffort } from "./config";
 
 export type AnnotationType = "circle" | "line" | "angle" | "arrow";
 
@@ -67,11 +67,18 @@ export interface FormcheckError {
 
 export interface FormcheckWeek { week: number; focus: string; actions: string[]; load_advice: string }
 
+/** Exercice identifié par le modèle à partir des images (le client ne le choisit pas). */
+export interface FormcheckDetectedExercise {
+  /** Nom usuel en français, variante comprise (ex. « Soulevé de terre sur blocs »). */
+  name_fr: string;
+  /** false si aucun exercice de musculation n'est reconnu sur les images. */
+  is_strength_exercise: boolean;
+}
+
 export interface FormcheckAnalysis {
   exploitable: boolean;
   rejection_reason: string;
-  exercise_recognized: string;
-  matches_declared_exercise: boolean;
+  exercise_detected: FormcheckDetectedExercise;
   camera_view: "profil" | "face" | "dos" | "trois_quarts" | "autre";
   confidence: number;
   reps_count: number;
@@ -118,8 +125,7 @@ const criterion = () => obj({ rating: en(RATINGS), comment: str });
 export const FORMCHECK_ANALYSIS_SCHEMA = obj({
   exploitable: { type: "boolean" },
   rejection_reason: str,
-  exercise_recognized: str,
-  matches_declared_exercise: { type: "boolean" },
+  exercise_detected: obj({ name_fr: str, is_strength_exercise: { type: "boolean" } }),
   camera_view: en(["profil", "face", "dos", "trois_quarts", "autre"]),
   confidence: num,
   reps_count: int,
@@ -191,7 +197,6 @@ export const FORMCHECK_INSTRUCTIONS = [
 ].join("\n");
 
 export function buildFormcheckPrompt(input: {
-  declaredExercise: string;
   frameTimestamps: number[];
   durationS: number;
 }): string {
@@ -199,12 +204,12 @@ export function buildFormcheckPrompt(input: {
   const frames = input.frameTimestamps
     .map((t, i) => `frame ${i} = ${t.toFixed(1)} s`)
     .join(", ");
-  return `Exercice déclaré par le client : ${input.declaredExercise}.
+  return `Le client n'indique pas l'exercice : c'est à toi de l'identifier à partir des images.
 Vidéo d'une série, durée ${input.durationS.toFixed(1)} s. ${input.frameTimestamps.length} images extraites dans l'ordre chronologique, à intervalle régulier (${frames}).
 
 Règles :
 1. exploitable = false si on ne peut pas juger la technique : personne absente ou coupée (pieds, barre ou articulations clés hors cadre), image trop sombre ou floue, caméra qui bouge trop, plusieurs séries ou plusieurs personnes, pas d'exercice de musculation. Dans ce cas, rejection_reason explique en une ou deux phrases quoi refilmer et comment (cadrage, distance, angle, lumière), et le reste peut rester minimal. Sinon rejection_reason = "".
-2. exercise_recognized : l'exercice que tu vois (avec la variante : conventionnel, sumo, barre haute...). matches_declared_exercise = false s'il ne correspond pas à l'exercice déclaré (une variante proche compte comme correspondante).
+2. exercise_detected : identifie toi-même l'exercice filmé. name_fr = son nom usuel en français, avec la variante visible (par exemple : Squat barre haute, Développé couché, Soulevé de terre sumo, Hip thrust, Rowing barre, Squat bulgare), sans anglicisme quand un nom français existe. is_strength_exercise = false si aucun exercice de musculation n'est reconnu (pas de mouvement, autre sport, étirement, vidéo sans rapport) : dans ce cas name_fr = "", exploitable = false et rejection_reason dit ce qu'il faut filmer. Base toute la suite de l'analyse sur l'exercice que tu as identifié.
 3. confidence entre 0 et 1 : ta confiance globale dans l'analyse (cadrage, netteté, nombre d'images utiles).
 4. reps_count : nombre de répétitions estimé (repère les positions hautes et basses dans les images et leurs horodatages).
 5. score sur 100 de la qualité technique de la série. subscores sur 100 : mise_en_place (placement avant de bouger), execution (trajectoire et positions pendant les reps), stabilite (gainage, pieds, symétrie), controle (tempo, régularité, descente). summary : 3 à 4 phrases de verdict, en tutoyant : ce qui va, le problème principal, la priorité.
@@ -331,8 +336,10 @@ export function normalizeFormcheckAnalysis(raw: any, frameCount: number): Formch
   return {
     exploitable: raw?.exploitable === true,
     rejection_reason: text(raw?.rejection_reason, 500),
-    exercise_recognized: text(raw?.exercise_recognized, 80),
-    matches_declared_exercise: raw?.matches_declared_exercise !== false,
+    exercise_detected: {
+      name_fr: text(raw?.exercise_detected?.name_fr, 80),
+      is_strength_exercise: raw?.exercise_detected?.is_strength_exercise === true,
+    },
     camera_view: oneOf(raw?.camera_view, ["profil", "face", "dos", "trois_quarts", "autre"] as const, "autre"),
     confidence: clamp(raw?.confidence, 0, 1, 0),
     reps_count: Math.round(clamp(raw?.reps_count, 0, 100, 0)),
@@ -395,15 +402,19 @@ export type FormcheckDecision =
   | { kind: "reject"; reason: string }
   | { kind: "retry"; reason: string };
 
+/** Nom de l'exercice détecté à afficher (PDF, email), avec un repli neutre. */
+export function detectedExerciseLabel(analysis: Pick<FormcheckAnalysis, "exercise_detected"> | null | undefined): string {
+  return analysis?.exercise_detected?.name_fr || "Exercice analysé";
+}
+
 /**
  * Décide du sort d'une analyse :
- * - reject : vidéo inexploitable ou mauvais exercice, le crédit est libéré ;
+ * - reject : vidéo inexploitable ou aucun exercice de musculation reconnu, le crédit est libéré ;
  * - retry : confiance trop basse ou sortie incomplète, on relance (puis alerte admin) ;
  * - deliver : rapport envoyé et crédit consommé.
  */
 export function decideFormcheckOutcome(
   analysis: FormcheckAnalysis,
-  declaredExerciseLabel: string,
   minConfidence = getFormcheckMinConfidence(),
 ): FormcheckDecision {
   if (!analysis.exploitable) {
@@ -413,11 +424,11 @@ export function decideFormcheckOutcome(
         || "On ne voit pas assez bien ton mouvement pour l'analyser. Refilme ta série de profil, corps entier dans le cadre, avec une bonne lumière.",
     };
   }
-  if (!analysis.matches_declared_exercise) {
-    const seen = analysis.exercise_recognized ? ` On voit plutôt : ${analysis.exercise_recognized}.` : "";
+  if (!analysis.exercise_detected.is_strength_exercise || !analysis.exercise_detected.name_fr) {
     return {
       kind: "reject",
-      reason: `La vidéo ne correspond pas à l'exercice choisi (${declaredExerciseLabel}).${seen} Renvoie-la en choisissant le bon exercice, ou filme le bon mouvement.`,
+      reason: analysis.rejection_reason
+        || "On ne reconnaît aucun exercice de musculation sur ta vidéo. Filme une seule série d'un exercice de musculation, corps entier et charge dans le cadre.",
     };
   }
   if (analysis.confidence < minConfidence) {
@@ -431,12 +442,20 @@ export function decideFormcheckOutcome(
 
 export interface VisionFrame { index: number; timestampS: number; jpeg: Buffer }
 
-export interface VisionResult { analysis: FormcheckAnalysis; model: string; responseId: string; costUsd: number | null }
+export interface VisionUsage { inputTokens: number; cachedInputTokens: number; outputTokens: number; reasoningTokens: number; totalTokens: number }
+
+export interface VisionResult {
+  analysis: FormcheckAnalysis;
+  model: string;
+  responseId: string;
+  costUsd: number | null;
+  reasoningEffort?: string;
+  usage?: VisionUsage | null;
+}
 
 export async function runFormcheckVisionAnalysis(input: {
   analysisId: string;
   email: string;
-  declaredExercise: string;
   durationS: number;
   frames: VisionFrame[];
 }): Promise<VisionResult> {
@@ -444,7 +463,6 @@ export async function runFormcheckVisionAnalysis(input: {
     {
       type: "input_text",
       text: buildFormcheckPrompt({
-        declaredExercise: input.declaredExercise,
         frameTimestamps: input.frames.map((f) => f.timestampS),
         durationS: input.durationS,
       }),
@@ -458,6 +476,7 @@ export async function runFormcheckVisionAnalysis(input: {
   const result = await runOpenAIText({
     profile: "vision",
     model: getFormcheckModel(),
+    reasoningEffort: getFormcheckReasoningEffort(),
     instructions: FORMCHECK_INSTRUCTIONS,
     input: [{ role: "user", content }],
     safetyId: input.email,
@@ -468,10 +487,16 @@ export async function runFormcheckVisionAnalysis(input: {
     label: `formcheck-${input.analysisId}`,
   });
   const parsed = JSON.parse(result.text);
+  const tokens = result.usage?.tokens;
   return {
     analysis: normalizeFormcheckAnalysis(parsed, input.frames.length),
     model: result.model,
     responseId: result.responseId,
-    costUsd: (result.usage as any)?.costs?.openaiGpt56SolUsd ?? null,
+    // Coût au tarif du modèle réellement utilisé (le suivi global ai_usage_events reste au tarif gpt-5.6-sol).
+    costUsd: tokens ? estimateFormcheckCostUsd(result.model, tokens) : null,
+    reasoningEffort: result.reasoningEffort,
+    usage: tokens
+      ? { inputTokens: tokens.inputTokens, cachedInputTokens: tokens.cachedInputTokens, outputTokens: tokens.outputTokens, reasoningTokens: tokens.reasoningTokens, totalTokens: tokens.totalTokens }
+      : null,
   };
 }

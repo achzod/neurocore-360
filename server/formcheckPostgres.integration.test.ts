@@ -17,7 +17,7 @@ test("FormCheck credits: idempotent grant, reserve, consume, release, queue clai
   const { pool } = await import("./db");
   const email = `formcheck-test-${randomUUID()}@example.com`;
   const frames = Array.from({ length: 8 }, (_, index) => ({ index, timestampS: index + 0.5, jpeg: Buffer.from([0xff, 0xd8, index]) }));
-  const newAnalysis = () => store.reserveCreditAndEnqueue({ email, exerciseKey: "squat", exerciseLabel: "Squat", durationS: 9, videoMeta: { test: true }, frames });
+  const newAnalysis = () => store.reserveCreditAndEnqueue({ email, durationS: 9, videoMeta: { test: true }, frames });
 
   try {
     await store.ensureFormcheckTables();
@@ -34,6 +34,10 @@ test("FormCheck credits: idempotent grant, reserve, consume, release, queue clai
     assert.equal(await newAnalysis(), null, "plus de crédit disponible");
     assert.deepEqual(await store.getFormcheckBalance(email), { total: 3, used: 0, reserved: 3, available: 0 });
     assert.equal((await store.loadFrames(a1!)).length, 8);
+    // Aucun exercice choisi à l'envoi : le libellé vient de l'exercice détecté par l'analyse.
+    assert.equal((await store.getAnalysisForEmail(a1!, email)).exercise_label, null);
+    await store.saveAnalysisResult(a1!, { result: { exercise_detected: { name_fr: "Soulevé de terre sur blocs", is_strength_exercise: true } }, score: 78, model: "gpt-6.1-sol", responseId: "resp_test", costUsd: 0.1 });
+    assert.equal((await store.getAnalysisForEmail(a1!, email)).exercise_label, "Soulevé de terre sur blocs");
 
     // Livré : consommé une seule fois.
     assert.equal(await store.markDeliveredAndConsume(a1!), true);

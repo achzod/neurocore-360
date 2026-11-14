@@ -88,7 +88,7 @@ const tiers: PricingTier[] = [
     badge: "NOUVEAU",
     features: [
       { text: "Note technique sur 100", included: true },
-      { text: "Contrôle de l'exercice filmé", included: true },
+      { text: "Exercice reconnu automatiquement", included: true },
       { text: "Erreurs annotées sur tes images", included: true },
       { text: "3 corrections prioritaires", included: true },
       { text: "Rapport PDF en quelques minutes", included: true },

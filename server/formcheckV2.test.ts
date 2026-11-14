@@ -9,17 +9,18 @@ import sharp from "sharp";
 import {
   buildFormcheckLineItem,
   computeFrameTimestamps,
+  estimateFormcheckCostUsd,
   FORMCHECK_PACKS,
   frameCountForDuration,
   getFormcheckAdminEmail,
   getFormcheckModel,
-  resolveExercise,
+  getFormcheckReasoningEffort,
   resolveFormcheckPack,
   retryDelayMs,
   validateUploadedFileMeta,
   validateVideoDuration,
 } from "./formcheck/config";
-import { decideFormcheckOutcome, FORMCHECK_ANALYSIS_SCHEMA, buildFormcheckPrompt, FORMCHECK_INSTRUCTIONS, normalizeFormcheckAnalysis } from "./formcheck/analysis";
+import { decideFormcheckOutcome, detectedExerciseLabel, FORMCHECK_ANALYSIS_SCHEMA, buildFormcheckPrompt, FORMCHECK_INSTRUCTIONS, normalizeFormcheckAnalysis } from "./formcheck/analysis";
 import { angleDegrees, annotateFrame, buildAnnotationSvg } from "./formcheck/annotate";
 import { buildFormcheckReportHtml, jpegSize, scoreVerdict } from "./formcheck/report";
 import { buildAccessEmail, buildReportEmail, buildReshootEmail } from "./formcheck/emails";
@@ -31,8 +32,7 @@ const read = (relative: string) => readFileSync(path.join(root, relative), "utf8
 export const goodAnalysis = () => normalizeFormcheckAnalysis({
   exploitable: true,
   rejection_reason: "",
-  exercise_recognized: "Squat barre haute",
-  matches_declared_exercise: true,
+  exercise_detected: { name_fr: "Squat barre haute", is_strength_exercise: true },
   camera_view: "profil",
   confidence: 0.82,
   reps_count: 6,
@@ -139,15 +139,29 @@ test("16 to 20 frames are spread over the whole set, inside the video", () => {
   }
 });
 
-test("model, admin email and retry delays are configurable with safe defaults", () => {
+test("model, reasoning effort, admin email and retry delays are configurable with safe defaults", () => {
   assert.equal(getFormcheckModel({ FORMCHECK_MODEL: "gpt-x-vision" }), "gpt-x-vision");
-  assert.equal(getFormcheckModel({ OPENAI_REPORT_MODEL: "gpt-5.6-sol" }), "gpt-5.6-sol");
-  assert.equal(getFormcheckModel({}), "gpt-5.6-sol");
+  assert.equal(getFormcheckModel({}), "gpt-6.1-sol");
+  // Le modèle des autres rapports (OPENAI_REPORT_MODEL) ne change pas celui de FormCheck.
+  assert.equal(getFormcheckModel({ OPENAI_REPORT_MODEL: "gpt-5.6-sol" }), "gpt-6.1-sol");
+  assert.equal(getFormcheckReasoningEffort({}), "high");
+  assert.equal(getFormcheckReasoningEffort({ FORMCHECK_REASONING_EFFORT: "XHIGH" }), "xhigh");
+  assert.equal(getFormcheckReasoningEffort({ FORMCHECK_REASONING_EFFORT: "medium" }), "medium");
+  assert.equal(getFormcheckReasoningEffort({ FORMCHECK_REASONING_EFFORT: "minimal" }), "high", "effort refusé par gpt-6.1-sol : repli sur high");
   assert.equal(getFormcheckAdminEmail({ ADMIN_NOTIF_EMAIL: "ops@x.fr", ADMIN_NOTIFICATION_EMAIL: "old@x.fr" }), "ops@x.fr");
   assert.equal(getFormcheckAdminEmail({ ADMIN_NOTIFICATION_EMAIL: "old@x.fr" }), "old@x.fr");
   assert.ok(retryDelayMs(1) < retryDelayMs(2) && retryDelayMs(2) < retryDelayMs(3));
-  assert.equal(resolveExercise("squat")?.label, "Squat");
-  assert.equal(resolveExercise("haltero"), null);
+});
+
+test("cost estimate uses the official gpt-6.1-sol price (2 $ input, 0,10 $ cached, 10 $ output per 1M)", () => {
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol", { inputTokens: 100_000, outputTokens: 0 }), 0.2);
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol", { inputTokens: 0, outputTokens: 100_000 }), 1);
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol", { inputTokens: 100_000, cachedInputTokens: 100_000, outputTokens: 0 }), 0.01);
+  // Au-delà de 272K tokens d'entrée : x2 sur l'entrée, x1,5 sur la sortie.
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol", { inputTokens: 300_000, outputTokens: 100_000 }), 2.7);
+  assert.equal(estimateFormcheckCostUsd("gpt-6.1-sol-2026-09-29", { inputTokens: 20_000, outputTokens: 10_000 }), 0.14);
+  assert.equal(estimateFormcheckCostUsd("gpt-5.6-sol", { inputTokens: 20_000, outputTokens: 10_000 }), 0.4);
+  assert.equal(estimateFormcheckCostUsd("unknown-model", { inputTokens: 1, outputTokens: 1 }), null);
 });
 
 test("strict JSON schema requires every field and forbids extra keys", () => {
@@ -161,7 +175,10 @@ test("strict JSON schema requires every field and forbids extra keys", () => {
   };
   walk(FORMCHECK_ANALYSIS_SCHEMA, "root");
   const props = (FORMCHECK_ANALYSIS_SCHEMA as any).properties;
-  for (const key of ["exercise_recognized", "matches_declared_exercise", "reps_count", "subscores", "phases", "tempo", "rhythm", "range_of_motion", "symmetry", "compensations", "intensity", "bar_path", "bracing", "breathing", "head_position", "feet", "errors", "strengths", "priority_corrections", "plan_4_weeks", "next_session_cues", "next_video_instructions", "score", "safety_note"]) {
+  assert.deepEqual(Object.keys(props.exercise_detected.properties).sort(), ["is_strength_exercise", "name_fr"]);
+  assert.equal(props.exercise_detected.properties.is_strength_exercise.type, "boolean");
+  assert.ok(!("matches_declared_exercise" in props) && !("exercise_recognized" in props), "plus d'exercice déclaré par le client");
+  for (const key of ["exercise_detected", "reps_count", "subscores", "phases", "tempo", "rhythm", "range_of_motion", "symmetry", "compensations", "intensity", "bar_path", "bracing", "breathing", "head_position", "feet", "errors", "strengths", "priority_corrections", "plan_4_weeks", "next_session_cues", "next_video_instructions", "score", "safety_note"]) {
     assert.ok(key in props, key);
   }
   assert.ok("reps" in props.tempo.properties, "tempo rep par rep");
@@ -174,7 +191,10 @@ test("strict JSON schema requires every field and forbids extra keys", () => {
 });
 
 test("prompt is French, tutoiement, and forbids medical diagnosis", () => {
-  const prompt = buildFormcheckPrompt({ declaredExercise: "Squat", frameTimestamps: [1, 2, 3, 4, 5, 6, 7, 8], durationS: 9 });
+  const prompt = buildFormcheckPrompt({ frameTimestamps: [1, 2, 3, 4, 5, 6, 7, 8], durationS: 9 });
+  assert.match(prompt, /Le client n'indique pas l'exercice/);
+  assert.match(prompt, /name_fr = son nom usuel en français/);
+  assert.doesNotMatch(prompt, /déclaré/);
   assert.match(FORMCHECK_INSTRUCTIONS, /Tu tutoies/);
   assert.match(FORMCHECK_INSTRUCTIONS, /Interdit : tout diagnostic médical/);
   assert.match(prompt, /exactement 3 corrections prioritaires/);
@@ -214,21 +234,28 @@ test("normalization clamps model output so the PDF never breaks", () => {
   assert.match(raw.safety_note, /avis médical/);
 });
 
-test("decision: unusable video or wrong exercise is rejected (credit kept), low confidence is retried", () => {
+test("decision: unusable video or no strength exercise is rejected (credit kept), low confidence is retried", () => {
   const good = goodAnalysis();
-  assert.deepEqual(decideFormcheckOutcome(good, "Squat", 0.55), { kind: "deliver" });
+  assert.equal(good.exercise_detected.name_fr, "Squat barre haute");
+  assert.equal(detectedExerciseLabel(good), "Squat barre haute");
+  assert.deepEqual(decideFormcheckOutcome(good, 0.55), { kind: "deliver" });
 
   const unusable = { ...good, exploitable: false, rejection_reason: "Tes pieds sont hors cadre." };
-  assert.deepEqual(decideFormcheckOutcome(unusable, "Squat", 0.55), { kind: "reject", reason: "Tes pieds sont hors cadre." });
+  assert.deepEqual(decideFormcheckOutcome(unusable, 0.55), { kind: "reject", reason: "Tes pieds sont hors cadre." });
 
-  const wrong = { ...good, matches_declared_exercise: false, exercise_recognized: "Soulevé de terre" };
-  const decision = decideFormcheckOutcome(wrong, "Squat", 0.55);
+  const noStrength = { ...good, exercise_detected: { name_fr: "", is_strength_exercise: false } };
+  const decision = decideFormcheckOutcome(noStrength, 0.55);
   assert.equal(decision.kind, "reject");
-  assert.match((decision as any).reason, /Squat/);
-  assert.match((decision as any).reason, /Soulevé de terre/);
+  assert.match((decision as any).reason, /aucun exercice de musculation/);
+  // Un exercice reconnu mais sans nom ne peut pas être livré non plus.
+  assert.equal(decideFormcheckOutcome({ ...good, exercise_detected: { name_fr: "", is_strength_exercise: true } }, 0.55).kind, "reject");
+  // Tout exercice de musculation reconnu est analysé : plus de rejet « mauvais exercice ».
+  assert.equal(decideFormcheckOutcome({ ...good, exercise_detected: { name_fr: "Soulevé de terre sur blocs", is_strength_exercise: true } }, 0.55).kind, "deliver");
 
-  assert.equal(decideFormcheckOutcome({ ...good, confidence: 0.3 }, "Squat", 0.55).kind, "retry");
-  assert.equal(decideFormcheckOutcome({ ...good, priority_corrections: good.priority_corrections.slice(0, 2) }, "Squat", 0.55).kind, "retry");
+  assert.equal(decideFormcheckOutcome({ ...good, confidence: 0.3 }, 0.55).kind, "retry");
+  assert.equal(decideFormcheckOutcome({ ...good, priority_corrections: good.priority_corrections.slice(0, 2) }, 0.55).kind, "retry");
+  // Normalisation : champ absent = aucun exercice reconnu.
+  assert.equal(normalizeFormcheckAnalysis({ exploitable: true }, 8).exercise_detected.is_strength_exercise, false);
 });
 
 test("annotation SVG draws circle, line, arrow and angle with measured degrees", () => {
@@ -289,7 +316,6 @@ test("PDF HTML is light, branded, and shows annotated captures and corrections",
   const html = buildFormcheckReportHtml({
     analysisId: "abcdef12-0000-0000-0000-000000000000",
     email: "client@example.com",
-    exerciseLabel: "Squat",
     createdAt: new Date("2026-11-14T10:00:00Z"),
     analysis,
     frames: Array.from({ length: 10 }, (_, index) => ({ index, timestampS: index * 2 + 1, jpeg: frame, annotated: index === 3 ? Buffer.from([1, 2, 3]) : null })),
@@ -304,7 +330,10 @@ test("PDF HTML is light, branded, and shows annotated captures and corrections",
   const logos = html.match(/<svg[^>]*viewBox="0 0 38\.047 30\.012"[^>]*>.*?<\/svg>/g) || [];
   assert.equal(logos.length, 2);
   for (const logo of logos) assert.equal((logo.match(/<path /g) || []).length, 2);
-  assert.ok(html.indexOf("viewBox=\"0 0 38.047 30.012\"") < html.indexOf("Synthèse"), "logo en en-tête");
+  assert.ok(html.indexOf("viewBox=\"0 0 38.047 30.012\"") < html.indexOf("Exercice détecté"), "logo en en-tête");
+  // L'exercice affiché est celui détecté par le modèle.
+  assert.match(html, /<div class="kicker">Exercice détecté<\/div><h1>Squat barre haute<\/h1>/);
+  assert.match(html, /<title>FormCheck : Squat barre haute<\/title>/);
   assert.ok(html.lastIndexOf("viewBox=\"0 0 38.047 30.012\"") > html.indexOf('class="cta"'), "logo sur la page CTA");
   assert.match(html, /74<small>\/100<\/small>/);
   assert.match(html, /Tes 3 corrections prioritaires/);
@@ -328,9 +357,13 @@ test("PDF HTML is light, branded, and shows annotated captures and corrections",
 test("client emails are French, accented, without em dash, and never promise anything free", () => {
   const mails = [
     buildAccessEmail({ uploadUrl: "https://x/u?token=t", credits: 3, available: 3 }),
-    buildReportEmail({ exerciseLabel: "Squat", score: 74, summary: "Bonne base.", pdfUrl: "https://x/p", uploadUrl: "https://x/u", available: 2 }),
-    buildReshootEmail({ exerciseLabel: "Squat", reason: "Pieds hors cadre.", uploadUrl: "https://x/u" }),
+    buildReportEmail({ exerciseLabel: "Squat barre haute", score: 74, summary: "Bonne base.", pdfUrl: "https://x/p", uploadUrl: "https://x/u", available: 2 }),
+    buildReshootEmail({ reason: "Pieds hors cadre.", uploadUrl: "https://x/u" }),
   ];
+  assert.match(mails[1].subject, /Squat barre haute/);
+  assert.match(mails[1].html, /Exercice détecté : <strong>Squat barre haute<\/strong>/);
+  assert.match(mails[1].text, /Exercice détecté : Squat barre haute/);
+  assert.match(mails[2].html, /analyser ta vidéo de façon fiable/);
   for (const mail of mails) {
     assert.doesNotMatch(mail.html + mail.text + mail.subject, /[\u2013\u2014]/);
     assert.doesNotMatch(mail.html + mail.text, /gratuit|WhatsApp/i);
@@ -393,6 +426,18 @@ test("FormCheck never creates Stripe prices or touches deployment config", () =>
   assert.doesNotMatch(sources, /prices\.create|products\.create/);
   assert.doesNotMatch(sources, /render\.com\/v1|api\.render\.com/);
   assert.match(read("server/formcheck/routes.ts"), /rm\(file\.path/, "la vidéo est supprimée après extraction");
+});
+
+test("the client no longer chooses the exercise: no picker, no field sent, no server validation", () => {
+  const routes = read("server/formcheck/routes.ts");
+  assert.doesNotMatch(routes, /EXERCISE_REQUIRED|resolveExercise|FORMCHECK_EXERCISES|req\.body\?\.exercise/);
+  assert.doesNotMatch(read("server/formcheck/config.ts"), /FORMCHECK_EXERCISES|resolveExercise/);
+  const page = read("client/src/pages/FormCheckUpload.tsx");
+  assert.doesNotMatch(page, /formcheck-exercise"|form\.append\("exercise"|Choisis l'exercice/);
+  assert.match(page, /reconnaît automatiquement/);
+  const offer = read("client/src/pages/offers/FormCheck.tsx");
+  assert.doesNotMatch(offer, /[Tt]u choisis l'exercice|choisir « Autre exercice »|mauvais exercice/);
+  assert.match(offer, /reconnu automatiquement/);
 });
 
 test("the upload page is a real noindex SPA route (no 404) and is routed client side", () => {

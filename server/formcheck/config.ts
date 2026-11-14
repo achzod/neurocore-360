@@ -56,31 +56,6 @@ export function buildFormcheckLineItem(
   };
 }
 
-/** Exercices proposés au client (valeur stockée -> libellé affiché). */
-export const FORMCHECK_EXERCISES: Record<string, string> = {
-  squat: "Squat",
-  front_squat: "Front squat",
-  deadlift: "Soulevé de terre",
-  romanian_deadlift: "Soulevé de terre roumain",
-  bench_press: "Développé couché",
-  overhead_press: "Développé militaire",
-  barbell_row: "Rowing barre",
-  pull_up: "Traction",
-  hip_thrust: "Hip thrust",
-  lunge: "Fente",
-  bulgarian_split_squat: "Squat bulgare",
-  leg_press: "Presse à cuisses",
-  push_up: "Pompe",
-  dip: "Dips",
-  other: "Autre exercice",
-};
-
-export function resolveExercise(raw: unknown): { key: string; label: string } | null {
-  const key = String(raw ?? "").trim();
-  const label = FORMCHECK_EXERCISES[key];
-  return label ? { key, label } : null;
-}
-
 // ---------------------------------------------------------------------------
 // Vidéo
 // ---------------------------------------------------------------------------
@@ -156,9 +131,57 @@ export function computeFrameTimestamps(durationS: number, count = frameCountForD
 // Modèle, file d'attente et seuils
 // ---------------------------------------------------------------------------
 
-/** Modèle vision : FORMCHECK_MODEL, sinon le modèle déjà utilisé pour la vision (OPENAI_REPORT_MODEL). */
+/**
+ * Modèle vision FormCheck : FORMCHECK_MODEL, sinon gpt-6.1-sol.
+ * Volontairement indépendant de OPENAI_REPORT_MODEL (utilisé par les autres rapports).
+ */
+export const FORMCHECK_DEFAULT_MODEL = "gpt-6.1-sol";
 export function getFormcheckModel(env: NodeJS.ProcessEnv = process.env): string {
-  return String(env.FORMCHECK_MODEL || "").trim() || String(env.OPENAI_REPORT_MODEL || "").trim() || "gpt-5.6-sol";
+  return String(env.FORMCHECK_MODEL || "").trim() || FORMCHECK_DEFAULT_MODEL;
+}
+
+/** Efforts de raisonnement acceptés par gpt-6.1-sol (doc OpenAI : low, medium, high, xhigh, max). */
+export const FORMCHECK_REASONING_EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
+export type FormcheckReasoningEffort = typeof FORMCHECK_REASONING_EFFORTS[number];
+export const FORMCHECK_DEFAULT_REASONING_EFFORT: FormcheckReasoningEffort = "high";
+
+/** Effort de raisonnement : FORMCHECK_REASONING_EFFORT, sinon high. Valeur inconnue : high. */
+export function getFormcheckReasoningEffort(env: NodeJS.ProcessEnv = process.env): FormcheckReasoningEffort {
+  const raw = String(env.FORMCHECK_REASONING_EFFORT || "").trim().toLowerCase();
+  return (FORMCHECK_REASONING_EFFORTS as readonly string[]).includes(raw)
+    ? (raw as FormcheckReasoningEffort)
+    : FORMCHECK_DEFAULT_REASONING_EFFORT;
+}
+
+/**
+ * Tarifs officiels OpenAI (USD par million de tokens, traitement Standard).
+ * gpt-6.1-sol : https://developers.openai.com/api/docs/models/gpt-6.1-sol
+ * Au-delà de 272K tokens d'entrée : x2 sur l'entrée et le cache, x1,5 sur la sortie.
+ */
+export const FORMCHECK_MODEL_PRICING: Record<string, { input: number; cachedInput: number; cacheWrite: number; output: number }> = {
+  "gpt-6.1-sol": { input: 2, cachedInput: 0.1, cacheWrite: 2.5, output: 10 },
+  "gpt-5.6-sol": { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 30 },
+};
+const LONG_CONTEXT_THRESHOLD_TOKENS = 272_000;
+
+/** Coût estimé d'une analyse. Les tokens de raisonnement sont inclus dans outputTokens. null si modèle sans tarif connu. */
+export function estimateFormcheckCostUsd(
+  model: string,
+  tokens: { inputTokens: number; cachedInputTokens?: number; cacheWriteTokens?: number; outputTokens: number },
+): number | null {
+  const key = Object.keys(FORMCHECK_MODEL_PRICING)
+    .sort((a, b) => b.length - a.length)
+    .find((k) => model === k || model.startsWith(`${k}-`));
+  if (!key) return null;
+  const p = FORMCHECK_MODEL_PRICING[key];
+  const input = Math.max(0, tokens.inputTokens || 0);
+  const cached = Math.min(input, Math.max(0, tokens.cachedInputTokens || 0));
+  const writes = Math.min(input - cached, Math.max(0, tokens.cacheWriteTokens || 0));
+  const uncached = input - cached - writes;
+  const long = input > LONG_CONTEXT_THRESHOLD_TOKENS;
+  const inputUsd = ((uncached * p.input + cached * p.cachedInput + writes * p.cacheWrite) / 1_000_000) * (long ? 2 : 1);
+  const outputUsd = ((Math.max(0, tokens.outputTokens || 0) * p.output) / 1_000_000) * (long ? 1.5 : 1);
+  return Math.round((inputUsd + outputUsd) * 1_000_000) / 1_000_000;
 }
 
 export function getFormcheckMinConfidence(env: NodeJS.ProcessEnv = process.env): number {

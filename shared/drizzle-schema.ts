@@ -187,8 +187,8 @@ export const formcheckAccounts = pgTable("formcheck_accounts", {
 export const formcheckAnalyses = pgTable("formcheck_analyses", {
   id: varchar("id", { length: 36 }).primaryKey(),
   email: varchar("email", { length: 255 }).notNull(),
-  exerciseKey: varchar("exercise_key", { length: 64 }).notNull(),
-  exerciseLabel: varchar("exercise_label", { length: 120 }).notNull(),
+  // Exercice détecté par l'analyse (le client ne le choisit plus).
+  exerciseLabel: varchar("exercise_label", { length: 120 }),
   // queued | processing | retry | delivered | rejected | needs_review
   status: varchar("status", { length: 20 }).notNull().default("queued"),
   // reserved | consumed | released

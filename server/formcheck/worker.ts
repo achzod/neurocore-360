@@ -5,7 +5,7 @@
  * relance avec délai croissant, puis alerte admin. Le crédit n'est consommé
  * qu'après l'envoi effectif du rapport.
  */
-import { decideFormcheckOutcome, normalizeFormcheckAnalysis, runFormcheckVisionAnalysis, type FormcheckAnalysis, type VisionFrame, type VisionResult } from "./analysis";
+import { decideFormcheckOutcome, detectedExerciseLabel, normalizeFormcheckAnalysis, runFormcheckVisionAnalysis, type FormcheckAnalysis, type VisionFrame, type VisionResult } from "./analysis";
 import { annotateFrame } from "./annotate";
 import { FORMCHECK_MAX_ATTEMPTS, retryDelayMs } from "./config";
 import { buildAdminAlert, buildIssueEmail, buildReportEmail, buildReshootEmail } from "./emails";
@@ -16,7 +16,7 @@ import { formcheckLinks } from "./links";
 
 export interface FormcheckWorkerDeps {
   loadFrames: (id: string) => Promise<Array<{ index: number; timestampS: number; jpeg: Buffer; annotated: Buffer | null }>>;
-  vision: (input: { analysisId: string; email: string; declaredExercise: string; durationS: number; frames: VisionFrame[] }) => Promise<VisionResult>;
+  vision: (input: { analysisId: string; email: string; durationS: number; frames: VisionFrame[] }) => Promise<VisionResult>;
   saveResult: typeof store.saveAnalysisResult;
   annotate: (jpeg: Buffer, annotations: FormcheckAnalysis["errors"][number]["annotations"], badge: number) => Promise<Buffer>;
   saveAnnotated: typeof store.saveAnnotatedFrame;
@@ -52,6 +52,11 @@ async function retryOrEscalate(job: ClaimedAnalysis, deps: FormcheckWorkerDeps, 
   return "retry";
 }
 
+/** Nom de fichier sûr à partir du nom français de l'exercice (« Soulevé de terre » -> « souleve_de_terre »). */
+export function pdfSlug(label: string): string {
+  return label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "analyse";
+}
+
 export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckWorkerDeps): Promise<JobOutcome> {
   const links = deps.links(job.email, job.id);
   const frames = await deps.loadFrames(job.id);
@@ -59,26 +64,25 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
 
   // 1. Analyse vision (sautée si un résultat validé existe déjà : relance d'envoi seulement).
   let analysis: FormcheckAnalysis | null = job.result ? normalizeFormcheckAnalysis(job.result, frames.length) : null;
-  if (analysis && decideFormcheckOutcome(analysis, job.exercise_label).kind !== "deliver") analysis = null;
+  if (analysis && decideFormcheckOutcome(analysis).kind !== "deliver") analysis = null;
   if (!analysis) {
     let vision: VisionResult;
     try {
       vision = await deps.vision({
         analysisId: job.id,
         email: job.email,
-        declaredExercise: job.exercise_label,
         durationS: job.duration_s,
         frames: frames.map((f) => ({ index: f.index, timestampS: f.timestampS, jpeg: f.jpeg })),
       });
     } catch (error: any) {
       return retryOrEscalate(job, deps, `VISION_ERROR:${String(error?.message || error).slice(0, 300)}`);
     }
-    const decision = decideFormcheckOutcome(vision.analysis, job.exercise_label);
+    const decision = decideFormcheckOutcome(vision.analysis);
     if (decision.kind === "reject") {
       await deps.saveResult(job.id, { result: vision.analysis, score: vision.analysis.score, model: vision.model, responseId: vision.responseId, costUsd: vision.costUsd });
       const released = await deps.reject(job.id, decision.reason);
       if (released) {
-        const mail = buildReshootEmail({ exerciseLabel: job.exercise_label, reason: decision.reason, uploadUrl: links.uploadUrl });
+        const mail = buildReshootEmail({ exerciseLabel: vision.analysis.exercise_detected.name_fr || null, reason: decision.reason, uploadUrl: links.uploadUrl });
         await deps.sendEmail({ to: job.email, ...mail, emailType: "sendFormcheckReshootEmail", metadata: { analysisId: job.id } });
       }
       return "rejected";
@@ -88,7 +92,8 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
     analysis = vision.analysis;
   }
 
-  // 2. Annotation des frames fautives, PDF, envoi.
+  // 2. Annotation des frames fautives, PDF, envoi. L'exercice affiché est celui détecté par le modèle.
+  const exerciseLabel = detectedExerciseLabel(analysis);
   try {
     // Une image annotée par erreur (même si deux erreurs tombent sur la même frame),
     // avec uniquement les formes de cette erreur et son numéro.
@@ -109,7 +114,7 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
     const html = buildFormcheckReportHtml({
       analysisId: job.id,
       email: job.email,
-      exerciseLabel: job.exercise_label,
+      exerciseLabel,
       createdAt: deps.now(),
       analysis,
       frames: frames.map((f) => ({ ...f, annotated: annotatedByIndex.get(f.index) || f.annotated })),
@@ -121,7 +126,7 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
     const balance = await deps.balance(job.email);
     // Le crédit en cours sera consommé juste après : on l'affiche déjà déduit.
     const mail = buildReportEmail({
-      exerciseLabel: job.exercise_label,
+      exerciseLabel,
       score: analysis.score,
       summary: analysis.summary,
       pdfUrl: links.pdfUrl,
@@ -133,7 +138,7 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
       ...mail,
       emailType: "sendFormcheckReportEmail",
       metadata: { analysisId: job.id, score: analysis.score },
-      attachments: { [`FormCheck_${job.exercise_key}_${job.id.slice(0, 8)}.pdf`]: pdf },
+      attachments: { [`FormCheck_${pdfSlug(exerciseLabel)}_${job.id.slice(0, 8)}.pdf`]: pdf },
     });
     if (!sent) return retryOrEscalate(job, deps, "EMAIL_SEND_FAILED");
     await deps.consume(job.id);
@@ -180,7 +185,7 @@ export async function runFormcheckQueueOnce(deps: FormcheckWorkerDeps, maxJobs =
   try {
     // Jobs ayant épuisé leurs tentatives (crash pendant la dernière) : alerte + crédit libéré.
     for (const stuck of await store.listExhaustedAnalyses()) {
-      await escalate({ id: stuck.id, email: stuck.email, exercise_label: stuck.exercise_label, exercise_key: "", attempts: FORMCHECK_MAX_ATTEMPTS, duration_s: 0, result: null, model: null, response_id: null, cost_usd: null, pdf: null }, deps, stuck.last_error || "EXHAUSTED");
+      await escalate({ id: stuck.id, email: stuck.email, exercise_label: stuck.exercise_label, attempts: FORMCHECK_MAX_ATTEMPTS, duration_s: 0, result: null, model: null, response_id: null, cost_usd: null, pdf: null }, deps, stuck.last_error || "EXHAUSTED");
     }
     while (processed < maxJobs) {
       const job = await store.claimNextAnalysis();

@@ -73,15 +73,15 @@ const FILMING_TIPS = [
 const FAQ = [
   {
     q: "Comment se passe l'analyse ?",
-    a: "Après ton paiement, tu reçois un lien personnel par email. Tu choisis l'exercice, tu envoies la vidéo de ta série, et l'analyse démarre automatiquement : des images sont extraites sur toute la série, analysées selon la méthode Achzod, puis ton rapport PDF arrive par email, en général en quelques minutes et au plus tard sous 2 heures.",
+    a: "Après ton paiement, tu reçois un lien personnel par email. Tu envoies la vidéo de ta série, sans rien avoir à préciser : l'exercice est reconnu automatiquement. Des images sont extraites sur toute la série, analysées selon la méthode Achzod, puis ton rapport PDF arrive par email, en général en quelques minutes et au plus tard sous 2 heures.",
   },
   {
     q: "Quand un crédit est-il utilisé ?",
-    a: "Uniquement quand ton rapport est livré. Si ta vidéo est inexploitable (corps coupé, trop sombre, mauvais exercice), tu reçois un message clair pour la refilmer et ton crédit reste intact.",
+    a: "Uniquement quand ton rapport est livré. Si ta vidéo est inexploitable (corps coupé, trop sombre) ou si aucun exercice de musculation n'y est reconnu, tu reçois un message clair pour la refilmer et ton crédit reste intact.",
   },
   {
     q: "Quels exercices sont pris en charge ?",
-    a: "Les grands mouvements de musculation : squat, front squat, soulevé de terre et sa version roumaine, développé couché, développé militaire, rowing, traction, hip thrust, fentes, squat bulgare, presse, pompes et dips. Tu peux aussi choisir « Autre exercice ».",
+    a: "Les exercices de musculation : squat, front squat, soulevé de terre et ses variantes (roumain, sumo, sur blocs), développé couché, développé militaire, rowing, traction, hip thrust, fentes, squat bulgare, presse, pompes, dips et bien d'autres. Tu n'as pas à choisir l'exercice : il est reconnu automatiquement sur ta vidéo et indiqué en tête de ton rapport.",
   },
   {
     q: "Mes crédits expirent-ils ?",
@@ -184,7 +184,7 @@ export default function FormCheck() {
           <div className="mt-14 grid gap-6 md:grid-cols-3">
             {[
               { icon: ShieldCheck, title: "1. Choisis ton pack", text: "Paiement sécurisé par Stripe. Tes crédits sont ajoutés à ton email et ton lien d'envoi arrive aussitôt." },
-              { icon: Smartphone, title: "2. Filme et envoie", text: "Une série, 60 secondes maximum, en .mp4 ou .mov. Tu choisis l'exercice et tu envoies la vidéo depuis ton téléphone." },
+              { icon: Smartphone, title: "2. Filme et envoie", text: "Une série, 60 secondes maximum, en .mp4 ou .mov. Tu envoies la vidéo depuis ton téléphone, l'exercice est reconnu automatiquement." },
               { icon: FileText, title: "3. Reçois ton rapport", text: "Ton rapport PDF arrive par email : note sur 100, captures annotées, corrections et consignes pour la prochaine séance." },
             ].map(({ icon: Icon, title, text }) => (
               <div key={title} className="rounded-sm border border-white/10 bg-white/[0.03] p-8">

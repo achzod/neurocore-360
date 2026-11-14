@@ -43,7 +43,8 @@ export interface ReportFrame { index: number; timestampS: number; jpeg: Buffer; 
 export interface ReportInput {
   analysisId: string;
   email: string;
-  exerciseLabel: string;
+  /** Libellé de repli si le modèle n'a pas nommé l'exercice (l'exercice affiché est celui détecté). */
+  exerciseLabel?: string;
   createdAt: Date;
   analysis: FormcheckAnalysis;
   frames: ReportFrame[];
@@ -99,6 +100,7 @@ const majorNote = (n: number) => (n === 0 ? "Aucune erreur majeure" : n === 1 ? 
 
 export function buildFormcheckReportHtml(input: ReportInput): string {
   const a = input.analysis;
+  const exerciseName = a.exercise_detected?.name_fr || input.exerciseLabel || "Exercice analysé";
   const framesByIndex = new Map(input.frames.map((f) => [f.index, f]));
   const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "Europe/Paris" }).format(input.createdAt);
   const tempo = `${fmt(a.tempo.eccentric_s)} / ${fmt(a.tempo.pause_bottom_s)} / ${fmt(a.tempo.concentric_s)} / ${fmt(a.tempo.pause_top_s)}`;
@@ -111,7 +113,7 @@ export function buildFormcheckReportHtml(input: ReportInput): string {
       <span class="logo-pill">${achzodLogoHtml({ markColor: C.yellow, textColor: "#FFFFFF", heightPx: 24 })}</span>
       <div class="brand">APEXLABS<span>FORMCHECK</span></div>
     </div>
-    <div class="meta">${esc(input.exerciseLabel)} · ${esc(date)}<br/>Réf. ${esc(input.analysisId.slice(0, 8).toUpperCase())}</div>
+    <div class="meta">${esc(exerciseName)} · ${esc(date)}<br/>Réf. ${esc(input.analysisId.slice(0, 8).toUpperCase())}</div>
   </div>`;
   const section = (kicker: string, title: string) => `<div class="section-head"><div class="kicker">${esc(kicker)}</div><h2>${esc(title)}</h2></div>`;
 
@@ -130,7 +132,7 @@ export function buildFormcheckReportHtml(input: ReportInput): string {
   ${header}
   <div class="hero avoid-break">
     <div class="score"><div class="num">${a.score}<small>/100</small></div><div class="verdict">${esc(scoreVerdict(a.score))}</div></div>
-    <div class="summary"><div class="kicker">Synthèse</div><h1>${esc(a.exercise_recognized || input.exerciseLabel)}</h1><p>${esc(a.summary)}</p></div>
+    <div class="summary"><div class="kicker">Exercice détecté</div><h1>${esc(exerciseName)}</h1><p>${esc(a.summary)}</p></div>
   </div>
   <div class="bars avoid-break">
     ${bar("Mise en place", a.subscores.mise_en_place)}
@@ -286,7 +288,7 @@ export function buildFormcheckReportHtml(input: ReportInput): string {
   </div>`;
 
   return `<!doctype html>
-<html lang="fr"><head><meta charset="utf-8"/><title>FormCheck : ${esc(input.exerciseLabel)}</title>
+<html lang="fr"><head><meta charset="utf-8"/><title>FormCheck : ${esc(exerciseName)}</title>
 <style>
   @page { size: A4; margin: 14mm 12mm 16mm; }
   * { box-sizing: border-box; }

@@ -9,8 +9,7 @@ import { processFormcheckJob, type FormcheckWorkerDeps } from "./formcheck/worke
 const analysis = (overrides: Partial<FormcheckAnalysis> = {}): FormcheckAnalysis => ({
   ...normalizeFormcheckAnalysis({
     exploitable: true,
-    exercise_recognized: "Squat",
-    matches_declared_exercise: true,
+    exercise_detected: { name_fr: "Soulevé de terre sur blocs", is_strength_exercise: true },
     camera_view: "profil",
     confidence: 0.8,
     reps_count: 5,
@@ -27,8 +26,7 @@ const analysis = (overrides: Partial<FormcheckAnalysis> = {}): FormcheckAnalysis
 const job = (overrides: Partial<ClaimedAnalysis> = {}): ClaimedAnalysis => ({
   id: "11111111-2222-3333-4444-555555555555",
   email: "client@example.com",
-  exercise_key: "squat",
-  exercise_label: "Squat",
+  exercise_label: null,
   attempts: 1,
   duration_s: 12,
   result: null,
@@ -46,8 +44,8 @@ function fakeDeps(options: { vision?: () => Promise<FormcheckAnalysis>; emailOk?
   };
   const deps: FormcheckWorkerDeps = {
     loadFrames: async () => Array.from({ length: 8 }, (_, index) => ({ index, timestampS: index + 0.5, jpeg: Buffer.from([index]), annotated: null })),
-    vision: async () => {
-      record("vision");
+    vision: async (input) => {
+      record("vision", input);
       return { analysis: options.vision ? await options.vision() : analysis(), model: "test-model", responseId: "resp_test", costUsd: 0.12 };
     },
     saveResult: async (...args) => record("saveResult", ...args),
@@ -94,7 +92,11 @@ test("a good analysis is annotated, rendered, emailed with the PDF, then the cre
   const mail = calls.sendEmail[0][0];
   assert.equal(mail.to, "client@example.com");
   assert.equal(mail.emailType, "sendFormcheckReportEmail");
-  assert.ok(Object.keys(mail.attachments)[0].endsWith(".pdf"));
+  assert.equal(Object.keys(mail.attachments)[0], "FormCheck_souleve_de_terre_sur_blocs_11111111.pdf");
+  // L'exercice n'est jamais fourni au modèle : il le détecte et c'est lui qu'on affiche.
+  assert.ok(!("declaredExercise" in calls.vision[0][0]));
+  assert.match(mail.subject, /Soulevé de terre sur blocs/);
+  assert.match(mail.text, /Exercice détecté : Soulevé de terre sur blocs/);
   assert.equal(calls.consume.length, 1);
   assert.equal(calls.reject, undefined);
 });
@@ -119,11 +121,21 @@ test("an unusable video is rejected: credit released, client asked to reshoot, n
   assert.match(mail.text, /crédit n'a pas été utilisé/);
 });
 
-test("a wrong exercise is rejected without consuming the credit", async () => {
-  const { deps, calls } = fakeDeps({ vision: async () => analysis({ matches_declared_exercise: false, exercise_recognized: "Hip thrust" }) });
+test("no strength exercise recognized: rejected, credit released, client asked to reshoot", async () => {
+  const { deps, calls } = fakeDeps({ vision: async () => analysis({ exercise_detected: { name_fr: "", is_strength_exercise: false } }) });
   assert.equal(await processFormcheckJob(job(), deps), "rejected");
-  assert.match(calls.reject[0][1], /Hip thrust/);
+  assert.match(calls.reject[0][1], /aucun exercice de musculation/);
   assert.equal(calls.consume, undefined);
+  assert.equal(calls.renderPdf, undefined);
+  assert.equal(calls.sendEmail[0][0].emailType, "sendFormcheckReshootEmail");
+});
+
+test("any recognized strength exercise is analyzed and delivered (no more wrong-exercise rejection)", async () => {
+  const { deps, calls } = fakeDeps({ vision: async () => analysis({ exercise_detected: { name_fr: "Hip thrust", is_strength_exercise: true } }) });
+  assert.equal(await processFormcheckJob(job(), deps), "delivered");
+  assert.equal(calls.reject, undefined);
+  assert.equal(calls.consume.length, 1);
+  assert.match(calls.sendEmail[0][0].subject, /Hip thrust/);
 });
 
 test("low confidence is retried, then escalated to the admin on the last attempt without consuming", async () => {

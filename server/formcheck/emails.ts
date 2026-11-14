@@ -72,11 +72,13 @@ ${lightLogoUrl ? `<img src="${esc(lightLogoUrl)}" width="124" height="32" alt="A
 </td></tr></table>`;
 }
 
+/** exerciseLabel = exercice détecté par l'analyse (le client ne le choisit pas). */
 export function buildReportEmail(input: { exerciseLabel: string; score: number; summary: string; pdfUrl: string; uploadUrl: string; available: number }) {
   const subject = `Ton rapport FormCheck est prêt : ${input.exerciseLabel}`;
   const html = wrapFormcheckEmail(
     `${input.exerciseLabel} : ${input.score}/100`,
-    `<p>${esc(input.summary)}</p>
+    `<p style="margin:0 0 12px;"><span style="display:inline-block;background:#FFF8C2;padding:4px 10px;border-radius:6px;font-size:13px;">Exercice détecté : <strong>${esc(input.exerciseLabel)}</strong></span></p>
+     <p>${esc(input.summary)}</p>
      <p>Ton rapport complet est en pièce jointe (PDF) : tableau de bord de tous les critères, analyse phase par phase, tempo rep par rep, chaque erreur sur ton image annotée avec le pourquoi, comment corriger et tes exercices correctifs, puis ton plan de correction sur 4 semaines.</p>
      <p>Pièce jointe introuvable ? <a href="${esc(input.pdfUrl)}" style="color:${C.black};font-weight:700;">Télécharge le PDF ici</a>.</p>
      <p>Crédits restants : <strong>${input.available}</strong>. Applique ton plan pendant 2 à 4 semaines puis renvoie une vidéo pour mesurer le progrès.</p>
@@ -85,41 +87,44 @@ export function buildReportEmail(input: { exerciseLabel: string; score: number; 
     undefined,
     achzodEmailLogoUrl(input.uploadUrl, "dark"),
   );
-  const text = `Ton rapport FormCheck (${input.exerciseLabel}) est prêt : ${input.score}/100.\n${input.summary}\nPDF : ${input.pdfUrl}\nNouvelle vidéo : ${input.uploadUrl}\n\nTu sais quoi corriger. Avec le coaching Achzod, tu le corriges pour de bon : Essential, Elite ou Private Lab.\nDécouvre les formules : ${COACHING_URL}`;
+  const text = `Ton rapport FormCheck est prêt : ${input.score}/100.\nExercice détecté : ${input.exerciseLabel}\n${input.summary}\nPDF : ${input.pdfUrl}\nNouvelle vidéo : ${input.uploadUrl}\n\nTu sais quoi corriger. Avec le coaching Achzod, tu le corriges pour de bon : Essential, Elite ou Private Lab.\nDécouvre les formules : ${COACHING_URL}`;
   return { subject, html, text };
 }
 
-export function buildReshootEmail(input: { exerciseLabel: string; reason: string; uploadUrl: string }) {
+export function buildReshootEmail(input: { exerciseLabel?: string | null; reason: string; uploadUrl: string }) {
+  const what = input.exerciseLabel ? `ta vidéo de <strong>${esc(input.exerciseLabel)}</strong>` : "ta vidéo";
   const subject = "FormCheck : ta vidéo est à refilmer (crédit non utilisé)";
   const html = wrapFormcheckEmail(
     "On a besoin d'une nouvelle vidéo",
-    `<p>On n'a pas pu analyser ta vidéo de <strong>${esc(input.exerciseLabel)}</strong> de façon fiable :</p>
+    `<p>On n'a pas pu analyser ${what} de façon fiable :</p>
      <p style="background:#FFF8C2;padding:10px 12px;border-radius:6px;">${esc(input.reason)}</p>
      <p><strong>Ton crédit n'a pas été utilisé.</strong> Refilme ta série (téléphone stable, corps entier visible, bonne lumière) et renvoie-la.</p>`,
     { href: input.uploadUrl, label: "Renvoyer une vidéo" },
   );
-  const text = `On n'a pas pu analyser ta vidéo de ${input.exerciseLabel} : ${input.reason}\nTon crédit n'a pas été utilisé. Renvoie une vidéo ici : ${input.uploadUrl}`;
+  const text = `On n'a pas pu analyser ${input.exerciseLabel ? `ta vidéo de ${input.exerciseLabel}` : "ta vidéo"} : ${input.reason}\nTon crédit n'a pas été utilisé. Renvoie une vidéo ici : ${input.uploadUrl}`;
   return { subject, html, text };
 }
 
-export function buildIssueEmail(input: { exerciseLabel: string; uploadUrl: string }) {
+export function buildIssueEmail(input: { exerciseLabel?: string | null; uploadUrl: string }) {
+  const what = input.exerciseLabel ? `ta vidéo de <strong>${esc(input.exerciseLabel)}</strong>` : "ta vidéo";
   const subject = "FormCheck : ton analyse prend un peu plus de temps";
   const html = wrapFormcheckEmail(
     "Ton analyse demande une vérification",
-    `<p>L'analyse automatique de ta vidéo de <strong>${esc(input.exerciseLabel)}</strong> n'a pas abouti avec assez de fiabilité. Achzod a été prévenu et regarde ta vidéo.</p>
+    `<p>L'analyse automatique de ${what} n'a pas abouti avec assez de fiabilité. Achzod a été prévenu et regarde ta vidéo.</p>
      <p><strong>Ton crédit n'a pas été utilisé.</strong> Tu peux aussi renvoyer une vidéo mieux cadrée dès maintenant.</p>`,
     { href: input.uploadUrl, label: "Renvoyer une vidéo" },
   );
-  const text = `L'analyse de ta vidéo de ${input.exerciseLabel} demande une vérification manuelle. Ton crédit n'a pas été utilisé. Renvoyer une vidéo : ${input.uploadUrl}`;
+  const text = `L'analyse de ${input.exerciseLabel ? `ta vidéo de ${input.exerciseLabel}` : "ta vidéo"} demande une vérification manuelle. Ton crédit n'a pas été utilisé. Renvoyer une vidéo : ${input.uploadUrl}`;
   return { subject, html, text };
 }
 
-export function buildAdminAlert(input: { analysisId: string; email: string; exerciseLabel: string; attempts: number; reason: string }) {
-  const subject = `[FormCheck] Analyse à vérifier : ${input.exerciseLabel} (${input.email})`;
+export function buildAdminAlert(input: { analysisId: string; email: string; exerciseLabel?: string | null; attempts: number; reason: string }) {
+  const exercise = input.exerciseLabel || "exercice non détecté";
+  const subject = `[FormCheck] Analyse à vérifier : ${exercise} (${input.email})`;
   const lines = [
     `Analyse : ${input.analysisId}`,
     `Client : ${input.email}`,
-    `Exercice : ${input.exerciseLabel}`,
+    `Exercice détecté : ${exercise}`,
     `Tentatives : ${input.attempts}`,
     `Raison : ${input.reason}`,
     "Crédit libéré (non consommé). Le client a reçu un email l'invitant à renvoyer une vidéo.",

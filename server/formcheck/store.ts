@@ -43,8 +43,7 @@ CREATE TABLE IF NOT EXISTS formcheck_accounts (
 CREATE TABLE IF NOT EXISTS formcheck_analyses (
   id varchar(36) PRIMARY KEY,
   email varchar(255) NOT NULL,
-  exercise_key varchar(64) NOT NULL,
-  exercise_label varchar(120) NOT NULL,
+  exercise_label varchar(120),
   status varchar(20) NOT NULL DEFAULT 'queued',
   credit_state varchar(20) NOT NULL DEFAULT 'reserved',
   attempts integer NOT NULL DEFAULT 0,
@@ -65,6 +64,13 @@ CREATE TABLE IF NOT EXISTS formcheck_analyses (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+-- Base créée avant la détection automatique de l'exercice : colonnes de choix client rendues facultatives.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'formcheck_analyses' AND column_name = 'exercise_key') THEN
+    ALTER TABLE formcheck_analyses ALTER COLUMN exercise_key DROP NOT NULL;
+  END IF;
+  ALTER TABLE formcheck_analyses ALTER COLUMN exercise_label DROP NOT NULL;
+END $$;
 CREATE INDEX IF NOT EXISTS formcheck_analyses_queue_idx ON formcheck_analyses (status, next_attempt_at);
 CREATE INDEX IF NOT EXISTS formcheck_analyses_email_idx ON formcheck_analyses (email, created_at DESC);
 CREATE TABLE IF NOT EXISTS formcheck_frames (
@@ -171,8 +177,6 @@ export async function hasFormcheckPurchase(emailRaw: string): Promise<boolean> {
 
 export interface NewAnalysisInput {
   email: string;
-  exerciseKey: string;
-  exerciseLabel: string;
   durationS: number;
   videoMeta: Record<string, unknown>;
   frames: Array<{ index: number; timestampS: number; jpeg: Buffer }>;
@@ -196,9 +200,9 @@ export async function reserveCreditAndEnqueue(input: NewAnalysisInput): Promise<
       [email],
     );
     await client.query(
-      `INSERT INTO formcheck_analyses (id, email, exercise_key, exercise_label, duration_s, video_meta)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [id, email, input.exerciseKey, input.exerciseLabel, input.durationS, JSON.stringify(input.videoMeta)],
+      `INSERT INTO formcheck_analyses (id, email, duration_s, video_meta)
+       VALUES ($1, $2, $3, $4)`,
+      [id, email, input.durationS, JSON.stringify(input.videoMeta)],
     );
     for (const frame of input.frames) {
       await client.query(
@@ -252,8 +256,8 @@ export const markNeedsReviewAndRelease = (analysisId: string, reason: string) =>
 export interface ClaimedAnalysis {
   id: string;
   email: string;
-  exercise_key: string;
-  exercise_label: string;
+  /** Exercice détecté par l'analyse (null tant qu'aucune analyse n'a abouti). */
+  exercise_label: string | null;
   attempts: number;
   duration_s: number;
   result: any;
@@ -278,7 +282,7 @@ export async function claimNextAnalysis(): Promise<ClaimedAnalysis | null> {
            ORDER BY next_attempt_at ASC
            FOR UPDATE SKIP LOCKED
            LIMIT 1)
-        RETURNING id, email, exercise_key, exercise_label, attempts, duration_s, result, model, response_id, cost_usd, pdf`,
+        RETURNING id, email, exercise_label, attempts, duration_s, result, model, response_id, cost_usd, pdf`,
       [FORMCHECK_MAX_ATTEMPTS],
     )).rows[0];
     return row ? { ...row, duration_s: Number(row.duration_s) } : null;
@@ -286,7 +290,7 @@ export async function claimNextAnalysis(): Promise<ClaimedAnalysis | null> {
 }
 
 /** Analyses bloquées : toutes les tentatives consommées sans issue (crash pendant la dernière). */
-export async function listExhaustedAnalyses(): Promise<Array<{ id: string; email: string; exercise_label: string; last_error: string | null }>> {
+export async function listExhaustedAnalyses(): Promise<Array<{ id: string; email: string; exercise_label: string | null; last_error: string | null }>> {
   await ensureFormcheckTables();
   const pool = await getPool();
   return (await pool.query(
@@ -313,9 +317,12 @@ export async function saveAnalysisResult(analysisId: string, data: {
   result: unknown; score: number; model: string; responseId: string; costUsd: number | null;
 }): Promise<void> {
   const pool = await getPool();
+  // L'exercice n'est plus choisi par le client : on garde celui détecté par le modèle.
+  const detected = String((data.result as any)?.exercise_detected?.name_fr || "").slice(0, 120) || null;
   await pool.query(
-    `UPDATE formcheck_analyses SET result = $2, score = $3, model = $4, response_id = $5, cost_usd = $6, updated_at = now() WHERE id = $1`,
-    [analysisId, JSON.stringify(data.result), data.score, data.model, data.responseId, data.costUsd],
+    `UPDATE formcheck_analyses SET result = $2, score = $3, model = $4, response_id = $5, cost_usd = $6,
+            exercise_label = COALESCE($7, exercise_label), updated_at = now() WHERE id = $1`,
+    [analysisId, JSON.stringify(data.result), data.score, data.model, data.responseId, data.costUsd, detected],
   );
 }
 
