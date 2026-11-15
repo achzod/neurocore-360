@@ -324,6 +324,12 @@ function generateReportHTML(stats: ReportStats): string {
 /**
  * Section FormCheck V2
  */
+/** Prochaine livraison FormCheck programmée, à l'heure de Dubaï (l'heure d'Achzod). */
+export function formatFormcheckNextDelivery(epochSeconds: number | undefined): string {
+  if (!epochSeconds || !Number.isFinite(epochSeconds)) return "aucune";
+  return new Date(epochSeconds * 1000).toLocaleString("fr-FR", { timeZone: "Asia/Dubai", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + " (Dubaï)";
+}
+
 function generateFormcheckHTML(stats: ReportStats): string {
   const f = stats.formcheck;
   if (!f) return "";
@@ -338,6 +344,8 @@ function generateFormcheckHTML(stats: ReportStats): string {
       ${row("Rapports livrés", f.delivered ?? 0)}
       ${row("Vidéos à refilmer", f.rejected ?? 0)}
       ${row("En file", f.pending ?? 0)}
+      ${row("Rapports prêts, livraison programmée", f.scheduled ?? 0)}
+      ${row("Prochaine livraison prévue", formatFormcheckNextDelivery(f.next_delivery_epoch))}
       ${row("À vérifier (total)", f.needs_review ?? 0)}
     </div>
   `;
@@ -545,6 +553,7 @@ ${stats.formcheck ? `
 FORMCHECK (6h):
 - Achats: ${stats.formcheck.purchases ?? 0} (${((stats.formcheck.revenue_cents ?? 0) / 100).toFixed(2)}€)
 - Rapports livrés: ${stats.formcheck.delivered ?? 0}, à refilmer: ${stats.formcheck.rejected ?? 0}, en file: ${stats.formcheck.pending ?? 0}
+- Livraisons programmées: ${stats.formcheck.scheduled ?? 0}, prochaine: ${formatFormcheckNextDelivery(stats.formcheck.next_delivery_epoch)}
 - À vérifier (total): ${stats.formcheck.needs_review ?? 0}
 ` : ""}
 ---

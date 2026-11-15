@@ -77,6 +77,7 @@ function fakeDeps(options: { vision?: () => Promise<FormcheckAnalysis>; emailOk?
       return true;
     },
     retry: async (id, delay, reason) => record("retry", id, delay, reason),
+    schedule: async (id, at) => record("schedule", id, at),
     balance: async () => ({ available: 2 }),
     links: () => ({ uploadUrl: "https://apexlabs.test/formcheck/upload?token=t", pdfUrl: "https://apexlabs.test/pdf" }),
     now: () => new Date("2026-11-14T10:00:00Z"),
@@ -225,5 +226,61 @@ test("a retry after a stored valid result reuses it: no second OpenAI call, no s
   assert.equal(await processFormcheckJob(job({ attempts: 2, result: stored, pdf: Buffer.from("%PDF-old") }), deps), "delivered");
   assert.equal(calls.vision, undefined);
   assert.equal(calls.renderPdf, undefined);
+  assert.equal(calls.consume.length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// Livraison différée (rapport produit tout de suite, envoyé 2 à 3 h après l'upload)
+// ---------------------------------------------------------------------------
+
+const NOW = fakeDeps().deps.now();
+
+test("delayed delivery: analysis and PDF are produced now, but nothing is sent or consumed before the scheduled time", async () => {
+  const { deps, calls } = fakeDeps();
+  const deliverAfter = new Date(NOW.getTime() + 150 * 60_000);
+  assert.equal(await processFormcheckJob(job({ deliver_after: deliverAfter }), deps), "scheduled");
+  assert.equal(calls.vision.length, 1, "analyse faite tout de suite");
+  assert.equal(calls.renderPdf.length, 1, "PDF fait tout de suite");
+  assert.equal(calls.savePdf.length, 1);
+  assert.deepEqual(calls.schedule, [[job().id, deliverAfter]]);
+  assert.equal(calls.sendEmail, undefined, "aucun email avant l'heure");
+  assert.equal(calls.consume, undefined, "crédit non débité avant la livraison");
+});
+
+test("delayed delivery: once due, the stored result and PDF are emailed, then the credit is consumed", async () => {
+  const { deps, calls } = fakeDeps();
+  const due = new Date(NOW.getTime() - 1000);
+  const outcome = await processFormcheckJob(job({ attempts: 1, result: analysis(), pdf: Buffer.from("%PDF-stored"), deliver_after: due }), deps);
+  assert.equal(outcome, "delivered");
+  assert.equal(calls.vision, undefined, "pas de second appel d'analyse");
+  assert.equal(calls.renderPdf, undefined, "pas de second rendu PDF");
+  assert.equal(calls.schedule, undefined);
+  const mail = calls.sendEmail[0][0];
+  assert.equal(mail.emailType, "sendFormcheckReportEmail");
+  assert.equal(mail.attachments[Object.keys(mail.attachments)[0]].toString(), "%PDF-stored");
+  assert.equal(calls.consume.length, 1);
+});
+
+test("delayed delivery: a rejection (video to reshoot) stays immediate", async () => {
+  const { deps, calls } = fakeDeps({ vision: async () => analysis({ exploitable: false, rejection_code: "video_illisible", rejection_reason: "Ta vidéo est noire du début à la fin." }) });
+  const outcome = await processFormcheckJob(job({ deliver_after: new Date(NOW.getTime() + 170 * 60_000) }), deps);
+  assert.equal(outcome, "rejected");
+  assert.equal(calls.schedule, undefined);
+  assert.equal(calls.sendEmail[0][0].emailType, "sendFormcheckReshootEmail");
+  assert.equal(calls.reject.length, 1);
+});
+
+test("delayed delivery: a persistent technical failure stays immediate", async () => {
+  const { deps, calls } = fakeDeps({ vision: async () => { throw new Error("OpenAI 500"); } });
+  const outcome = await processFormcheckJob(job({ attempts: FORMCHECK_MAX_ATTEMPTS, deliver_after: new Date(NOW.getTime() + 170 * 60_000) }), deps);
+  assert.equal(outcome, "needs_review");
+  assert.equal(calls.schedule, undefined);
+  assert.ok(calls.sendEmail.some(([mail]: any[]) => mail.emailType === "sendFormcheckIssueEmail" && mail.to === "client@example.com"));
+});
+
+test("delivery delay set to 0 (deliver_after null): the report is delivered right away", async () => {
+  const { deps, calls } = fakeDeps();
+  assert.equal(await processFormcheckJob(job({ deliver_after: null }), deps), "delivered");
+  assert.equal(calls.schedule, undefined);
   assert.equal(calls.consume.length, 1);
 });

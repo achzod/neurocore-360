@@ -134,7 +134,7 @@ const FILMING_TIPS = [
 const FAQ = [
   {
     q: "Comment se passe l'analyse ?",
-    a: "Après ton paiement, tu reçois un lien personnel par email. Tu envoies la vidéo de ta série, sans rien avoir à préciser : l'exercice est reconnu automatiquement. Des images sont extraites sur toute la série, puis ta technique est analysée selon ma méthode et ma grille d'analyse. Ton rapport PDF arrive par email, en général en quelques minutes.",
+    a: "Après ton paiement, tu reçois un lien personnel par email. Tu envoies la vidéo de ta série, sans rien avoir à préciser : l'exercice est reconnu automatiquement. Des images sont extraites sur toute la série, puis ta technique est analysée selon ma méthode et ma grille d'analyse. Tu reçois ton rapport PDF par email sous 3 heures.",
   },
   {
     q: "Qui a conçu la méthode ?",
@@ -302,7 +302,7 @@ export default function FormCheck() {
             </Reveal>
             <Reveal delay={0.1}>
               <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-white/75 sm:text-xl">
-                Filme une série, envoie la vidéo. Elle est analysée selon ma grille biomécanique de coach certifié NASM. Ton rapport PDF arrive par email en quelques minutes : score sur 100, erreurs montrées sur tes images, corrections et plan sur 4 semaines.
+                Filme une série, envoie la vidéo. Elle est analysée selon ma grille biomécanique de coach certifié NASM. Ton rapport PDF arrive par email sous 3 heures : score sur 100, erreurs montrées sur tes images, corrections et plan sur 4 semaines.
               </p>
             </Reveal>
             <Reveal delay={0.15}>
@@ -423,7 +423,7 @@ export default function FormCheck() {
       {/* COMMENT ÇA MARCHE */}
       <section id="etapes" className="border-t border-white/10 px-5 py-20 sm:px-6 sm:py-28">
         <div className="mx-auto max-w-6xl">
-          <SectionTitle eyebrow="Comment ça marche" title="Trois étapes. Quelques minutes." />
+          <SectionTitle eyebrow="Comment ça marche" title="Trois étapes. Ton rapport sous 3 heures." />
           <div className="mt-12">
             <StepsDemo />
           </div>
@@ -661,7 +661,7 @@ export default function FormCheck() {
             <span style={{ color: ACCENT }}>mieux qu'un doute.</span>
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-base text-white/70 sm:text-lg">
-            Filme, envoie, corrige. Ton rapport arrive par email en quelques minutes, dès 9,90 €.
+            Filme, envoie, corrige. Ton rapport arrive par email sous 3 heures, dès 9,90 €.
           </p>
           <div className="mt-10 flex justify-center">
             <PrimaryCTA testId="formcheck-final-cta">Choisir mon pack</PrimaryCTA>

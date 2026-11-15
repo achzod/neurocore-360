@@ -205,6 +205,49 @@ export function retryDelayMs(attempt: number): number {
   return [60_000, 5 * 60_000, 15 * 60_000][Math.max(0, Math.min(2, attempt - 1))];
 }
 
+// ---------------------------------------------------------------------------
+// Délai de livraison du rapport
+// ---------------------------------------------------------------------------
+
+/** Par défaut : rapport livré entre 2 h et 3 h après l'upload. */
+export const FORMCHECK_DEFAULT_DELIVERY_DELAY = { minMinutes: 120, maxMinutes: 180 } as const;
+/** Garde-fou : jamais plus de 24 h, quelle que soit la variable. */
+const FORMCHECK_MAX_DELIVERY_DELAY_MINUTES = 24 * 60;
+
+/**
+ * FORMCHECK_DELIVERY_DELAY_MINUTES (facultative) :
+ *   absente ou invalide -> 120 à 180 min (défaut)
+ *   "0"                 -> livraison immédiate
+ *   "90"                -> 90 min fixes
+ *   "120-180"           -> tirage aléatoire entre 120 et 180 min
+ */
+export function getFormcheckDeliveryDelay(env: NodeJS.ProcessEnv = process.env): { minMinutes: number; maxMinutes: number } {
+  const raw = String(env.FORMCHECK_DELIVERY_DELAY_MINUTES ?? "").trim();
+  if (!raw) return { ...FORMCHECK_DEFAULT_DELIVERY_DELAY };
+  const match = raw.match(/^(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?$/);
+  if (!match) return { ...FORMCHECK_DEFAULT_DELIVERY_DELAY };
+  const a = Number(match[1]);
+  const b = match[2] === undefined ? a : Number(match[2]);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return { ...FORMCHECK_DEFAULT_DELIVERY_DELAY };
+  const minMinutes = Math.min(Math.min(a, b), FORMCHECK_MAX_DELIVERY_DELAY_MINUTES);
+  const maxMinutes = Math.min(Math.max(a, b), FORMCHECK_MAX_DELIVERY_DELAY_MINUTES);
+  return { minMinutes, maxMinutes };
+}
+
+/** Délai tiré pour une analyse, en millisecondes (0 = livraison immédiate). */
+export function pickFormcheckDeliveryDelayMs(env: NodeJS.ProcessEnv = process.env, random: () => number = Math.random): number {
+  const { minMinutes, maxMinutes } = getFormcheckDeliveryDelay(env);
+  if (maxMinutes <= 0) return 0;
+  const minutes = minMinutes + (maxMinutes - minMinutes) * Math.min(Math.max(random(), 0), 1);
+  return Math.round(minutes * 60_000);
+}
+
+/** Date de livraison programmée à partir de l'heure d'upload (null = livrer dès que le rapport est prêt). */
+export function computeFormcheckDeliverAfter(uploadedAt: Date, env: NodeJS.ProcessEnv = process.env, random: () => number = Math.random): Date | null {
+  const delayMs = pickFormcheckDeliveryDelayMs(env, random);
+  return delayMs > 0 ? new Date(uploadedAt.getTime() + delayMs) : null;
+}
+
 export function getFormcheckAdminEmail(env: NodeJS.ProcessEnv = process.env): string {
   return String(env.ADMIN_NOTIF_EMAIL || env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com").trim();
 }

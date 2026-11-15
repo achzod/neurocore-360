@@ -9,6 +9,11 @@
  * rapport livré (limites indiquées) ou une demande de refilmer. Le statut
  * needs_review ne sert plus qu'aux pannes techniques persistantes (OpenAI,
  * envoi d'email, frames absentes) : crédit libéré, client prévenu, alerte admin.
+ *
+ * Livraison différée : l'analyse et le PDF sont produits dès la prise du job,
+ * puis l'envoi attend deliver_after (fixée à l'upload, 2 à 3 h plus tard par
+ * défaut). L'attente est en base (status 'scheduled', next_attempt_at) : un
+ * redémarrage ne perd rien. Refus et pannes techniques restent immédiats.
  */
 import { decideFormcheckOutcome, detectedExerciseLabel, normalizeFormcheckAnalysis, runFormcheckVisionAnalysis, type FormcheckAnalysis, type VisionFrame, type VisionResult } from "./analysis";
 import { annotateFrame } from "./annotate";
@@ -32,12 +37,13 @@ export interface FormcheckWorkerDeps {
   reject: typeof store.markRejectedAndRelease;
   needsReview: typeof store.markNeedsReviewAndRelease;
   retry: typeof store.scheduleRetry;
+  schedule: typeof store.scheduleDelivery;
   balance: (email: string) => Promise<{ available: number }>;
   links: (email: string, analysisId: string) => { uploadUrl: string; pdfUrl: string };
   now: () => Date;
 }
 
-export type JobOutcome = "delivered" | "rejected" | "retry" | "needs_review";
+export type JobOutcome = "delivered" | "rejected" | "retry" | "needs_review" | "scheduled";
 
 async function escalate(job: ClaimedAnalysis, deps: FormcheckWorkerDeps, reason: string): Promise<JobOutcome> {
   const settled = await deps.needsReview(job.id, reason);
@@ -98,15 +104,17 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
     analysis = vision.analysis;
   }
 
-  // 2. Annotation des frames fautives, PDF, envoi. L'exercice affiché est celui détecté par le modèle.
+  // 2. Annotation des frames fautives, PDF (tout de suite), puis envoi à l'heure prévue.
   const exerciseLabel = detectedExerciseLabel(analysis);
-  try {
+  const readyAnalysis = analysis;
+  // Construit le rapport HTML (annotation comprise). Inutile quand le PDF est déjà stocké.
+  const buildHtml = async (): Promise<string> => {
     // Une image annotée par erreur (même si deux erreurs tombent sur la même frame),
     // avec uniquement les formes de cette erreur et son numéro.
     const annotatedByIndex = new Map<number, Buffer>();
     const errorImages: Array<Buffer | null> = [];
-    for (let i = 0; i < analysis.errors.length; i++) {
-      const error = analysis.errors[i];
+    for (let i = 0; i < readyAnalysis.errors.length; i++) {
+      const error = readyAnalysis.errors[i];
       const frame = frames.find((f) => f.index === error.frame_index);
       if (!frame) { errorImages.push(null); continue; }
       if (error.annotations.length === 0) { errorImages.push(frame.jpeg); continue; }
@@ -117,17 +125,21 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
         await deps.saveAnnotated(job.id, frame.index, annotated);
       }
     }
-    const html = buildFormcheckReportHtml({
+    return buildFormcheckReportHtml({
       analysisId: job.id,
       email: job.email,
       exerciseLabel,
       createdAt: deps.now(),
-      analysis,
+      analysis: readyAnalysis,
       frames: frames.map((f) => ({ ...f, annotated: annotatedByIndex.get(f.index) || f.annotated })),
       errorImages,
     });
+  };
+  try {
+    let html: string | null = null;
     let pdf: Buffer | null = job.pdf && job.pdf.length > 0 ? job.pdf : null;
     if (!pdf) {
+      html = await buildHtml();
       try {
         pdf = await deps.renderPdf(html);
         await deps.savePdf(job.id, pdf);
@@ -139,6 +151,14 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
         pdf = null;
       }
     }
+
+    // Rapport prêt : s'il est trop tôt, on programme l'envoi (crédit toujours réservé).
+    const deliverAfter = job.deliver_after ? new Date(job.deliver_after) : null;
+    if (deliverAfter && Number.isFinite(deliverAfter.getTime()) && deliverAfter.getTime() > deps.now().getTime()) {
+      await deps.schedule(job.id, deliverAfter);
+      return "scheduled";
+    }
+    if (!pdf && !html) html = await buildHtml();
 
     const balance = await deps.balance(job.email);
     // Le crédit en cours sera consommé juste après : on l'affiche déjà déduit.
@@ -158,7 +178,7 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
       metadata: { analysisId: job.id, score: analysis.score, format: pdf ? "pdf" : "html" },
       attachments: pdf
         ? { [`FormCheck_${pdfSlug(exerciseLabel)}_${job.id.slice(0, 8)}.pdf`]: pdf }
-        : { [`FormCheck_${pdfSlug(exerciseLabel)}_${job.id.slice(0, 8)}.html`]: Buffer.from(html, "utf8") },
+        : { [`FormCheck_${pdfSlug(exerciseLabel)}_${job.id.slice(0, 8)}.html`]: Buffer.from(html || "", "utf8") },
     });
     if (!sent) return retryOrEscalate(job, deps, "EMAIL_SEND_FAILED");
     await deps.consume(job.id);
@@ -189,6 +209,7 @@ export function createProductionDeps(baseUrl: () => string): FormcheckWorkerDeps
     reject: store.markRejectedAndRelease,
     needsReview: store.markNeedsReviewAndRelease,
     retry: store.scheduleRetry,
+    schedule: store.scheduleDelivery,
     balance: store.getFormcheckBalance,
     links: (email, analysisId) => formcheckLinks(baseUrl(), email, analysisId),
     now: () => new Date(),
