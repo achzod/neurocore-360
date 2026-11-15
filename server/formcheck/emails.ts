@@ -45,11 +45,12 @@ export function buildAccessEmail(input: { uploadUrl: string; credits: number; av
        <li>téléphone posé et stable, à hauteur de hanche, de profil pour le squat, le soulevé de terre et le hip thrust ;</li>
        <li>corps entier et charge visibles du début à la fin, bonne lumière.</li>
      </ul>
+     <p>Dès que ta vidéo est envoyée, tu reçois ton rapport complet par email <strong>sous 3 heures</strong>.</p>
      <p>Un crédit est utilisé seulement quand ton rapport est livré. Si ta vidéo est vraiment inexploitable, je te demande de la refilmer et ton crédit reste intact.</p>
      <p style="color:${C.muted};font-size:13px;">Garde cet email : ce lien te sert pour toutes tes prochaines vidéos.</p>`,
     { href: input.uploadUrl, label: "Envoyer ma vidéo" },
   );
-  const text = `Paiement reçu : ${input.credits} analyse${plural} FormCheck. Crédits disponibles : ${input.available}.\nEnvoie ta vidéo ici : ${input.uploadUrl}\nUne seule série, 60 s maximum, .mp4 ou .mov, 200 Mo maximum. Le crédit n'est utilisé que si le rapport est livré.`;
+  const text = `Paiement reçu : ${input.credits} analyse${plural} FormCheck. Crédits disponibles : ${input.available}.\nEnvoie ta vidéo ici : ${input.uploadUrl}\nUne seule série, 60 s maximum, .mp4 ou .mov, 200 Mo maximum. Ton rapport arrive par email sous 3 heures après l'envoi de ta vidéo. Le crédit n'est utilisé que si le rapport est livré.`;
   return { subject, html, text };
 }
 
@@ -106,10 +107,24 @@ export function buildReshootEmail(input: { exerciseLabel?: string | null; reason
     "J'ai besoin d'une nouvelle vidéo",
     `<p>Je n'ai pas pu analyser ${what} :</p>
      <p style="background:#FFF8C2;padding:10px 12px;border-radius:6px;">${esc(input.reason)}</p>
-     <p><strong>Ton crédit n'a pas été utilisé.</strong> Refilme ta série (téléphone posé, ton mouvement visible du début à la fin) et renvoie-la : ton rapport arrive dans la foulée.</p>`,
+     <p><strong>Ton crédit n'a pas été utilisé.</strong> Refilme ta série (téléphone posé, ton mouvement visible du début à la fin) et renvoie-la : tu reçois ton rapport sous 3 heures.</p>`,
     { href: input.uploadUrl, label: "Renvoyer une vidéo" },
   );
-  const text = `Je n'ai pas pu analyser ${input.exerciseLabel ? `ta vidéo de ${input.exerciseLabel}` : "ta vidéo"} : ${input.reason}\nTon crédit n'a pas été utilisé. Renvoie une vidéo ici : ${input.uploadUrl}`;
+  const text = `Je n'ai pas pu analyser ${input.exerciseLabel ? `ta vidéo de ${input.exerciseLabel}` : "ta vidéo"} : ${input.reason}\nTon crédit n'a pas été utilisé. Renvoie une vidéo ici : ${input.uploadUrl}\nTu reçois ton rapport sous 3 heures.`;
+  return { subject, html, text };
+}
+
+/** Accusé de réception envoyé à l'upload : la vidéo est bien arrivée, le rapport suit sous 3 heures. */
+export function buildReceivedEmail(input: { uploadUrl: string }) {
+  const subject = "FormCheck : ta vidéo est bien reçue";
+  const html = wrapFormcheckEmail(
+    "Ta vidéo est bien reçue",
+    `<p>J'ai bien reçu ta vidéo, ton analyse est en cours. Tu reçois ton rapport complet par email <strong>sous 3 heures</strong>.</p>
+     <p>Ton crédit n'est utilisé qu'au moment où ton rapport est livré. Tu peux suivre l'avancement à tout moment depuis ton espace.</p>`,
+    { href: input.uploadUrl, label: "Voir mon espace FormCheck" },
+    achzodEmailLogoUrl(input.uploadUrl, "dark"),
+  );
+  const text = `J'ai bien reçu ta vidéo. Tu reçois ton rapport complet par email sous 3 heures.\nTon crédit n'est utilisé qu'au moment où ton rapport est livré.\nTon espace FormCheck : ${input.uploadUrl}`;
   return { subject, html, text };
 }
 

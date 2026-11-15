@@ -13,6 +13,9 @@ import {
   FORMCHECK_PACKS,
   frameCountForDuration,
   FORMCHECK_DEFAULT_MIN_CONFIDENCE,
+  computeFormcheckDeliverAfter,
+  getFormcheckDeliveryDelay,
+  pickFormcheckDeliveryDelayMs,
   getFormcheckAdminEmail,
   getFormcheckMinConfidence,
   getFormcheckModel,
@@ -25,7 +28,7 @@ import {
 import { decideFormcheckOutcome, detectedExerciseLabel, FORMCHECK_ANALYSIS_SCHEMA, FORMCHECK_HARD_REJECTION_CODES, buildFormcheckPrompt, FORMCHECK_INSTRUCTIONS, normalizeFormcheckAnalysis } from "./formcheck/analysis";
 import { angleDegrees, annotateFrame, buildAnnotationSvg } from "./formcheck/annotate";
 import { buildFormcheckReportHtml, jpegSize, scoreVerdict } from "./formcheck/report";
-import { buildAccessEmail, buildIssueEmail, buildReportEmail, buildReshootEmail } from "./formcheck/emails";
+import { buildAccessEmail, buildIssueEmail, buildReceivedEmail, buildReportEmail, buildReshootEmail } from "./formcheck/emails";
 import { parseFfmpegProbe } from "./formcheck/video";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -431,6 +434,7 @@ test("client emails are French, accented, without em dash, and never promise any
     buildReportEmail({ exerciseLabel: "Squat barre haute", score: 74, summary: "Bonne base.", limits: ["Tes pieds sont coupés : je n'ai pas pu juger tes appuis."], pdfUrl: "https://x/p", uploadUrl: "https://x/u", available: 2 }),
     buildReshootEmail({ reason: "Je ne te vois pas sur la vidéo.", uploadUrl: "https://x/u" }),
     buildIssueEmail({ exerciseLabel: "Squat barre haute", uploadUrl: "https://x/u" }),
+    buildReceivedEmail({ uploadUrl: "https://x/u?token=t" }),
   ];
   assert.match(mails[1].subject, /Squat barre haute/);
   assert.match(mails[1].html, /Exercice détecté : <strong>Squat barre haute<\/strong>/);
@@ -526,4 +530,68 @@ test("the upload page is a real noindex SPA route (no 404) and is routed client 
   assert.ok(block.length > 0 && staticServer.includes('ssrSimplePage(["/formcheck/upload"]'));
   assert.match(block.slice(0, 400), /robots: "noindex, follow"/);
   assert.match(read("client/src/App.tsx"), /<Route path="\/formcheck\/upload" component=\{FormCheckUpload\} \/>/);
+});
+
+// ---------------------------------------------------------------------------
+// Livraison différée : 2 à 3 h après l'upload
+// ---------------------------------------------------------------------------
+
+test("delivery delay defaults to a random 120 to 180 minutes after upload", () => {
+  assert.deepEqual(getFormcheckDeliveryDelay({}), { minMinutes: 120, maxMinutes: 180 });
+  assert.equal(pickFormcheckDeliveryDelayMs({}, () => 0), 120 * 60_000);
+  assert.equal(pickFormcheckDeliveryDelayMs({}, () => 1), 180 * 60_000);
+  assert.equal(pickFormcheckDeliveryDelayMs({}, () => 0.5), 150 * 60_000);
+  for (let i = 0; i < 2000; i++) {
+    const ms = pickFormcheckDeliveryDelayMs({});
+    assert.ok(ms >= 120 * 60_000 && ms <= 180 * 60_000, String(ms));
+  }
+  const uploadedAt = new Date("2026-11-15T10:00:00Z");
+  const at = computeFormcheckDeliverAfter(uploadedAt, {}, () => 0.25)!;
+  assert.equal(at.getTime() - uploadedAt.getTime(), 135 * 60_000);
+});
+
+test("FORMCHECK_DELIVERY_DELAY_MINUTES: 0 delivers right away, a number or a range overrides, junk keeps the default", () => {
+  assert.equal(pickFormcheckDeliveryDelayMs({ FORMCHECK_DELIVERY_DELAY_MINUTES: "0" }), 0);
+  assert.equal(computeFormcheckDeliverAfter(new Date(), { FORMCHECK_DELIVERY_DELAY_MINUTES: "0" }), null);
+  assert.equal(pickFormcheckDeliveryDelayMs({ FORMCHECK_DELIVERY_DELAY_MINUTES: "90" }, () => 0.7), 90 * 60_000);
+  assert.deepEqual(getFormcheckDeliveryDelay({ FORMCHECK_DELIVERY_DELAY_MINUTES: "30-60" }), { minMinutes: 30, maxMinutes: 60 });
+  assert.deepEqual(getFormcheckDeliveryDelay({ FORMCHECK_DELIVERY_DELAY_MINUTES: "60 - 30" }), { minMinutes: 30, maxMinutes: 60 });
+  for (const junk of ["", "abc", "-5", "2h", "1-2-3"]) {
+    assert.deepEqual(getFormcheckDeliveryDelay({ FORMCHECK_DELIVERY_DELAY_MINUTES: junk }), { minMinutes: 120, maxMinutes: 180 }, junk);
+  }
+  assert.deepEqual(getFormcheckDeliveryDelay({ FORMCHECK_DELIVERY_DELAY_MINUTES: "99999" }), { minMinutes: 1440, maxMinutes: 1440 }, "plafonné à 24 h");
+});
+
+test("deliver_after is an additive nullable column and the queue picks scheduled analyses back up", () => {
+  const store = read("server/formcheck/store.ts");
+  assert.match(store, /ALTER TABLE formcheck_analyses ADD COLUMN IF NOT EXISTS deliver_after timestamptz;/);
+  assert.doesNotMatch(store, /DROP COLUMN|DROP TABLE|TRUNCATE|DELETE FROM/i);
+  assert.match(store, /status IN \('queued', 'retry', 'scheduled'\) AND next_attempt_at <= now\(\)/);
+  assert.match(read("server/formcheck/routes.ts"), /computeFormcheckDeliverAfter\(new Date\(\)\)/);
+});
+
+test("client copy promises the report within 3 hours, in the first person, never 'a few minutes'", () => {
+  const files = [
+    "client/src/pages/offers/FormCheck.tsx",
+    "client/src/components/formcheck/StepsDemo.tsx",
+    "client/src/pages/FormCheckUpload.tsx",
+    "server/formcheck/routes.ts",
+    "server/formcheck/emails.ts",
+  ];
+  for (const file of files) {
+    const src = read(file);
+    // « quelques minutes » reste permis pour le lien d'accès après paiement, jamais pour le rapport.
+    assert.doesNotMatch(src, /rapport[^."]{0,60}(quelques minutes|rapidement|dans la foulée)/i, file);
+    assert.doesNotMatch(src, /Quelques minutes\./, file);
+    assert.doesNotMatch(src, /\bIA\b|intelligence artificielle|Achzod (regarde|vérifie)/, file);
+  }
+  assert.match(read("client/src/pages/offers/FormCheck.tsx"), /sous 3 heures/);
+  assert.match(read("client/src/components/formcheck/StepsDemo.tsx"), /sous 3 heures/);
+  assert.match(read("client/src/pages/FormCheckUpload.tsx"), /sous 3 heures/);
+  assert.match(read("server/formcheck/routes.ts"), /FORMCHECK_UPLOAD_ACCEPTED_MESSAGE = "Vidéo reçue\. Tu reçois ton rapport par email sous 3 heures\."/);
+  assert.match(buildAccessEmail({ uploadUrl: "https://x/u", credits: 1, available: 1 }).html, /sous 3 heures/);
+  assert.match(buildAccessEmail({ uploadUrl: "https://x/u", credits: 1, available: 1 }).text, /sous 3 heures/);
+  const received = buildReceivedEmail({ uploadUrl: "https://x/u" });
+  assert.match(received.subject, /ta vidéo est bien reçue/);
+  assert.match(received.html + received.text, /sous 3 heures/);
 });

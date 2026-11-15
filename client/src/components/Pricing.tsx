@@ -91,7 +91,7 @@ const tiers: PricingTier[] = [
       { text: "Exercice reconnu automatiquement", included: true },
       { text: "Erreurs annotées sur tes images", included: true },
       { text: "3 corrections prioritaires", included: true },
-      { text: "Rapport PDF en quelques minutes", included: true },
+      { text: "Rapport PDF sous 3 heures", included: true },
       { text: "3 analyses : 24,90 €", included: true },
       { text: "6 analyses : 44,90 €", included: true },
       { text: "Sans abonnement", included: true },

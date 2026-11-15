@@ -18,15 +18,18 @@ import {
   FORMCHECK_PACKS,
   FORMCHECK_PLAN_TYPE,
   isFormcheckWorkerEnabled,
+  computeFormcheckDeliverAfter,
   resolveFormcheckPack,
   validateUploadedFileMeta,
   validateVideoDuration,
 } from "./config";
-import { buildAccessEmail } from "./emails";
+import { buildAccessEmail, buildReceivedEmail } from "./emails";
 import { formcheckLinks } from "./links";
 import * as store from "./store";
 import { extractFrames, probeVideo } from "./video";
 import { createProductionDeps, runFormcheckQueueOnce } from "./worker";
+
+export const FORMCHECK_UPLOAD_ACCEPTED_MESSAGE = "Vidéo reçue. Tu reçois ton rapport par email sous 3 heures.";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -283,8 +286,11 @@ export function registerFormcheckRoutes(app: Express) {
           return res.status(422).json({ error: "UNREADABLE", message: "Je n'arrive pas à extraire des images nettes de cette vidéo. Refilme ta série avec l'appareil photo de ton téléphone et renvoie-la." });
         }
 
+        // Livraison programmée dès l'upload (2 à 3 h par défaut), stockée en base.
+        const deliverAfter = computeFormcheckDeliverAfter(new Date());
         const analysisId = await store.reserveCreditAndEnqueue({
           email,
+          deliverAfter,
           durationS: probe.durationS!,
           videoMeta: { originalName: file.originalname.slice(0, 200), sizeBytes: file.size, mimeType: file.mimetype, width: probe.width, height: probe.height, frameCount: frames.length },
           frames,
@@ -292,7 +298,11 @@ export function registerFormcheckRoutes(app: Express) {
         if (!analysisId) return res.status(402).json({ error: "NO_CREDIT", message: "Tu n'as plus de crédit disponible." });
 
         kickFormcheckWorker();
-        res.status(202).json({ analysisId, status: "queued", message: "Vidéo reçue. Ton rapport arrive par email dans quelques minutes." });
+        // Accusé de réception, sans bloquer la réponse.
+        const received = buildReceivedEmail({ uploadUrl: formcheckLinks(getFormcheckBaseUrl(), email).uploadUrl });
+        sendMail({ to: email, ...received, emailType: "sendFormcheckReceivedEmail", metadata: { analysisId } })
+          .catch((error) => console.error("[FormCheck] received email error:", error));
+        res.status(202).json({ analysisId, status: "queued", message: FORMCHECK_UPLOAD_ACCEPTED_MESSAGE });
       } catch (error: any) {
         console.error("[FormCheck] upload error:", error?.message || error);
         if (String(error?.message || "").includes("FFMPEG_NOT_AVAILABLE")) {
@@ -310,7 +320,8 @@ export function registerFormcheckRoutes(app: Express) {
     const row = await store.getAnalysisForEmail(String(req.params.id), (req as any).formcheckEmail).catch(() => null);
     if (!row) return res.status(404).json({ error: "NOT_FOUND" });
     const { pdf, ...rest } = row;
-    res.json({ ...rest, hasPdf: Boolean(pdf && pdf.length) });
+    // Tant que le rapport n'est pas livré, le client voit « en cours » (pas de score, pas de PDF).
+    res.json({ ...store.toClientAnalysisView(rest), hasPdf: rest.status === "delivered" && Boolean(pdf && pdf.length) });
   });
 
   app.get("/api/formcheck/analyses/:id/pdf", requireAccess, async (req, res) => {

@@ -445,7 +445,7 @@ export default function DiscoveryScanAds() {
                   "Note technique sur 100",
                   "Erreurs annotées sur tes images",
                   "3 corrections prioritaires",
-                  "Rapport PDF en quelques minutes",
+                  "Rapport PDF sous 3 heures",
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-white/80">
                     <Check className="text-[#FCDD00] flex-shrink-0 mt-0.5" size={18} />

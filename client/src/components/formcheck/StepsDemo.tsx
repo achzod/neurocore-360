@@ -22,7 +22,7 @@ const STEPS = [
   {
     icon: FileText,
     title: "Reçois ton rapport PDF",
-    text: "Ton rapport arrive par email en quelques minutes. Ta vidéo est supprimée après l'analyse.",
+    text: "Ton rapport arrive par email sous 3 heures. Ta vidéo est supprimée après l'analyse.",
   },
 ];
 

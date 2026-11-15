@@ -19,8 +19,9 @@ type Me = { email: string; balance: Balance; analyses: AnalysisRow[] };
 
 const STATUS_LABEL: Record<string, string> = {
   queued: "En file d'attente",
-  processing: "Analyse en cours",
-  retry: "Analyse en cours",
+  processing: "Analyse en cours, rapport sous 3 heures",
+  retry: "Analyse en cours, rapport sous 3 heures",
+  scheduled: "Analyse en cours, rapport sous 3 heures",
   delivered: "Rapport envoyé",
   rejected: "À refilmer (crédit non utilisé)",
   needs_review: "Non abouti, renvoie ta vidéo (crédit non utilisé)",
@@ -117,7 +118,8 @@ export default function FormCheckUpload() {
     if (!token || !me) return;
     const pending = me.analyses.some((a) => ["queued", "processing", "retry"].includes(a.status));
     if (!pending) return;
-    const id = setInterval(() => loadMe(token).catch(() => {}), 10_000);
+    // Rapport livré sous 3 heures : un rafraîchissement par minute suffit.
+    const id = setInterval(() => loadMe(token).catch(() => {}), 60_000);
     return () => clearInterval(id);
   }, [token, me, loadMe]);
 
@@ -160,7 +162,7 @@ export default function FormCheckUpload() {
       let data: any = {};
       try { data = JSON.parse(xhr.responseText || "{}"); } catch { /* réponse vide */ }
       if (xhr.status === 202) {
-        setMessage(data.message || "Vidéo reçue. Ton rapport arrive par email dans quelques minutes.");
+        setMessage(data.message || "Vidéo reçue. Tu reçois ton rapport par email sous 3 heures.");
         setFile(null);
         if (fileInput.current) fileInput.current.value = "";
         loadMe(token).catch(() => {});

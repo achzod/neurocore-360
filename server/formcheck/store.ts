@@ -5,6 +5,11 @@
  *   upload accepté      -> credit_state = reserved (credits_reserved + 1)
  *   rapport livré       -> consumed  (reserved - 1, used + 1)
  *   vidéo rejetée/échec -> released  (reserved - 1)
+ *
+ * Livraison différée : le rapport (analyse + PDF) est produit tout de suite,
+ * puis l'analyse passe en status = 'scheduled' jusqu'à deliver_after (fixée à
+ * l'upload, 2 à 3 h plus tard par défaut). Le worker la reprend à cette heure,
+ * y compris après un redémarrage, envoie l'email et consomme alors le crédit.
  * Chaque transition est conditionnée par l'état courant : elle est idempotente.
  */
 import { randomUUID } from "node:crypto";
@@ -71,6 +76,9 @@ DO $$ BEGIN
   END IF;
   ALTER TABLE formcheck_analyses ALTER COLUMN exercise_label DROP NOT NULL;
 END $$;
+-- Livraison différée (additif, nullable) : heure à partir de laquelle le rapport peut être envoyé.
+-- NULL = livrer dès que le rapport est prêt (analyses antérieures, ou délai à 0).
+ALTER TABLE formcheck_analyses ADD COLUMN IF NOT EXISTS deliver_after timestamptz;
 CREATE INDEX IF NOT EXISTS formcheck_analyses_queue_idx ON formcheck_analyses (status, next_attempt_at);
 CREATE INDEX IF NOT EXISTS formcheck_analyses_email_idx ON formcheck_analyses (email, created_at DESC);
 CREATE TABLE IF NOT EXISTS formcheck_frames (
@@ -180,6 +188,8 @@ export interface NewAnalysisInput {
   durationS: number;
   videoMeta: Record<string, unknown>;
   frames: Array<{ index: number; timestampS: number; jpeg: Buffer }>;
+  /** Heure de livraison programmée (null = dès que le rapport est prêt). */
+  deliverAfter?: Date | null;
 }
 
 /** Réserve un crédit et met l'analyse en file. Retourne null si aucun crédit disponible. */
@@ -200,9 +210,9 @@ export async function reserveCreditAndEnqueue(input: NewAnalysisInput): Promise<
       [email],
     );
     await client.query(
-      `INSERT INTO formcheck_analyses (id, email, duration_s, video_meta)
-       VALUES ($1, $2, $3, $4)`,
-      [id, email, input.durationS, JSON.stringify(input.videoMeta)],
+      `INSERT INTO formcheck_analyses (id, email, duration_s, video_meta, deliver_after)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [id, email, input.durationS, JSON.stringify(input.videoMeta), input.deliverAfter ?? null],
     );
     for (const frame of input.frames) {
       await client.query(
@@ -265,6 +275,8 @@ export interface ClaimedAnalysis {
   response_id: string | null;
   cost_usd: number | null;
   pdf: Buffer | null;
+  /** Heure de livraison programmée (null = immédiate). Absent dans les anciens appels : immédiate. */
+  deliver_after?: Date | null;
 }
 
 /** Prend la prochaine analyse due (ou une analyse bloquée en processing depuis 20 min). */
@@ -277,12 +289,12 @@ export async function claimNextAnalysis(): Promise<ClaimedAnalysis | null> {
           SELECT id FROM formcheck_analyses
            WHERE credit_state = 'reserved'
              AND attempts < $1
-             AND ((status IN ('queued', 'retry') AND next_attempt_at <= now())
+             AND ((status IN ('queued', 'retry', 'scheduled') AND next_attempt_at <= now())
                OR (status = 'processing' AND locked_at < now() - interval '20 minutes'))
            ORDER BY next_attempt_at ASC
            FOR UPDATE SKIP LOCKED
            LIMIT 1)
-        RETURNING id, email, exercise_label, attempts, duration_s, result, model, response_id, cost_usd, pdf`,
+        RETURNING id, email, exercise_label, attempts, duration_s, result, model, response_id, cost_usd, pdf, deliver_after`,
       [FORMCHECK_MAX_ATTEMPTS],
     )).rows[0];
     return row ? { ...row, duration_s: Number(row.duration_s) } : null;
@@ -310,6 +322,22 @@ export async function scheduleRetry(analysisId: string, delayMs: number, error: 
             next_attempt_at = now() + ($3::text || ' milliseconds')::interval, updated_at = now()
       WHERE id = $1`,
     [analysisId, error.slice(0, 2000), String(Math.round(delayMs))],
+  );
+}
+
+/**
+ * Rapport prêt, livraison programmée : l'analyse attend deliver_after sans être
+ * reprise avant. La tentative en cours est rendue (attempts - 1) : l'attente n'est
+ * pas un échec, les relances d'envoi gardent toutes leurs tentatives.
+ */
+export async function scheduleDelivery(analysisId: string, deliverAfter: Date): Promise<void> {
+  const pool = await getPool();
+  await pool.query(
+    `UPDATE formcheck_analyses
+        SET status = 'scheduled', locked_at = NULL, next_attempt_at = $2,
+            attempts = GREATEST(0, attempts - 1), updated_at = now()
+      WHERE id = $1 AND credit_state = 'reserved'`,
+    [analysisId, deliverAfter],
   );
 }
 
@@ -348,6 +376,16 @@ export async function saveAnnotatedFrame(analysisId: string, index: number, anno
   );
 }
 
+/**
+ * Vue client d'une analyse : tant que le rapport n'est pas livré, le client voit
+ * seulement « analyse en cours » (ni score, ni exercice détecté, ni heure prévue).
+ */
+export function toClientAnalysisView<T extends { status: string; score?: unknown; exercise_label?: unknown; decision_reason?: unknown }>(row: T): T {
+  if (["delivered", "rejected", "needs_review"].includes(row.status)) return row;
+  const status = row.status === "scheduled" ? "processing" : row.status;
+  return { ...row, status, score: null, exercise_label: null, decision_reason: null };
+}
+
 export async function listAnalysesForEmail(emailRaw: string) {
   await ensureFormcheckTables();
   const pool = await getPool();
@@ -355,7 +393,7 @@ export async function listAnalysesForEmail(emailRaw: string) {
     `SELECT id, exercise_label, status, score, decision_reason, created_at, delivered_at
        FROM formcheck_analyses WHERE email = $1 ORDER BY created_at DESC LIMIT 30`,
     [normalizeEmail(emailRaw)],
-  )).rows;
+  )).rows.map(toClientAnalysisView);
 }
 
 export async function getAnalysisForEmail(id: string, emailRaw: string) {
@@ -377,7 +415,9 @@ export async function getFormcheckOpsStats(sinceHours = 6) {
        count(*) FILTER (WHERE status = 'delivered' AND delivered_at > now() - ($1::text || ' hours')::interval) AS delivered,
        count(*) FILTER (WHERE status = 'rejected' AND updated_at > now() - ($1::text || ' hours')::interval) AS rejected,
        count(*) FILTER (WHERE status = 'needs_review') AS needs_review,
-       count(*) FILTER (WHERE status IN ('queued', 'retry', 'processing')) AS pending,
+       count(*) FILTER (WHERE status IN ('queued', 'retry', 'processing', 'scheduled')) AS pending,
+       count(*) FILTER (WHERE status = 'scheduled') AS scheduled,
+       (SELECT extract(epoch FROM min(next_attempt_at)) FROM formcheck_analyses WHERE status = 'scheduled') AS next_delivery_epoch,
        (SELECT count(*) FROM formcheck_purchases WHERE created_at > now() - ($1::text || ' hours')::interval) AS purchases,
        (SELECT COALESCE(sum(amount_cents), 0) FROM formcheck_purchases WHERE created_at > now() - ($1::text || ' hours')::interval) AS revenue_cents
      FROM formcheck_analyses`,

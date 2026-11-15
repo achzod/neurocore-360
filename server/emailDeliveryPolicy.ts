@@ -6,9 +6,10 @@ const normalizeEmailPolicyText = (value: unknown): string =>
     .replace(/\s+/g, " ")
     .trim();
 
-/** FormCheck : accès payé, rapport payé, demande de refilmer, incident. Jamais bloqués par un désabonnement marketing. */
+/** FormCheck : accès payé, vidéo reçue, rapport payé, demande de refilmer, incident. Jamais bloqués par un désabonnement marketing. */
 export const FORMCHECK_TRANSACTIONAL_EMAIL_TYPES = new Set([
   "sendFormcheckAccessEmail",
+  "sendFormcheckReceivedEmail",
   "sendFormcheckReportEmail",
   "sendFormcheckReshootEmail",
   "sendFormcheckIssueEmail",
