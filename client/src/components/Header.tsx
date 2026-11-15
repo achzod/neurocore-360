@@ -20,7 +20,7 @@ const PRODUCTS = [
   { name: "Peptides Engine", href: "/offers/peptides-engine" },
 ];
 
-export function Header() {
+export function Header({ hideCoachingLink = false }: { hideCoachingLink?: boolean } = {}) {
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -124,6 +124,7 @@ export function Header() {
               <MessageCircle className="h-3.5 w-3.5" />
               WhatsApp
             </a>
+            {!hideCoachingLink && (
             <a 
               href="https://www.achzodcoaching.com" 
               target="_blank" 
@@ -132,6 +133,7 @@ export function Header() {
             >
               Coaching
             </a>
+            )}
             {userEmail ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

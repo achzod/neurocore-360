@@ -5,7 +5,7 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { trackWhatsAppClick } from "@/lib/analytics";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 
-export function Footer() {
+export function Footer({ hideCoachingLink = false }: { hideCoachingLink?: boolean } = {}) {
   const whatsappDestination = buildWhatsAppUrl(
     "Salut Achzod, je viens d'APEXLABS. Je veux ton avis pour savoir quelle offre ou quel coaching est adapte a mon cas."
   );
@@ -140,6 +140,7 @@ export function Footer() {
                   WhatsApp Achzod
                 </a>
               </li>
+              {!hideCoachingLink && (
               <li>
                 <a
                   href="https://achzodcoaching.com"
@@ -150,6 +151,7 @@ export function Footer() {
                   achzodcoaching.com
                 </a>
               </li>
+              )}
             </ul>
           </div>
         </div>

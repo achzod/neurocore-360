@@ -14,6 +14,9 @@ const HIDDEN_PREFIXES = [
   "/peptides-preview",
   "/peptides-engine",
   "/checkout",
+  // Page de vente FormCheck : un seul appel à l'action (les packs), CTA collant mobile dédié.
+  "/offers/formcheck",
+  "/formcheck",
 ];
 
 const ORIENTATION_URL =
