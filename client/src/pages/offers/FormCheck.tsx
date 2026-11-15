@@ -134,11 +134,11 @@ const FILMING_TIPS = [
 const FAQ = [
   {
     q: "Comment se passe l'analyse ?",
-    a: "Après ton paiement, tu reçois un lien personnel par email. Tu envoies la vidéo de ta série, sans rien avoir à préciser : l'exercice est reconnu automatiquement. Des images sont extraites sur toute la série, puis ta technique est analysée de façon automatique selon la méthode et la grille d'analyse d'Achzod. Ton rapport PDF arrive par email, en général en quelques minutes.",
+    a: "Après ton paiement, tu reçois un lien personnel par email. Tu envoies la vidéo de ta série, sans rien avoir à préciser : l'exercice est reconnu automatiquement. Des images sont extraites sur toute la série, puis ta technique est analysée selon ma méthode et ma grille d'analyse. Ton rapport PDF arrive par email, en général en quelques minutes.",
   },
   {
     q: "Qui a conçu la méthode ?",
-    a: "Achzod, coach expert en biomécanique, certifié NASM (CPT, CNC, CSNC). La grille d'analyse, les critères, les corrections et les exercices correctifs de FormCheck suivent sa méthode.",
+    a: "Moi, Achzod, coach expert en biomécanique, certifié NASM (CPT, CNC, CSNC). La grille d'analyse, les critères, les corrections et les exercices correctifs de FormCheck suivent ma méthode.",
   },
   {
     q: "Faut-il créer un compte ?",
@@ -146,7 +146,7 @@ const FAQ = [
   },
   {
     q: "Quand un crédit est-il utilisé ?",
-    a: "Uniquement quand ton rapport est livré. Si ta vidéo est inexploitable (corps coupé, trop sombre) ou si aucun exercice de musculation n'y est reconnu, tu reçois un message clair pour la refilmer et ton crédit reste intact.",
+    a: "Uniquement quand ton rapport est livré. Un cadrage imparfait ne bloque pas ton analyse : ton rapport est livré, avec ses limites signalées. Si ta vidéo est vraiment inexploitable (personne à l'image, aucune répétition, vidéo noire) ou si aucun exercice de musculation n'y est reconnu, je te demande de la refilmer et ton crédit reste intact.",
   },
   {
     q: "Quels exercices sont pris en charge ?",
@@ -302,7 +302,7 @@ export default function FormCheck() {
             </Reveal>
             <Reveal delay={0.1}>
               <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-white/75 sm:text-xl">
-                Filme une série, envoie la vidéo. Elle est analysée selon la grille biomécanique d'Achzod, coach certifié NASM. Ton rapport PDF arrive par email en quelques minutes : score sur 100, erreurs montrées sur tes images, corrections et plan sur 4 semaines.
+                Filme une série, envoie la vidéo. Elle est analysée selon ma grille biomécanique de coach certifié NASM. Ton rapport PDF arrive par email en quelques minutes : score sur 100, erreurs montrées sur tes images, corrections et plan sur 4 semaines.
               </p>
             </Reveal>
             <Reveal delay={0.15}>
@@ -370,7 +370,7 @@ export default function FormCheck() {
             <SectionTitle
               eyebrow="La méthode Achzod"
               title="La grille d'un coach expert en biomécanique."
-              sub="Achzod est coach expert en biomécanique, certifié NASM. FormCheck applique sa méthode : sa grille d'analyse, ses critères de technique, ses corrections et ses consignes. Ta série est passée au crible critère par critère, et chaque correction vient avec la consigne qui va avec."
+              sub="Je suis coach expert en biomécanique, certifié NASM. FormCheck applique ma méthode : ma grille d'analyse, mes critères de technique, mes corrections et mes consignes. Ta série est passée au crible critère par critère, et chaque correction vient avec la consigne qui va avec."
             />
             <Reveal delay={0.1}>
               <div className="mt-8 flex flex-wrap gap-3">
@@ -608,7 +608,7 @@ export default function FormCheck() {
                 <Trash2 className="h-3.5 w-3.5" style={{ color: ACCENT }} /> Vidéo supprimée après l'analyse
               </span>
             </div>
-            <p>Un crédit n'est utilisé que lorsque ton rapport est livré. Vidéo inexploitable ? Tu la refilmes, ton crédit reste intact.</p>
+            <p>Un crédit n'est utilisé que lorsque ton rapport est livré. Vidéo vraiment inexploitable ? Tu la refilmes, ton crédit reste intact.</p>
           </div>
         </div>
       </section>

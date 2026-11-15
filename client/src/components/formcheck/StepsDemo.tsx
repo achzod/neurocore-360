@@ -17,7 +17,7 @@ const STEPS = [
   {
     icon: Video,
     title: "Filme et envoie ta série",
-    text: "Une série, 60 secondes maximum, en .mp4 ou .mov. L'exercice est reconnu automatiquement et ta vidéo est analysée selon la méthode Achzod.",
+    text: "Une série, 60 secondes maximum, en .mp4 ou .mov. L'exercice est reconnu automatiquement et ta vidéo est analysée selon ma méthode.",
   },
   {
     icon: FileText,
@@ -104,7 +104,7 @@ function UploadScreen({ animate: run }: { animate: boolean }) {
           <Check className="h-3.5 w-3.5 text-emerald-400" /> Exercice reconnu automatiquement
         </div>
         <div className="flex items-center gap-2 text-[11px] text-white">
-          <Check className="h-3.5 w-3.5 text-emerald-400" /> Analyse selon la méthode Achzod
+          <Check className="h-3.5 w-3.5 text-emerald-400" /> Analyse selon ma méthode
         </div>
       </motion.div>
     </div>

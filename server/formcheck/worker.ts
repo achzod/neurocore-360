@@ -2,8 +2,13 @@
  * FormCheck V2 : traitement en arrière-plan.
  *
  * File en base (formcheck_analyses), prise de job par FOR UPDATE SKIP LOCKED,
- * relance avec délai croissant, puis alerte admin. Le crédit n'est consommé
- * qu'après l'envoi effectif du rapport.
+ * relance avec délai croissant. Le crédit n'est consommé qu'après l'envoi
+ * effectif du rapport.
+ *
+ * Aucune revue manuelle : une décision d'analyse se termine toujours par un
+ * rapport livré (limites indiquées) ou une demande de refilmer. Le statut
+ * needs_review ne sert plus qu'aux pannes techniques persistantes (OpenAI,
+ * envoi d'email, frames absentes) : crédit libéré, client prévenu, alerte admin.
  */
 import { decideFormcheckOutcome, detectedExerciseLabel, normalizeFormcheckAnalysis, runFormcheckVisionAnalysis, type FormcheckAnalysis, type VisionFrame, type VisionResult } from "./analysis";
 import { annotateFrame } from "./annotate";
@@ -64,7 +69,8 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
 
   // 1. Analyse vision (sautée si un résultat validé existe déjà : relance d'envoi seulement).
   let analysis: FormcheckAnalysis | null = job.result ? normalizeFormcheckAnalysis(job.result, frames.length) : null;
-  if (analysis && decideFormcheckOutcome(analysis).kind !== "deliver") analysis = null;
+  // Un résultat stocké n'a été sauvegardé que s'il était livrable : on le réévalue comme une dernière tentative.
+  if (analysis && decideFormcheckOutcome(analysis, undefined, Number.POSITIVE_INFINITY).kind !== "deliver") analysis = null;
   if (!analysis) {
     let vision: VisionResult;
     try {
@@ -77,7 +83,7 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
     } catch (error: any) {
       return retryOrEscalate(job, deps, `VISION_ERROR:${String(error?.message || error).slice(0, 300)}`);
     }
-    const decision = decideFormcheckOutcome(vision.analysis);
+    const decision = decideFormcheckOutcome(vision.analysis, undefined, job.attempts);
     if (decision.kind === "reject") {
       await deps.saveResult(job.id, { result: vision.analysis, score: vision.analysis.score, model: vision.model, responseId: vision.responseId, costUsd: vision.costUsd });
       const released = await deps.reject(job.id, decision.reason);
@@ -120,8 +126,19 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
       frames: frames.map((f) => ({ ...f, annotated: annotatedByIndex.get(f.index) || f.annotated })),
       errorImages,
     });
-    const pdf = job.pdf && job.pdf.length > 0 ? job.pdf : await deps.renderPdf(html);
-    if (!job.pdf) await deps.savePdf(job.id, pdf);
+    let pdf: Buffer | null = job.pdf && job.pdf.length > 0 ? job.pdf : null;
+    if (!pdf) {
+      try {
+        pdf = await deps.renderPdf(html);
+        await deps.savePdf(job.id, pdf);
+      } catch (error) {
+        // Le rendu PDF (Chrome) a échoué : on relance, puis à la dernière tentative
+        // on livre quand même le rapport complet en HTML plutôt que de bloquer le client.
+        if (job.attempts < FORMCHECK_MAX_ATTEMPTS) throw error;
+        console.error(`[FormCheck] job ${job.id}: PDF impossible, rapport livré en HTML:`, (error as any)?.message || error);
+        pdf = null;
+      }
+    }
 
     const balance = await deps.balance(job.email);
     // Le crédit en cours sera consommé juste après : on l'affiche déjà déduit.
@@ -129,7 +146,8 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
       exerciseLabel,
       score: analysis.score,
       summary: analysis.summary,
-      pdfUrl: links.pdfUrl,
+      limits: analysis.analysis_limits,
+      pdfUrl: pdf ? links.pdfUrl : null,
       uploadUrl: links.uploadUrl,
       available: balance.available,
     });
@@ -137,8 +155,10 @@ export async function processFormcheckJob(job: ClaimedAnalysis, deps: FormcheckW
       to: job.email,
       ...mail,
       emailType: "sendFormcheckReportEmail",
-      metadata: { analysisId: job.id, score: analysis.score },
-      attachments: { [`FormCheck_${pdfSlug(exerciseLabel)}_${job.id.slice(0, 8)}.pdf`]: pdf },
+      metadata: { analysisId: job.id, score: analysis.score, format: pdf ? "pdf" : "html" },
+      attachments: pdf
+        ? { [`FormCheck_${pdfSlug(exerciseLabel)}_${job.id.slice(0, 8)}.pdf`]: pdf }
+        : { [`FormCheck_${pdfSlug(exerciseLabel)}_${job.id.slice(0, 8)}.html`]: Buffer.from(html, "utf8") },
     });
     if (!sent) return retryOrEscalate(job, deps, "EMAIL_SEND_FAILED");
     await deps.consume(job.id);

@@ -12,7 +12,9 @@ import {
   estimateFormcheckCostUsd,
   FORMCHECK_PACKS,
   frameCountForDuration,
+  FORMCHECK_DEFAULT_MIN_CONFIDENCE,
   getFormcheckAdminEmail,
+  getFormcheckMinConfidence,
   getFormcheckModel,
   getFormcheckReasoningEffort,
   resolveFormcheckPack,
@@ -20,10 +22,10 @@ import {
   validateUploadedFileMeta,
   validateVideoDuration,
 } from "./formcheck/config";
-import { decideFormcheckOutcome, detectedExerciseLabel, FORMCHECK_ANALYSIS_SCHEMA, buildFormcheckPrompt, FORMCHECK_INSTRUCTIONS, normalizeFormcheckAnalysis } from "./formcheck/analysis";
+import { decideFormcheckOutcome, detectedExerciseLabel, FORMCHECK_ANALYSIS_SCHEMA, FORMCHECK_HARD_REJECTION_CODES, buildFormcheckPrompt, FORMCHECK_INSTRUCTIONS, normalizeFormcheckAnalysis } from "./formcheck/analysis";
 import { angleDegrees, annotateFrame, buildAnnotationSvg } from "./formcheck/annotate";
 import { buildFormcheckReportHtml, jpegSize, scoreVerdict } from "./formcheck/report";
-import { buildAccessEmail, buildReportEmail, buildReshootEmail } from "./formcheck/emails";
+import { buildAccessEmail, buildIssueEmail, buildReportEmail, buildReshootEmail } from "./formcheck/emails";
 import { parseFfmpegProbe } from "./formcheck/video";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -234,28 +236,83 @@ test("normalization clamps model output so the PDF never breaks", () => {
   assert.match(raw.safety_note, /avis médical/);
 });
 
-test("decision: unusable video or no strength exercise is rejected (credit kept), low confidence is retried", () => {
+test("decision: only truly unusable videos are rejected (credit kept), framing issues are delivered", () => {
   const good = goodAnalysis();
   assert.equal(good.exercise_detected.name_fr, "Squat barre haute");
   assert.equal(detectedExerciseLabel(good), "Squat barre haute");
-  assert.deepEqual(decideFormcheckOutcome(good, 0.55), { kind: "deliver" });
+  assert.deepEqual(decideFormcheckOutcome(good, 0.3), { kind: "deliver" });
 
-  const unusable = { ...good, exploitable: false, rejection_reason: "Tes pieds sont hors cadre." };
-  assert.deepEqual(decideFormcheckOutcome(unusable, 0.55), { kind: "reject", reason: "Tes pieds sont hors cadre." });
+  // Refus « dur » : seuls cas où la vidéo est rejetée.
+  for (const code of FORMCHECK_HARD_REJECTION_CODES) {
+    const hard = { ...good, exploitable: false, rejection_code: code, rejection_reason: "Je ne te vois pas sur la vidéo." };
+    assert.deepEqual(decideFormcheckOutcome(hard, 0.3), { kind: "reject", reason: "Je ne te vois pas sur la vidéo." }, code);
+  }
 
   const noStrength = { ...good, exercise_detected: { name_fr: "", is_strength_exercise: false } };
-  const decision = decideFormcheckOutcome(noStrength, 0.55);
+  const decision = decideFormcheckOutcome(noStrength, 0.3);
   assert.equal(decision.kind, "reject");
-  assert.match((decision as any).reason, /aucun exercice de musculation/);
+  assert.match((decision as any).reason, /Je ne reconnais aucun exercice de musculation/);
   // Un exercice reconnu mais sans nom ne peut pas être livré non plus.
-  assert.equal(decideFormcheckOutcome({ ...good, exercise_detected: { name_fr: "", is_strength_exercise: true } }, 0.55).kind, "reject");
+  assert.equal(decideFormcheckOutcome({ ...good, exercise_detected: { name_fr: "", is_strength_exercise: true } }, 0.3).kind, "reject");
   // Tout exercice de musculation reconnu est analysé : plus de rejet « mauvais exercice ».
-  assert.equal(decideFormcheckOutcome({ ...good, exercise_detected: { name_fr: "Soulevé de terre sur blocs", is_strength_exercise: true } }, 0.55).kind, "deliver");
+  assert.equal(decideFormcheckOutcome({ ...good, exercise_detected: { name_fr: "Soulevé de terre sur blocs", is_strength_exercise: true } }, 0.3).kind, "deliver");
 
-  assert.equal(decideFormcheckOutcome({ ...good, confidence: 0.3 }, 0.55).kind, "retry");
-  assert.equal(decideFormcheckOutcome({ ...good, priority_corrections: good.priority_corrections.slice(0, 2) }, 0.55).kind, "retry");
-  // Normalisation : champ absent = aucun exercice reconnu.
-  assert.equal(normalizeFormcheckAnalysis({ exploitable: true }, 8).exercise_detected.is_strength_exercise, false);
+  // Sortie incomplète : une relance, puis demande de refilmer (jamais de revue manuelle).
+  const incomplete = { ...good, priority_corrections: good.priority_corrections.slice(0, 2) };
+  assert.equal(decideFormcheckOutcome(incomplete, 0.3, 1).kind, "retry");
+  assert.equal(decideFormcheckOutcome(incomplete, 0.3, 2).kind, "reject");
+  // Normalisation : champ absent = aucun exercice reconnu, aucun code de refus.
+  const empty = normalizeFormcheckAnalysis({ exploitable: true }, 8);
+  assert.equal(empty.exercise_detected.is_strength_exercise, false);
+  assert.equal(empty.rejection_code, "");
+  assert.deepEqual(empty.analysis_limits, []);
+  assert.equal(normalizeFormcheckAnalysis({ rejection_code: "pieds_coupes" }, 8).rejection_code, "", "code inconnu ignoré");
+});
+
+test("the 15/11/2026 rejections (feet cut, machine upright, someone passing) now deliver with limits", () => {
+  const good = goodAnalysis();
+  // 5def3b20 : développé couché à la barre guidée, refusé pour un cadrage imparfait.
+  const benchFraming = {
+    ...good,
+    exploitable: false,
+    rejection_code: "" as const,
+    rejection_reason: "Tes pieds sont partiellement coupés et le montant de la machine masque la prise ; une autre personne apparaît aussi à 26,1 s.",
+    exercise_detected: { name_fr: "Développé couché à la barre guidée sur banc plat", is_strength_exercise: true },
+    analysis_limits: ["Tes pieds sont coupés : je n'ai pas pu juger tes appuis."],
+  };
+  assert.deepEqual(decideFormcheckOutcome(benchFraming, 0.3, 1), { kind: "deliver" }, "refus de cadrage + rapport complet = livré");
+  // Refus de cadrage sans rapport exploitable : une relance, puis demande de refilmer.
+  const softMinimal = { ...benchFraming, priority_corrections: [], summary: "", score: 0 };
+  assert.equal(decideFormcheckOutcome(softMinimal, 0.3, 1).kind, "retry");
+  assert.equal(decideFormcheckOutcome(softMinimal, 0.3, 2).kind, "reject");
+
+  // Prompt : le cadrage imparfait n'est plus un motif de refus, les refus sont listés.
+  const prompt = buildFormcheckPrompt({ frameTimestamps: [0, 1], durationS: 2 });
+  assert.match(prompt, /Par défaut exploitable = true/);
+  assert.match(prompt, /Ne sont PAS des motifs de refus : pieds ou une partie du corps coupés, une partie cachée par une machine/);
+  assert.match(prompt, /quelqu'un qui passe dans le champ, angle de vue moyen, éclairage moyen/);
+  for (const code of FORMCHECK_HARD_REJECTION_CODES) assert.ok(prompt.includes(`- ${code} :`), code);
+  assert.doesNotMatch(prompt, /coupée \(pieds, barre ou articulations clés hors cadre\)/);
+  assert.doesNotMatch(prompt, /plusieurs séries ou plusieurs personnes/);
+  assert.match(FORMCHECK_INSTRUCTIONS, /première personne du singulier/);
+  const props = (FORMCHECK_ANALYSIS_SCHEMA as any).properties;
+  assert.deepEqual(props.rejection_code.enum, ["", ...FORMCHECK_HARD_REJECTION_CODES]);
+  assert.equal(props.analysis_limits.type, "array");
+});
+
+test("confidence threshold is 0.30 by default (was 0.55), capped at 0.50, and low confidence never blocks delivery", () => {
+  assert.equal(FORMCHECK_DEFAULT_MIN_CONFIDENCE, 0.3);
+  assert.equal(getFormcheckMinConfidence({}), 0.3);
+  assert.equal(getFormcheckMinConfidence({ FORMCHECK_MIN_CONFIDENCE: "abc" }), 0.3);
+  assert.equal(getFormcheckMinConfidence({ FORMCHECK_MIN_CONFIDENCE: "0.2" }), 0.2);
+  assert.equal(getFormcheckMinConfidence({ FORMCHECK_MIN_CONFIDENCE: "0.55" }), 0.5, "plafonné : on ne revient pas à l'ancien seuil strict");
+  const good = goodAnalysis();
+  // 0,45 aurait été relancé avec l'ancien seuil 0,55 : livré directement désormais.
+  assert.deepEqual(decideFormcheckOutcome({ ...good, confidence: 0.45 }), { kind: "deliver" });
+  assert.deepEqual(decideFormcheckOutcome({ ...good, confidence: 0.3 }), { kind: "deliver" });
+  // Sous le seuil : une seule relance, puis livraison avec les limites.
+  assert.equal(decideFormcheckOutcome({ ...good, confidence: 0.2 }, undefined, 1).kind, "retry");
+  assert.deepEqual(decideFormcheckOutcome({ ...good, confidence: 0.2 }, undefined, 2), { kind: "deliver" });
 });
 
 test("annotation SVG draws circle, line, arrow and angle with measured degrees", () => {
@@ -350,6 +407,20 @@ test("PDF HTML is light, branded, and shows annotated captures and corrections",
   assert.match(html.slice(ctaAt), /href="https:\/\/achzodcoaching\.com"/);
   for (const name of ["Essential", "Elite", "Private Lab"]) assert.ok(html.slice(ctaAt).includes(name), name);
   assert.doesNotMatch(html, /[\u2013\u2014]/);
+  // Voix d'Achzod à la première personne, sans « on », sans IA ni vérification manuelle.
+  const text = plain.replace(/<style>[\s\S]*?<\/style>/, " ").replace(/<[^>]+>/g, " ");
+  assert.ok(text.includes("Ce que je vois") && text.includes("selon ma méthode"));
+  assert.doesNotMatch(text, /Ce qu'on|\bnous\b|l'équipe|vérification manuelle|\bIA\b|intelligence artificielle|GPT|algorithme|générée automatiquement/i);
+  assert.ok(!text.includes("Limites de cette vidéo"), "pas d'encart limites sur une vidéo bien filmée");
+  const withLimits = buildFormcheckReportHtml({
+    analysisId: "abcdef12-0000-0000-0000-000000000000",
+    email: "client@example.com",
+    createdAt: new Date("Sat 2026-11-14 2:00 PM (UTC+04:00)"),
+    analysis: { ...analysis, analysis_limits: ["Tes pieds sont coupés : je n'ai pas pu juger tes appuis."] },
+    frames: [{ index: 0, timestampS: 1, jpeg: frame, annotated: null }],
+  }).replace(/&#39;/g, "'");
+  assert.match(withLimits, /Limites de cette vidéo<\/div><ul><li>Tes pieds sont coupés : je n'ai pas pu juger tes appuis\.<\/li>/);
+  assert.match(withLimits, /Pour ta prochaine vidéo : Filme de profil, à hauteur de hanche/);
   assert.equal(scoreVerdict(90), "Technique solide");
   assert.equal(scoreVerdict(40), "Technique à reconstruire");
 });
@@ -357,13 +428,22 @@ test("PDF HTML is light, branded, and shows annotated captures and corrections",
 test("client emails are French, accented, without em dash, and never promise anything free", () => {
   const mails = [
     buildAccessEmail({ uploadUrl: "https://x/u?token=t", credits: 3, available: 3 }),
-    buildReportEmail({ exerciseLabel: "Squat barre haute", score: 74, summary: "Bonne base.", pdfUrl: "https://x/p", uploadUrl: "https://x/u", available: 2 }),
-    buildReshootEmail({ reason: "Pieds hors cadre.", uploadUrl: "https://x/u" }),
+    buildReportEmail({ exerciseLabel: "Squat barre haute", score: 74, summary: "Bonne base.", limits: ["Tes pieds sont coupés : je n'ai pas pu juger tes appuis."], pdfUrl: "https://x/p", uploadUrl: "https://x/u", available: 2 }),
+    buildReshootEmail({ reason: "Je ne te vois pas sur la vidéo.", uploadUrl: "https://x/u" }),
+    buildIssueEmail({ exerciseLabel: "Squat barre haute", uploadUrl: "https://x/u" }),
   ];
   assert.match(mails[1].subject, /Squat barre haute/);
   assert.match(mails[1].html, /Exercice détecté : <strong>Squat barre haute<\/strong>/);
   assert.match(mails[1].text, /Exercice détecté : Squat barre haute/);
-  assert.match(mails[2].html, /analyser ta vidéo de façon fiable/);
+  assert.match(mails[2].html, /Je n'ai pas pu analyser ta vidéo/);
+  assert.match(mails[2].html, /J&#39;ai besoin d&#39;une nouvelle vidéo/);
+  assert.match(mails[1].html, /Limites de cette vidéo :<\/strong> Tes pieds sont coupés/);
+  assert.match(mails[3].html, /Un souci technique de mon côté/);
+  // Achzod parle à la première personne : jamais « on », « nous », l'équipe, l'IA ou une vérification manuelle.
+  for (const mail of mails) {
+    const plain = (mail.subject + " " + mail.text + " " + mail.html.replace(/<[^>]+>/g, " ")).replace(/&#39;/g, "'");
+    assert.doesNotMatch(plain, /\b(on|nous|notre|nos)\b|l'équipe|vérification|manuelle|\bIA\b|intelligence artificielle|GPT|algorithme|analysé par|Achzod (a été|regarde|vérifie)/i, mail.subject);
+  }
   for (const mail of mails) {
     assert.doesNotMatch(mail.html + mail.text + mail.subject, /[\u2013\u2014]/);
     assert.doesNotMatch(mail.html + mail.text, /gratuit|WhatsApp/i);
