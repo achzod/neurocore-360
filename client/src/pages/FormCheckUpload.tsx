@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<string, string> = {
   retry: "Analyse en cours",
   delivered: "Rapport envoyé",
   rejected: "À refilmer (crédit non utilisé)",
-  needs_review: "Vérification manuelle (crédit non utilisé)",
+  needs_review: "Non abouti, renvoie ta vidéo (crédit non utilisé)",
 };
 
 function readVideoDuration(file: File): Promise<number | null> {
@@ -211,7 +211,7 @@ export default function FormCheckUpload() {
         {status === "no-access" && (
           <div className="mt-10 rounded-sm border border-white/10 bg-white/[0.03] p-8">
             <h2 className="text-xl font-bold">Retrouver mon accès</h2>
-            <p className="mt-2 text-white/60">Indique l'email utilisé lors de ton achat : on t'envoie ton lien personnel.</p>
+            <p className="mt-2 text-white/60">Indique l'email utilisé lors de ton achat : je t'envoie ton lien personnel.</p>
             {accessSent ? (
               <p className="mt-6 text-sm text-white/80">Si un achat FormCheck existe pour cette adresse, un nouveau lien vient d'être envoyé. Pense à vérifier tes spams.</p>
             ) : (
@@ -250,7 +250,7 @@ export default function FormCheckUpload() {
             {me.balance.available > 0 ? (
               <div className="mt-8 rounded-sm border border-white/10 bg-white/[0.03] p-8">
                 <p className="text-sm text-white/60" data-testid="formcheck-auto-exercise">
-                  Pas besoin d'indiquer l'exercice : l'analyse le reconnaît automatiquement sur ta vidéo.
+                  Pas besoin d'indiquer l'exercice : ton analyse le reconnaît automatiquement sur ta vidéo.
                 </p>
 
                 <label className="mt-6 block text-sm font-semibold text-white/80" htmlFor="formcheck-video">Vidéo d'une série (60 s maximum, .mp4 ou .mov, 200 Mo maximum)</label>

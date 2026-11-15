@@ -196,7 +196,7 @@ export function ReportPreview() {
           <motion.div className="space-y-4" variants={list} initial={reduce ? "show" : "hidden"} whileInView="show" viewport={{ once: true }}>
             <motion.div variants={item}>
               <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider" style={{ color: ACCENT }}>
-                <Eye className="h-3.5 w-3.5" /> Ce qu'on voit
+                <Eye className="h-3.5 w-3.5" /> Ce que je vois
               </div>
               <p className="mt-1 text-sm leading-relaxed text-white/75">
                 Ton visage s'oriente vers l'avant alors que ton tronc est encore nettement incliné.

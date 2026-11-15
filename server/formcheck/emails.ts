@@ -45,7 +45,7 @@ export function buildAccessEmail(input: { uploadUrl: string; credits: number; av
        <li>téléphone posé et stable, à hauteur de hanche, de profil pour le squat, le soulevé de terre et le hip thrust ;</li>
        <li>corps entier et charge visibles du début à la fin, bonne lumière.</li>
      </ul>
-     <p>Un crédit est utilisé seulement quand ton rapport est livré. Si la vidéo est inexploitable, on te demande de la refilmer et ton crédit reste intact.</p>
+     <p>Un crédit est utilisé seulement quand ton rapport est livré. Si ta vidéo est vraiment inexploitable, je te demande de la refilmer et ton crédit reste intact.</p>
      <p style="color:${C.muted};font-size:13px;">Garde cet email : ce lien te sert pour toutes tes prochaines vidéos.</p>`,
     { href: input.uploadUrl, label: "Envoyer ma vidéo" },
   );
@@ -73,21 +73,29 @@ ${lightLogoUrl ? `<img src="${esc(lightLogoUrl)}" width="124" height="32" alt="A
 }
 
 /** exerciseLabel = exercice détecté par l'analyse (le client ne le choisit pas). */
-export function buildReportEmail(input: { exerciseLabel: string; score: number; summary: string; pdfUrl: string; uploadUrl: string; available: number }) {
+export function buildReportEmail(input: { exerciseLabel: string; score: number; summary: string; limits?: string[]; pdfUrl: string | null; uploadUrl: string; available: number }) {
   const subject = `Ton rapport FormCheck est prêt : ${input.exerciseLabel}`;
+  const limits = (input.limits || []).filter(Boolean);
+  const limitsHtml = limits.length
+    ? `<p style="background:${C.soft};border-left:3px solid ${C.yellow};padding:10px 12px;border-radius:4px;font-size:14px;margin:12px 0;"><strong>Limites de cette vidéo :</strong> ${limits.map(esc).join(" ")} Mes conseils pour mieux filmer la prochaine fois sont dans ton rapport.</p>`
+    : "";
+  const attachmentLine = input.pdfUrl
+    ? `<p>Ton rapport complet est en pièce jointe (PDF) : tableau de bord de tous les critères, analyse phase par phase, tempo rep par rep, chaque erreur sur ton image annotée avec le pourquoi, comment corriger et tes exercices correctifs, puis ton plan de correction sur 4 semaines.</p>
+     <p>Pièce jointe introuvable ? <a href="${esc(input.pdfUrl)}" style="color:${C.black};font-weight:700;">Télécharge le PDF ici</a>.</p>`
+    : `<p>Ton rapport complet est en pièce jointe (fichier à ouvrir dans ton navigateur) : tableau de bord de tous les critères, analyse phase par phase, tempo rep par rep, chaque erreur sur ton image annotée avec le pourquoi, comment corriger et tes exercices correctifs, puis ton plan de correction sur 4 semaines.</p>`;
   const html = wrapFormcheckEmail(
     `${input.exerciseLabel} : ${input.score}/100`,
     `<p style="margin:0 0 12px;"><span style="display:inline-block;background:#FFF8C2;padding:4px 10px;border-radius:6px;font-size:13px;">Exercice détecté : <strong>${esc(input.exerciseLabel)}</strong></span></p>
      <p>${esc(input.summary)}</p>
-     <p>Ton rapport complet est en pièce jointe (PDF) : tableau de bord de tous les critères, analyse phase par phase, tempo rep par rep, chaque erreur sur ton image annotée avec le pourquoi, comment corriger et tes exercices correctifs, puis ton plan de correction sur 4 semaines.</p>
-     <p>Pièce jointe introuvable ? <a href="${esc(input.pdfUrl)}" style="color:${C.black};font-weight:700;">Télécharge le PDF ici</a>.</p>
+     ${limitsHtml}
+     ${attachmentLine}
      <p>Crédits restants : <strong>${input.available}</strong>. Applique ton plan pendant 2 à 4 semaines puis renvoie une vidéo pour mesurer le progrès.</p>
      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:16px 0 6px;"><tr><td style="background:${C.black};border-radius:6px;"><a href="${esc(input.uploadUrl)}" style="display:inline-block;padding:12px 20px;color:${C.yellow};font-weight:800;text-decoration:none;font-size:15px;">Envoyer une nouvelle vidéo</a></td></tr></table>
      ${buildCoachingCtaHtml(achzodEmailLogoUrl(input.uploadUrl, "light"))}`,
     undefined,
     achzodEmailLogoUrl(input.uploadUrl, "dark"),
   );
-  const text = `Ton rapport FormCheck est prêt : ${input.score}/100.\nExercice détecté : ${input.exerciseLabel}\n${input.summary}\nPDF : ${input.pdfUrl}\nNouvelle vidéo : ${input.uploadUrl}\n\nTu sais quoi corriger. Avec le coaching Achzod, tu le corriges pour de bon : Essential, Elite ou Private Lab.\nDécouvre les formules : ${COACHING_URL}`;
+  const text = `Ton rapport FormCheck est prêt : ${input.score}/100.\nExercice détecté : ${input.exerciseLabel}\n${input.summary}${limits.length ? `\nLimites de cette vidéo : ${limits.join(" ")}` : ""}\n${input.pdfUrl ? `PDF : ${input.pdfUrl}` : "Ton rapport complet est en pièce jointe."}\nNouvelle vidéo : ${input.uploadUrl}\n\nTu sais quoi corriger. Avec le coaching Achzod, tu le corriges pour de bon : Essential, Elite ou Private Lab.\nDécouvre les formules : ${COACHING_URL}`;
   return { subject, html, text };
 }
 
@@ -95,40 +103,41 @@ export function buildReshootEmail(input: { exerciseLabel?: string | null; reason
   const what = input.exerciseLabel ? `ta vidéo de <strong>${esc(input.exerciseLabel)}</strong>` : "ta vidéo";
   const subject = "FormCheck : ta vidéo est à refilmer (crédit non utilisé)";
   const html = wrapFormcheckEmail(
-    "On a besoin d'une nouvelle vidéo",
-    `<p>On n'a pas pu analyser ${what} de façon fiable :</p>
+    "J'ai besoin d'une nouvelle vidéo",
+    `<p>Je n'ai pas pu analyser ${what} :</p>
      <p style="background:#FFF8C2;padding:10px 12px;border-radius:6px;">${esc(input.reason)}</p>
-     <p><strong>Ton crédit n'a pas été utilisé.</strong> Refilme ta série (téléphone stable, corps entier visible, bonne lumière) et renvoie-la.</p>`,
+     <p><strong>Ton crédit n'a pas été utilisé.</strong> Refilme ta série (téléphone posé, ton mouvement visible du début à la fin) et renvoie-la : ton rapport arrive dans la foulée.</p>`,
     { href: input.uploadUrl, label: "Renvoyer une vidéo" },
   );
-  const text = `On n'a pas pu analyser ${input.exerciseLabel ? `ta vidéo de ${input.exerciseLabel}` : "ta vidéo"} : ${input.reason}\nTon crédit n'a pas été utilisé. Renvoie une vidéo ici : ${input.uploadUrl}`;
+  const text = `Je n'ai pas pu analyser ${input.exerciseLabel ? `ta vidéo de ${input.exerciseLabel}` : "ta vidéo"} : ${input.reason}\nTon crédit n'a pas été utilisé. Renvoie une vidéo ici : ${input.uploadUrl}`;
   return { subject, html, text };
 }
 
+/** Panne technique persistante (pas une décision sur la vidéo) : crédit libéré, le client renvoie sa vidéo. */
 export function buildIssueEmail(input: { exerciseLabel?: string | null; uploadUrl: string }) {
   const what = input.exerciseLabel ? `ta vidéo de <strong>${esc(input.exerciseLabel)}</strong>` : "ta vidéo";
-  const subject = "FormCheck : ton analyse prend un peu plus de temps";
+  const subject = "FormCheck : ton rapport n'a pas pu être finalisé (crédit non utilisé)";
   const html = wrapFormcheckEmail(
-    "Ton analyse demande une vérification",
-    `<p>L'analyse automatique de ${what} n'a pas abouti avec assez de fiabilité. Achzod a été prévenu et regarde ta vidéo.</p>
-     <p><strong>Ton crédit n'a pas été utilisé.</strong> Tu peux aussi renvoyer une vidéo mieux cadrée dès maintenant.</p>`,
-    { href: input.uploadUrl, label: "Renvoyer une vidéo" },
+    "Ton rapport n'a pas pu être finalisé",
+    `<p>Un souci technique de mon côté m'a empêché de finaliser le rapport de ${what}. Ta vidéo n'est pas en cause.</p>
+     <p><strong>Ton crédit n'a pas été utilisé.</strong> Renvoie la même vidéo avec le bouton ci-dessous pour recevoir ton rapport.</p>`,
+    { href: input.uploadUrl, label: "Renvoyer ma vidéo" },
   );
-  const text = `L'analyse de ${input.exerciseLabel ? `ta vidéo de ${input.exerciseLabel}` : "ta vidéo"} demande une vérification manuelle. Ton crédit n'a pas été utilisé. Renvoyer une vidéo : ${input.uploadUrl}`;
+  const text = `Un souci technique de mon côté m'a empêché de finaliser le rapport de ${input.exerciseLabel ? `ta vidéo de ${input.exerciseLabel}` : "ta vidéo"}. Ta vidéo n'est pas en cause. Ton crédit n'a pas été utilisé. Renvoie la même vidéo ici : ${input.uploadUrl}`;
   return { subject, html, text };
 }
 
 export function buildAdminAlert(input: { analysisId: string; email: string; exerciseLabel?: string | null; attempts: number; reason: string }) {
   const exercise = input.exerciseLabel || "exercice non détecté";
-  const subject = `[FormCheck] Analyse à vérifier : ${exercise} (${input.email})`;
+  const subject = `[FormCheck] Échec technique : ${exercise} (${input.email})`;
   const lines = [
     `Analyse : ${input.analysisId}`,
     `Client : ${input.email}`,
     `Exercice détecté : ${exercise}`,
     `Tentatives : ${input.attempts}`,
     `Raison : ${input.reason}`,
-    "Crédit libéré (non consommé). Le client a reçu un email l'invitant à renvoyer une vidéo.",
+    "Crédit libéré (non consommé). Le client a reçu un email (souci technique, sans mention de revue manuelle) l'invitant à renvoyer sa vidéo.",
   ];
-  const html = wrapFormcheckEmail("Analyse FormCheck à vérifier", `<pre style="white-space:pre-wrap;font-size:13px;">${esc(lines.join("\n"))}</pre>`);
+  const html = wrapFormcheckEmail("FormCheck : échec technique", `<pre style="white-space:pre-wrap;font-size:13px;">${esc(lines.join("\n"))}</pre>`);
   return { to: getFormcheckAdminEmail(), subject, html, text: lines.join("\n") };
 }

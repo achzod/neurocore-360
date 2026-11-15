@@ -134,6 +134,7 @@ export function buildFormcheckReportHtml(input: ReportInput): string {
     <div class="score"><div class="num">${a.score}<small>/100</small></div><div class="verdict">${esc(scoreVerdict(a.score))}</div></div>
     <div class="summary"><div class="kicker">Exercice détecté</div><h1>${esc(exerciseName)}</h1><p>${esc(a.summary)}</p></div>
   </div>
+  ${a.analysis_limits?.length ? `<div class="limits avoid-break"><div class="kicker">Limites de cette vidéo</div><ul>${a.analysis_limits.map((l) => `<li>${esc(l)}</li>`).join("")}</ul><p class="small">${a.next_video_instructions[0] ? `Pour ta prochaine vidéo : ${esc(a.next_video_instructions[0])}` : "Mes conseils pour mieux filmer ta prochaine vidéo sont en fin de rapport."}</p></div>` : ""}
   <div class="bars avoid-break">
     ${bar("Mise en place", a.subscores.mise_en_place)}
     ${bar("Exécution", a.subscores.execution)}
@@ -190,7 +191,7 @@ export function buildFormcheckReportHtml(input: ReportInput): string {
   <div class="avoid-break">
     ${section("Tempo", "Tempo et rythme, rep par rep")}
     <p>${esc(a.tempo.comment)}</p>
-    ${repRows ? `<table class="tbl"><thead><tr><th>Rep</th><th>Descente</th><th>Montée</th><th>Pause</th><th class="left">Ce qu'on voit</th></tr></thead><tbody>${repRows}</tbody></table>
+    ${repRows ? `<table class="tbl"><thead><tr><th>Rep</th><th>Descente</th><th>Montée</th><th>Pause</th><th class="left">Ce que je vois</th></tr></thead><tbody>${repRows}</tbody></table>
     <p class="muted small">Estimations à partir des images extraites à intervalle régulier : l'ordre de grandeur et les écarts entre les reps comptent plus que le dixième de seconde.</p>` : `<p class="muted">Les images ne permettent pas de suivre chaque rep séparément sur cette vidéo.</p>`}
   </div>`;
 
@@ -204,7 +205,7 @@ export function buildFormcheckReportHtml(input: ReportInput): string {
     const exercises = error.corrective_exercises.map((x) => `<tr><td class="left strong">${esc(x.name)}</td><td class="left">${esc(x.prescription)}</td><td class="left">${esc(x.why)}</td></tr>`).join("");
     const block = (title: string, body: string) => (body ? `<div class="eblock"><h4>${esc(title)}</h4><p>${esc(body)}</p></div>` : "");
     const textCol = `
-        ${block("Ce qu'on voit", error.description)}
+        ${block("Ce que je vois", error.description)}
         ${block("Pourquoi c'est un problème", error.why)}
         ${block("Comment corriger", error.how_to_fix)}
         ${error.cues.length ? `<div class="eblock"><h4>Tes consignes pendant la série</h4><div class="cues">${error.cues.map((c) => `<span class="cue">« ${esc(c)} »</span>`).join("")}</div></div>` : ""}`;
@@ -252,7 +253,7 @@ export function buildFormcheckReportHtml(input: ReportInput): string {
   const strip = input.frames.map((f) => `<figure><img src="${jpg(f.jpeg)}" alt="Image ${f.index + 1}"/><figcaption>${f.index + 1} · ${at(f)}</figcaption></figure>`).join("");
   const stripHtml = `
   <div class="avoid-break">${section("Vue d'ensemble", "La série image par image")}<div class="strip${input.frames.length > 14 ? " strip-dense" : ""}">${strip}</div></div>
-  <div class="safety">${esc(a.safety_note)} Analyse générée automatiquement à partir d'images extraites de ta vidéo, sous la méthode Achzod. Elle porte uniquement sur la technique et ne constitue ni un diagnostic, ni un avis médical.</div>`;
+  <div class="safety">${esc(a.safety_note)} Analyse réalisée à partir d'images extraites de ta vidéo, selon ma méthode. Elle porte uniquement sur la technique et ne constitue ni un diagnostic, ni un avis médical.</div>`;
 
   // ---------- 8. CTA coaching ----------
   const cta = `
@@ -270,7 +271,7 @@ export function buildFormcheckReportHtml(input: ReportInput): string {
     <div class="cta-start">
       <div class="cta-score"><div class="cs-num">${a.score}<small>/100</small></div><div class="cs-label">Ton point de départ</div></div>
       <div class="cta-prio">
-        <div class="cp-title">Ce qu'on attaque en premier ensemble</div>
+        <div class="cp-title">Ce que je te fais travailler en premier</div>
         ${a.priority_corrections.map((c, i) => `<div class="cp-row"><span>${i + 1}</span>${esc(c.title)}</div>`).join("")}
       </div>
     </div>
@@ -315,6 +316,9 @@ export function buildFormcheckReportHtml(input: ReportInput): string {
   .score .verdict { font-weight: 800; font-size: 10pt; margin-top: 6px; }
   .summary { flex: 1; background: ${C.soft}; border-radius: 6px; padding: 14px 16px; }
   .summary h1 { font-size: 18pt; margin: 2px 0 6px; }
+  .limits { margin: 10px 0 4px; background: #FFFBE0; border-left: 4px solid ${C.yellow}; border-radius: 4px; padding: 9px 14px; }
+  .limits ul { margin: 4px 0 4px 16px; padding: 0; }
+  .limits p { margin: 2px 0 0; color: ${C.muted}; }
   .bars { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
   .bar-row { display: flex; align-items: center; gap: 8px; }
   .bar-label { width: 104px; white-space: nowrap; font-size: 9pt; font-weight: 700; }

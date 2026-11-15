@@ -75,9 +75,27 @@ export interface FormcheckDetectedExercise {
   is_strength_exercise: boolean;
 }
 
+/**
+ * Seuls cas où une vidéo est refusée (crédit libéré, demande de refilmer).
+ * Un cadrage imparfait (pieds coupés, machine qui masque une partie, quelqu'un
+ * qui passe, angle ou lumière moyens) n'en fait jamais partie : le rapport est
+ * livré avec ses limites.
+ */
+export const FORMCHECK_HARD_REJECTION_CODES = [
+  "aucun_exercice",
+  "personne_absente",
+  "aucune_repetition",
+  "video_illisible",
+  "hors_musculation",
+] as const;
+export type FormcheckRejectionCode = typeof FORMCHECK_HARD_REJECTION_CODES[number] | "";
+
 export interface FormcheckAnalysis {
   exploitable: boolean;
+  rejection_code: FormcheckRejectionCode;
   rejection_reason: string;
+  /** Limites de la vidéo (cadrage, angle, lumière...) signalées dans le rapport livré. */
+  analysis_limits: string[];
   exercise_detected: FormcheckDetectedExercise;
   camera_view: "profil" | "face" | "dos" | "trois_quarts" | "autre";
   confidence: number;
@@ -124,7 +142,9 @@ const criterion = () => obj({ rating: en(RATINGS), comment: str });
 
 export const FORMCHECK_ANALYSIS_SCHEMA = obj({
   exploitable: { type: "boolean" },
+  rejection_code: en(["", ...FORMCHECK_HARD_REJECTION_CODES]),
   rejection_reason: str,
+  analysis_limits: strArr,
   exercise_detected: obj({ name_fr: str, is_strength_exercise: { type: "boolean" } }),
   camera_view: en(["profil", "face", "dos", "trois_quarts", "autre"]),
   confidence: num,
@@ -190,6 +210,8 @@ export const FORMCHECK_ANALYSIS_SCHEMA = obj({
 export const FORMCHECK_INSTRUCTIONS = [
   "Tu es Achzod, coach en musculation certifié, et tu fais une analyse technique complète (form check) à partir d'images extraites d'une vidéo.",
   "Tu tutoies le client, ton direct et concret de coach, phrases courtes, précises, zéro blabla. Français correct et accentué. Pas de tiret long.",
+  "Tu écris à la première personne du singulier, comme Achzod qui parle à son client : « je vois », « je te conseille », « ma priorité pour toi ». Jamais « on », « nous », « notre équipe » ou « l'équipe ». Ne mentionne jamais d'intelligence artificielle, de modèle, d'algorithme ni de vérification manuelle.",
+  "Tu es là pour analyser, pas pour trier : dès que l'exercice est identifiable et que la personne fait des répétitions, tu livres l'analyse complète, même si le cadrage n'est pas parfait. Tu notes simplement les limites et un conseil de cadrage pour la prochaine fois.",
   "Ton rapport doit être exhaustif : tempo, rythme entre les reps, symétrie, compensations, intensité et proximité de l'échec, chaque phase du mouvement, trajectoire de la charge, gainage, respiration, tête, pieds. Chaque erreur est expliquée (pourquoi c'est un problème) et corrigée (consignes, exercices correctifs, progression).",
   "Tu analyses uniquement ce qui est visible sur les images. Tu n'inventes rien. Si un critère n'est pas visible (angle de caméra, cadrage, images trop espacées), tu le dis clairement et tu mets la note non évaluable ou non visible.",
   "Interdit : tout diagnostic médical, toute hypothèse de blessure ou de pathologie, toute prescription médicale. Tu parles de technique, de placement, de trajectoire, de tempo et de programmation. Tu peux dire qu'une erreur augmente les contraintes sur une zone, sans jamais parler de lésion.",
@@ -208,11 +230,19 @@ export function buildFormcheckPrompt(input: {
 Vidéo d'une série, durée ${input.durationS.toFixed(1)} s. ${input.frameTimestamps.length} images extraites dans l'ordre chronologique, à intervalle régulier (${frames}).
 
 Règles :
-1. exploitable = false si on ne peut pas juger la technique : personne absente ou coupée (pieds, barre ou articulations clés hors cadre), image trop sombre ou floue, caméra qui bouge trop, plusieurs séries ou plusieurs personnes, pas d'exercice de musculation. Dans ce cas, rejection_reason explique en une ou deux phrases quoi refilmer et comment (cadrage, distance, angle, lumière), et le reste peut rester minimal. Sinon rejection_reason = "".
-2. exercise_detected : identifie toi-même l'exercice filmé. name_fr = son nom usuel en français, avec la variante visible (par exemple : Squat barre haute, Développé couché, Soulevé de terre sumo, Hip thrust, Rowing barre, Squat bulgare), sans anglicisme quand un nom français existe. is_strength_exercise = false si aucun exercice de musculation n'est reconnu (pas de mouvement, autre sport, étirement, vidéo sans rapport) : dans ce cas name_fr = "", exploitable = false et rejection_reason dit ce qu'il faut filmer. Base toute la suite de l'analyse sur l'exercice que tu as identifié.
-3. confidence entre 0 et 1 : ta confiance globale dans l'analyse (cadrage, netteté, nombre d'images utiles).
+1. Par défaut exploitable = true. Tu analyses toute vidéo où l'exercice est identifiable et où la personne fait au moins une répétition, même si le cadrage n'est pas parfait. Ne sont PAS des motifs de refus : pieds ou une partie du corps coupés, une partie cachée par une machine, un banc ou une barre, quelqu'un qui passe dans le champ, angle de vue moyen, éclairage moyen, image un peu floue, quelques images inutilisables, vidéo un peu longue. Dans ces cas, tu fais l'analyse complète avec ce qui est visible, tu mets non évaluable ou non visible sur les seuls critères concernés, tu remplis analysis_limits et tu donnes le conseil de cadrage dans next_video_instructions.
+   exploitable = false uniquement si la vidéo est vraiment inexploitable, et rejection_code dit pourquoi :
+   - aucun_exercice : on ne voit aucun exercice (personne immobile, vidéo sans rapport) ;
+   - personne_absente : la personne n'est pas visible (hors champ sur presque toute la vidéo, ou cachée au point qu'on ne voit pas son mouvement) ;
+   - aucune_repetition : aucune répétition n'est faite (la personne s'installe, discute ou range sa charge) ;
+   - video_illisible : vidéo noire, corrompue ou si floue/sombre qu'on ne distingue pas le mouvement ;
+   - hors_musculation : ce n'est pas un mouvement de musculation ou de fitness (autre sport, danse, étirement seul...).
+   Dans ces seuls cas, rejection_reason dit en une ou deux phrases, à la première personne et en tutoyant, quoi refilmer et comment (cadrage, distance, angle, lumière), et le reste peut rester minimal. Sinon rejection_code = "" et rejection_reason = "".
+   analysis_limits : 0 à 3 phrases courtes, à la première personne, sur ce que le cadrage ne m'a pas permis de juger (par exemple « Tes pieds sont coupés en bas de l'image : je n'ai pas pu juger tes appuis. »). Liste vide si la vidéo est bien filmée.
+2. exercise_detected : identifie toi-même l'exercice filmé. name_fr = son nom usuel en français, avec la variante visible (par exemple : Squat barre haute, Développé couché, Soulevé de terre sumo, Hip thrust, Rowing barre, Squat bulgare), sans anglicisme quand un nom français existe. is_strength_exercise = true pour tout exercice de musculation ou de fitness avec ou sans charge (machines, haltères, barre, poids du corps, élastiques). is_strength_exercise = false seulement si aucun exercice de musculation ou de fitness n'est reconnu : dans ce cas name_fr = "", exploitable = false, rejection_code = hors_musculation ou aucun_exercice, et rejection_reason dit ce qu'il faut filmer. Base toute la suite de l'analyse sur l'exercice que tu as identifié.
+3. confidence entre 0 et 1 : ta confiance globale dans l'analyse (cadrage, netteté, nombre d'images utiles). Une confiance moyenne ne t'empêche pas de livrer l'analyse complète.
 4. reps_count : nombre de répétitions estimé (repère les positions hautes et basses dans les images et leurs horodatages).
-5. score sur 100 de la qualité technique de la série. subscores sur 100 : mise_en_place (placement avant de bouger), execution (trajectoire et positions pendant les reps), stabilite (gainage, pieds, symétrie), controle (tempo, régularité, descente). summary : 3 à 4 phrases de verdict, en tutoyant : ce qui va, le problème principal, la priorité.
+5. score sur 100 de la qualité technique de la série. subscores sur 100 : mise_en_place (placement avant de bouger), execution (trajectoire et positions pendant les reps), stabilite (gainage, pieds, symétrie), controle (tempo, régularité, descente). summary : 3 à 4 phrases de verdict, à la première personne et en tutoyant : ce qui va, le problème principal, la priorité.
 6. phases : exactement 5 entrées, une par phase dans cet ordre : mise_en_place (pieds, prise, position de départ, tension avant de bouger), depart (premier centimètre, décollage ou initiation), milieu (passage du point difficile, genoux, hanches), verrouillage (position finale), descente (retour de la charge, contrôle). verdict : bon, correct, à corriger ou non visible. frame_index = l'image qui illustre le mieux cette phase. comment : 2 à 4 phrases précises sur ce que tu vois et ce qu'il faut garder ou changer.
 7. tempo : moyennes en secondes (excentrique, pause basse, concentrique, pause haute), estimées à partir des horodatages. tempo.reps : une entrée par répétition que tu peux suivre (rep 1, 2, 3...), avec excentrique, concentrique et pause entre les reps (pause_s) estimés, et un court commentaire (vitesse qui chute, rebond, pause trop longue...). Si les images sont trop espacées pour une rep, estime au mieux et dis-le dans le commentaire. comment : 2 à 3 phrases.
 8. rhythm : régularité entre les reps (pauses, reset, enchaînement). range_of_motion : amplitude. symmetry : assessable = false si la vue ne permet pas de juger (vue de profil stricte), rating et comment. compensations : items = liste courte des compensations vues (0 à 5, par exemple hanches qui montent avant les épaules, bascule du bassin, épaules qui partent devant), rating et comment.
@@ -221,7 +251,7 @@ Règles :
 11. errors : 0 à 6 erreurs techniques réelles, de la plus importante à la moins importante. Pour chaque erreur :
    - title court, severity, phase où elle apparaît (ou toute_la_serie) ;
    - frame_index = l'image où l'erreur se voit le mieux (0 à ${last}) ;
-   - description : ce qu'on voit, précisément (2 à 3 phrases) ;
+   - description : ce que tu vois, précisément (2 à 3 phrases) ;
    - why : pourquoi c'est un problème (performance, transfert de charge, contraintes sur une zone, efficacité), 2 à 3 phrases, sans diagnostic ;
    - how_to_fix : comment corriger, concrètement (placement, intention, réglage de charge), 2 à 4 phrases ;
    - cues : 2 ou 3 consignes très courtes à se répéter pendant la série ;
@@ -237,7 +267,7 @@ Règles :
 13. priority_corrections : exactement 3 corrections prioritaires, chacune avec un titre, une consigne courte à se répéter pendant la série (cue) et le pourquoi.
 14. plan_4_weeks : exactement 4 semaines (week 1 à 4). focus : l'objectif de la semaine. actions : 3 ou 4 actions concrètes (exercices correctifs, travail technique à charge réduite, tempo imposé, filmer une série). load_advice : la consigne de charge (pourcentage de ta charge actuelle ou effort en reps en réserve).
 15. next_session_cues : 3 à 5 consignes concrètes pour la prochaine séance (échauffement, charge, tempo, placement).
-16. next_video_instructions : 3 à 5 consignes pour filmer la prochaine vidéo afin d'avoir une analyse encore plus précise (angle, hauteur, distance, cadrage, lumière, nombre de reps).
+16. next_video_instructions : 3 à 5 consignes pour filmer la prochaine vidéo afin d'avoir une analyse encore plus précise (angle, hauteur, distance, cadrage, lumière, nombre de reps). Si analysis_limits n'est pas vide, la première consigne corrige la limite principale.
 17. safety_note : une phrase de prudence (pas de diagnostic, consulter un professionnel de santé en cas de douleur).`;
 }
 
@@ -335,7 +365,9 @@ export function normalizeFormcheckAnalysis(raw: any, frameCount: number): Formch
 
   return {
     exploitable: raw?.exploitable === true,
+    rejection_code: oneOf(raw?.rejection_code, ["", ...FORMCHECK_HARD_REJECTION_CODES] as const, ""),
     rejection_reason: text(raw?.rejection_reason, 500),
+    analysis_limits: list(raw?.analysis_limits, 3, 260),
     exercise_detected: {
       name_fr: text(raw?.exercise_detected?.name_fr, 80),
       is_strength_exercise: raw?.exercise_detected?.is_strength_exercise === true,
@@ -407,35 +439,62 @@ export function detectedExerciseLabel(analysis: Pick<FormcheckAnalysis, "exercis
   return analysis?.exercise_detected?.name_fr || "Exercice analysé";
 }
 
+export const FORMCHECK_RESHOOT_FALLBACK =
+  "Je n'arrive pas à voir ton mouvement sur cette vidéo. Refilme ta série téléphone posé, de profil, avec ton corps et la charge dans le cadre et une bonne lumière.";
+export const FORMCHECK_NO_EXERCISE_FALLBACK =
+  "Je ne reconnais aucun exercice de musculation sur ta vidéo. Filme une seule série d'un exercice de musculation, ton corps et la charge dans le cadre.";
+export const FORMCHECK_INCOMPLETE_FALLBACK =
+  "Je n'ai pas réussi à tirer une analyse complète de cette vidéo. Refilme ta série téléphone posé, de profil, avec ton corps et la charge dans le cadre, et renvoie-la.";
+
+/** Nombre de tentatives d'analyse (lecture vision) avant de trancher sans relancer. */
+export const FORMCHECK_ANALYSIS_TRIES = 2;
+
+function isHardRejection(analysis: FormcheckAnalysis): boolean {
+  return (FORMCHECK_HARD_REJECTION_CODES as readonly string[]).includes(analysis.rejection_code);
+}
+
+function isCompleteReport(analysis: FormcheckAnalysis): boolean {
+  return analysis.priority_corrections.length >= 3 && Boolean(analysis.summary) && analysis.score > 0;
+}
+
 /**
- * Décide du sort d'une analyse :
- * - reject : vidéo inexploitable ou aucun exercice de musculation reconnu, le crédit est libéré ;
- * - retry : confiance trop basse ou sortie incomplète, on relance (puis alerte admin) ;
- * - deliver : rapport envoyé et crédit consommé.
+ * Décide du sort d'une analyse. Règle : on livre dès que l'exercice est
+ * identifiable et que le rapport est complet, même avec un cadrage imparfait.
+ * - reject (crédit libéré, demande de refilmer) : uniquement aucun exercice de
+ *   musculation reconnu, ou refus « dur » (aucun_exercice, personne_absente,
+ *   aucune_repetition, video_illisible, hors_musculation) ;
+ * - retry : sortie incomplète, refus « mou » (cadrage) ou confiance sous le
+ *   seuil, une seule relance ;
+ * - à la dernière tentative : livraison si le rapport est complet (confiance
+ *   basse comprise, limites indiquées dans le rapport), sinon demande de refilmer.
+ * Plus aucun chemin de vérification manuelle pour une décision d'analyse.
  */
 export function decideFormcheckOutcome(
   analysis: FormcheckAnalysis,
   minConfidence = getFormcheckMinConfidence(),
+  attempt = 1,
 ): FormcheckDecision {
+  const finalTry = attempt >= FORMCHECK_ANALYSIS_TRIES;
+  const exerciseKnown = analysis.exercise_detected.is_strength_exercise && Boolean(analysis.exercise_detected.name_fr);
+  if (!exerciseKnown) {
+    return { kind: "reject", reason: analysis.rejection_reason || FORMCHECK_NO_EXERCISE_FALLBACK };
+  }
+  if (!analysis.exploitable && isHardRejection(analysis)) {
+    return { kind: "reject", reason: analysis.rejection_reason || FORMCHECK_RESHOOT_FALLBACK };
+  }
+  const complete = isCompleteReport(analysis);
   if (!analysis.exploitable) {
-    return {
-      kind: "reject",
-      reason: analysis.rejection_reason
-        || "On ne voit pas assez bien ton mouvement pour l'analyser. Refilme ta série de profil, corps entier dans le cadre, avec une bonne lumière.",
-    };
+    // Refus pour un simple défaut de cadrage : interdit. Si le rapport est là, on le livre.
+    if (complete && analysis.reps_count > 0) return { kind: "deliver" };
+    if (!finalTry) return { kind: "retry", reason: `SOFT_REJECTION:${analysis.rejection_reason.slice(0, 200)}` };
+    return { kind: "reject", reason: analysis.rejection_reason || FORMCHECK_RESHOOT_FALLBACK };
   }
-  if (!analysis.exercise_detected.is_strength_exercise || !analysis.exercise_detected.name_fr) {
-    return {
-      kind: "reject",
-      reason: analysis.rejection_reason
-        || "On ne reconnaît aucun exercice de musculation sur ta vidéo. Filme une seule série d'un exercice de musculation, corps entier et charge dans le cadre.",
-    };
+  if (!complete) {
+    if (!finalTry) return { kind: "retry", reason: "INCOMPLETE_OUTPUT" };
+    return { kind: "reject", reason: FORMCHECK_INCOMPLETE_FALLBACK };
   }
-  if (analysis.confidence < minConfidence) {
+  if (analysis.confidence < minConfidence && !finalTry) {
     return { kind: "retry", reason: `LOW_CONFIDENCE:${analysis.confidence.toFixed(2)}` };
-  }
-  if (analysis.priority_corrections.length < 3 || !analysis.summary || analysis.score <= 0) {
-    return { kind: "retry", reason: "INCOMPLETE_OUTPUT" };
   }
   return { kind: "deliver" };
 }

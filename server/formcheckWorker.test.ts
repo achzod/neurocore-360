@@ -37,7 +37,7 @@ const job = (overrides: Partial<ClaimedAnalysis> = {}): ClaimedAnalysis => ({
   ...overrides,
 });
 
-function fakeDeps(options: { vision?: () => Promise<FormcheckAnalysis>; emailOk?: boolean } = {}) {
+function fakeDeps(options: { vision?: () => Promise<FormcheckAnalysis>; emailOk?: boolean; pdfFails?: boolean } = {}) {
   const calls: Record<string, any[]> = {};
   const record = (name: string, ...args: any[]) => {
     (calls[name] ||= []).push(args);
@@ -56,6 +56,7 @@ function fakeDeps(options: { vision?: () => Promise<FormcheckAnalysis>; emailOk?
     saveAnnotated: async (...args) => record("saveAnnotated", ...args),
     renderPdf: async (html) => {
       record("renderPdf", html.length);
+      if (options.pdfFails) throw new Error("Could not find Chrome (ver. 143.0.7499.169)");
       return Buffer.from("%PDF-test");
     },
     savePdf: async (...args) => record("savePdf", ...args),
@@ -110,10 +111,10 @@ test("each error gets its own annotated image, even when two errors share a fram
   assert.equal(calls.saveAnnotated.length, 1, "une seule image stockée par frame");
 });
 
-test("an unusable video is rejected: credit released, client asked to reshoot, no PDF", async () => {
-  const { deps, calls } = fakeDeps({ vision: async () => analysis({ exploitable: false, rejection_reason: "Tes pieds sont hors cadre." }) });
+test("a truly unusable video is rejected: credit released, client asked to reshoot, no PDF", async () => {
+  const { deps, calls } = fakeDeps({ vision: async () => analysis({ exploitable: false, rejection_code: "video_illisible", rejection_reason: "Ta vidéo est noire du début à la fin." }) });
   assert.equal(await processFormcheckJob(job(), deps), "rejected");
-  assert.equal(calls.reject[0][1], "Tes pieds sont hors cadre.");
+  assert.equal(calls.reject[0][1], "Ta vidéo est noire du début à la fin.");
   assert.equal(calls.consume, undefined);
   assert.equal(calls.renderPdf, undefined);
   const mail = calls.sendEmail[0][0];
@@ -138,21 +139,70 @@ test("any recognized strength exercise is analyzed and delivered (no more wrong-
   assert.match(calls.sendEmail[0][0].subject, /Hip thrust/);
 });
 
-test("low confidence is retried, then escalated to the admin on the last attempt without consuming", async () => {
+test("low confidence is retried once, then the report is delivered (no manual review)", async () => {
   const low = async () => analysis({ confidence: 0.2 });
   const first = fakeDeps({ vision: low });
   assert.equal(await processFormcheckJob(job({ attempts: 1 }), first.deps), "retry");
   assert.match(first.calls.retry[0][2], /LOW_CONFIDENCE/);
   assert.equal(first.calls.sendEmail, undefined);
 
-  const last = fakeDeps({ vision: low });
-  assert.equal(await processFormcheckJob(job({ attempts: FORMCHECK_MAX_ATTEMPTS }), last.deps), "needs_review");
-  assert.equal(last.calls.needsReview.length, 1);
-  assert.equal(last.calls.consume, undefined);
-  const recipients = last.calls.sendEmail.map(([mail]: any[]) => mail.to);
-  assert.ok(recipients.includes("client@example.com"));
-  assert.equal(recipients.length, 2, "1 alerte admin + 1 message client");
-  assert.ok(last.calls.sendEmail.some(([mail]: any[]) => /\[FormCheck\] Analyse à vérifier/.test(mail.subject)));
+  const second = fakeDeps({ vision: low });
+  assert.equal(await processFormcheckJob(job({ attempts: 2 }), second.deps), "delivered");
+  assert.equal(second.calls.needsReview, undefined);
+  assert.equal(second.calls.consume.length, 1);
+  assert.equal(second.calls.sendEmail.length, 1, "seulement le rapport, pas d'alerte admin");
+  assert.equal(second.calls.sendEmail[0][0].emailType, "sendFormcheckReportEmail");
+});
+
+test("a framing complaint (feet cut, machine, someone passing) no longer rejects: the report ships with its limits", async () => {
+  const framing = async () => analysis({
+    exploitable: false,
+    rejection_code: "",
+    rejection_reason: "Tes pieds sont partiellement coupés et une autre personne passe à 26,1 s.",
+    analysis_limits: ["Tes pieds sont coupés : je n'ai pas pu juger tes appuis."],
+  });
+  const { deps, calls } = fakeDeps({ vision: framing });
+  assert.equal(await processFormcheckJob(job({ attempts: 1 }), deps), "delivered");
+  assert.equal(calls.reject, undefined);
+  assert.equal(calls.needsReview, undefined);
+  const mail = calls.sendEmail[0][0];
+  assert.equal(mail.emailType, "sendFormcheckReportEmail");
+  assert.match(mail.text, /Limites de cette vidéo : Tes pieds sont coupés/);
+});
+
+test("a hard rejection code still asks to reshoot with the credit released", async () => {
+  const noRep = async () => analysis({ exploitable: false, rejection_code: "aucune_repetition", rejection_reason: "Je ne vois aucune répétition : filme ta série complète." });
+  const { deps, calls } = fakeDeps({ vision: noRep });
+  assert.equal(await processFormcheckJob(job(), deps), "rejected");
+  assert.equal(calls.reject[0][1], "Je ne vois aucune répétition : filme ta série complète.");
+  assert.equal(calls.consume, undefined);
+  assert.match(calls.sendEmail[0][0].html, /Je n'ai pas pu analyser ta vidéo/);
+});
+
+test("PDF rendering failure (Chrome missing) is retried, then the report is delivered as HTML instead of manual review", async () => {
+  const first = fakeDeps({ pdfFails: true });
+  assert.equal(await processFormcheckJob(job({ attempts: 1 }), first.deps), "retry");
+  assert.match(first.calls.retry[0][2], /RENDER_ERROR:Could not find Chrome/);
+  assert.equal(first.calls.consume, undefined);
+
+  const last = fakeDeps({ pdfFails: true });
+  assert.equal(await processFormcheckJob(job({ attempts: FORMCHECK_MAX_ATTEMPTS }), last.deps), "delivered");
+  assert.equal(last.calls.needsReview, undefined);
+  assert.equal(last.calls.consume.length, 1);
+  const mail = last.calls.sendEmail[0][0];
+  assert.deepEqual(Object.keys(mail.attachments), ["FormCheck_souleve_de_terre_sur_blocs_11111111.html"]);
+  assert.match(mail.attachments[Object.keys(mail.attachments)[0]].toString("utf8"), /^<!doctype html>/);
+  assert.doesNotMatch(mail.html, /Télécharge le PDF/);
+});
+
+test("only a persistent technical failure releases the credit, with a first-person email and no manual review wording", async () => {
+  const { deps, calls } = fakeDeps({ vision: async () => { throw new Error("OpenAI 500"); } });
+  assert.equal(await processFormcheckJob(job({ attempts: FORMCHECK_MAX_ATTEMPTS }), deps), "needs_review");
+  assert.equal(calls.consume, undefined);
+  const client = calls.sendEmail.map(([mail]: any[]) => mail).find((mail: any) => mail.to === "client@example.com");
+  assert.match(client.html, /Un souci technique de mon côté/);
+  assert.doesNotMatch(client.subject + client.text + client.html, /vérification|manuelle|Achzod a été prévenu|\bon\b|\bnous\b/i);
+  assert.ok(calls.sendEmail.some(([mail]: any[]) => /\[FormCheck\] Échec technique/.test(mail.subject)));
 });
 
 test("an OpenAI failure schedules a retry and never consumes the credit", async () => {

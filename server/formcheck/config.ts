@@ -95,7 +95,7 @@ export function validateUploadedFileMeta(input: {
 
 export function validateVideoDuration(durationS: number | null): VideoRejection | null {
   if (durationS === null || !Number.isFinite(durationS) || durationS <= 0) {
-    return { code: "UNREADABLE", message: "Impossible de lire cette vidéo. Refilme ta série avec l'appareil photo de ton téléphone et renvoie-la." };
+    return { code: "UNREADABLE", message: "Je n'arrive pas à lire cette vidéo. Refilme ta série avec l'appareil photo de ton téléphone et renvoie-la." };
   }
   if (durationS > FORMCHECK_MAX_DURATION_S + DURATION_TOLERANCE_S) {
     return { code: "TOO_LONG", message: "Vidéo trop longue (60 secondes maximum). Coupe-la pour ne garder qu'une seule série." };
@@ -184,9 +184,18 @@ export function estimateFormcheckCostUsd(
   return Math.round((inputUsd + outputUsd) * 1_000_000) / 1_000_000;
 }
 
+/**
+ * Seuil de confiance sous lequel une analyse est relancée une fois (puis livrée
+ * quand même, avec ses limites). 0,30 par défaut (0,55 avant le 15/11/2026, trop
+ * strict). Une valeur d'environnement est plafonnée à 0,5.
+ */
+export const FORMCHECK_DEFAULT_MIN_CONFIDENCE = 0.3;
+export const FORMCHECK_MAX_MIN_CONFIDENCE = 0.5;
+
 export function getFormcheckMinConfidence(env: NodeJS.ProcessEnv = process.env): number {
   const raw = Number(env.FORMCHECK_MIN_CONFIDENCE);
-  return Number.isFinite(raw) && raw > 0 && raw <= 1 ? raw : 0.55;
+  if (!Number.isFinite(raw) || raw <= 0 || raw > 1) return FORMCHECK_DEFAULT_MIN_CONFIDENCE;
+  return Math.min(raw, FORMCHECK_MAX_MIN_CONFIDENCE);
 }
 
 export const FORMCHECK_MAX_ATTEMPTS = 3;

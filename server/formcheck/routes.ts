@@ -280,7 +280,7 @@ export function registerFormcheckRoutes(app: Express) {
 
         const frames = await extractFrames(file.path, probe.durationS!);
         if (frames.length < 12) {
-          return res.status(422).json({ error: "UNREADABLE", message: "Impossible d'extraire des images nettes de cette vidéo. Refilme ta série avec l'appareil photo de ton téléphone et renvoie-la." });
+          return res.status(422).json({ error: "UNREADABLE", message: "Je n'arrive pas à extraire des images nettes de cette vidéo. Refilme ta série avec l'appareil photo de ton téléphone et renvoie-la." });
         }
 
         const analysisId = await store.reserveCreditAndEnqueue({
@@ -298,7 +298,7 @@ export function registerFormcheckRoutes(app: Express) {
         if (String(error?.message || "").includes("FFMPEG_NOT_AVAILABLE")) {
           await notifyAdmin("FormCheck ffmpeg indisponible", "ffmpeg introuvable (FFMPEG_PATH, système, ffmpeg-static).");
         }
-        res.status(500).json({ error: "UPLOAD_PROCESSING_FAILED", message: "On n'a pas pu traiter ta vidéo. Aucun crédit n'a été utilisé, réessaie dans quelques minutes." });
+        res.status(500).json({ error: "UPLOAD_PROCESSING_FAILED", message: "Je n'ai pas pu traiter ta vidéo. Aucun crédit n'a été utilisé, réessaie dans quelques minutes." });
       } finally {
         // La vidéo n'est jamais conservée : seules les images extraites sont stockées.
         if (file?.path) await rm(file.path, { force: true }).catch(() => {});
