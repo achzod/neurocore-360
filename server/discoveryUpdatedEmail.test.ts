@@ -98,3 +98,8 @@ test("send script refuses to run when a mail contains a forbidden word", () => {
   assert.match(script, /DISCOVERY_UPDATED_FORBIDDEN_WORDS/);
   assert.match(script, /FORBIDDEN_WORDS_OK/);
 });
+
+test("claim row satisfies email_tracking.sent_at NOT NULL", () => {
+  assert.match(script, /'claim', 'pending', \$5::jsonb, NOW\(\), NOW\(\)\)/);
+  assert.doesNotMatch(script, /\$5::jsonb, NOW\(\), NULL\)/);
+});
