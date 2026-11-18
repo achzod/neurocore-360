@@ -48,6 +48,7 @@ import {
   type RecoveryCtaCohort,
   type CoachingFormulaLeadInput,
 } from "./emailService";
+import { loadDiscoveryOfferWindow } from "./discoveryOfferWindow";
 import { isEmailSequenceAttempted } from "./emailSequencePolicy";
 import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } from "./peptidesPreviewDeliveryQueue";
 import { processPeptidesPreviewFollowups, setPeptidesPreviewFollowupEnabled, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
@@ -11679,7 +11680,8 @@ export async function registerRoutes(
           if (audit.type === "GRATUIT" && daysSinceSent >= 2 && daysSinceSent < 30) {
             if (!trackingTypes.includes("sendGratuitUpsellEmail")) {
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitUpsellEmail", audit.email);
-              const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
+              const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
+              const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
               if (sent) results.gratuitUpsell++;
               else results.errors++;
             }
@@ -11691,7 +11693,8 @@ export async function registerRoutes(
               const hasConverted = await storage.hasUserPurchased(audit.email);
               if (!hasConverted) {
                 const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ5Email", audit.email);
-                const sent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id);
+                const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
+                const sent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
                 if (sent) results.gratuitJ5++;
                 else results.errors++;
               }
@@ -11704,7 +11707,8 @@ export async function registerRoutes(
               const hasConverted = await storage.hasUserPurchased(audit.email);
               if (!hasConverted) {
                 const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ7Email", audit.email);
-                const sent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id);
+                const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
+                const sent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
                 if (sent) results.gratuitJ7++;
                 else results.errors++;
               }
@@ -12117,7 +12121,13 @@ export async function registerRoutes(
 
       switch (emailType) {
         case "GRATUIT_UPSELL":
-          sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, tracking.id);
+          sent = await sendGratuitUpsellEmail(
+            audit.email,
+            audit.id,
+            baseUrl,
+            tracking.id,
+            await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id)),
+          );
           break;
         case "PREMIUM_J7":
           const hasReview = await storage.hasUserLeftReview(audit.id);
@@ -18009,14 +18019,17 @@ export async function registerRoutes(
         if (audit.type === "GRATUIT") {
           if (daysSinceSent >= 3 && daysSinceSent < 7 && !trackingTypes.includes("sendGratuitUpsellEmail")) {
             const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitUpsellEmail", audit.email);
-            const emailSent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id);
+            // DISCOVERY20 window: 7 days from report_sent_at (same date as the report).
+            const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
+            const emailSent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
             if (emailSent) { sent++; if (sent >= 5) break; }
           }
           if (daysSinceSent >= 5 && daysSinceSent < 10 && !trackingTypes.includes("sendGratuitJ5Email")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ5Email", audit.email);
-              const emailSent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id);
+              const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
+              const emailSent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
@@ -18024,7 +18037,8 @@ export async function registerRoutes(
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ7Email", audit.email);
-              const emailSent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id);
+              const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
+              const emailSent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
@@ -18044,7 +18058,8 @@ export async function registerRoutes(
               if (emailSent) { sent++; if (sent >= 5) break; }
             }
           }
-          // J+30 nurture , pushes the profile-matched coaching formule with DISCOVERY20
+          // J+30 nurture , profile-matched coaching formule at the normal price
+          // (no DISCOVERY20: the offer ends 7 days after the report delivery)
           if (daysSinceSent >= 30 && daysSinceSent < 60 && !trackingTypes.includes("sendDiscoveryJ30NurtureEmail")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
             if (!hasConverted) {

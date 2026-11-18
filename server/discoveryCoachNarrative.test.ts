@@ -264,7 +264,9 @@ test("report-ready email links go through the first-party click tracker", () => 
   assert.match(body, /const trackedReportLink = withEmailClickTracking\(baseUrl, pixelTrackingId, reportLink\)/);
   assert.match(body, /getPrimaryButton\('Consulter le rapport', trackedReportLink/);
   assert.match(body, /getReviewSection\(reportLink, trackedReviewLink\)/);
-  assert.match(body, /getCoachingSection\(auditType, planColor, trackLink\)/);
+  // The coaching section keeps the click tracker; for Discovery it also gets
+  // the dated 7-day offer (bridge link with until=).
+  assert.match(body, /getCoachingSection\(auditType, planColor, trackLink, discoveryOffer\)/);
   assert.match(body, /<a href="\$\{trackedReportLink\}"/);
   assert.match(routes, /isApexReportDestination =[\s\S]{0,200}\(\?:scan\|anabolic\|ultimate\|analysis\|offers\)/);
   assert.match(routes, /"apexlabs\.onrender\.com"/);

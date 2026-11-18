@@ -67,22 +67,24 @@ test("public Discovery promo copy limits DISCOVERY20 to coaching 8 and 12 weeks"
   assert.ok(emailService.includes("Les 4 semaines ne sont pas éligibles au code DISCOVERY20"));
 });
 
-test("every active Discovery CTA email uses the same code, percentage, scope and bridge", () => {
+function emailFunctionSource(emailService: string, name: string): string {
+  const start = emailService.indexOf(`export async function ${name}(`);
+  assert.notEqual(start, -1, name);
+  const next = emailService.indexOf("\nexport async function ", start + 1);
+  return emailService.slice(start, next === -1 ? emailService.length : next);
+}
+
+test("every Discovery CTA email that still carries the code uses the same code, percentage, scope and bridge", () => {
   const emailService = readFileSync(resolve(repositoryRoot, "server/emailService.ts"), "utf8");
   const functions = [
     "sendRecoveryCtaEmail",
     "sendGratuitUpsellEmail",
     "sendGratuitJ5Email",
     "sendGratuitJ7Email",
-    "sendDiscoveryJ14CoachingEmail",
-    "sendDiscoveryJ30NurtureEmail",
   ];
 
   for (const name of functions) {
-    const start = emailService.indexOf(`export async function ${name}`);
-    assert.notEqual(start, -1, name);
-    const next = emailService.indexOf("\nexport async function ", start + 1);
-    const source = emailService.slice(start, next === -1 ? emailService.length : next);
+    const source = emailFunctionSource(emailService, name);
     assert.ok(source.includes("DISCOVERY20"), `${name}: code`);
     assert.ok(source.includes("-20%"), `${name}: percentage`);
     assert.match(source, /8 (?:et|ou) 12 semaines|8 et 12 sem|8 à 12 semaines/u, `${name}: scope`);
@@ -90,6 +92,105 @@ test("every active Discovery CTA email uses the same code, percentage, scope and
     assert.equal(source.includes(["DISCOVERY", "30"].join("")), false, `${name}: retired code`);
     assert.equal(source.includes("-30%"), false, `${name}: competing percentage`);
   }
+});
+
+test("J3, J5 and J7 restate DISCOVERY20 only inside the 7-day report window, with the report's until date", () => {
+  const emailService = readFileSync(resolve(repositoryRoot, "server/emailService.ts"), "utf8");
+  const stages: Array<[string, string]> = [
+    ["sendGratuitUpsellEmail", "j3"],
+    ["sendGratuitJ5Email", "j5"],
+    ["sendGratuitJ7Email", "j7"],
+  ];
+  for (const [name, stage] of stages) {
+    const source = emailFunctionSource(emailService, name);
+    assert.ok(source.includes("offerWindow?: DiscoveryOfferWindow | null"), `${name}: window parameter`);
+    assert.ok(source.includes("const offer = activeDiscoveryOffer(offerWindow);"), `${name}: window gate`);
+    const gate = source.indexOf("const offer = activeDiscoveryOffer(offerWindow);");
+    const fallback = source.indexOf(`sendDiscoveryFollowupWithoutCode("${stage}"`);
+    assert.ok(fallback > gate, `${name}: no-code fallback right after the gate`);
+    assert.ok(gate < source.indexOf("DISCOVERY20"), `${name}: code appears only after the gate`);
+    // The deadline is the report window, never "N days from now".
+    assert.equal(source.includes("formatDeadlineFR("), false, `${name}: relative deadline`);
+    assert.equal(source.includes("DAYS_LEFT"), false, `${name}: fixed days left`);
+    assert.ok(source.includes("const deadlineDate = offer.label;"), `${name}: exact deadline`);
+    const bridgeCalls = source.match(/discoveryCoachingBridgeUrl\([^;]*?\)/gu) ?? [];
+    assert.ok(bridgeCalls.length > 0, `${name}: bridge calls`);
+    for (const call of bridgeCalls) {
+      assert.ok(call.includes("offer.untilIso"), `${name}: until= on ${call}`);
+    }
+    assert.ok(source.includes("withEmailClickTracking(baseUrl, trackingId,"), `${name}: click tracking`);
+  }
+});
+
+test("J14 and J30 never carry DISCOVERY20 or the discount", () => {
+  const emailService = readFileSync(resolve(repositoryRoot, "server/emailService.ts"), "utf8");
+  const stages: Array<[string, string]> = [
+    ["sendDiscoveryJ14CoachingEmail", "j14"],
+    ["sendDiscoveryJ30NurtureEmail", "j30"],
+  ];
+  for (const [name, stage] of stages) {
+    const source = emailFunctionSource(emailService, name);
+    assert.ok(source.includes(`sendDiscoveryFollowupWithoutCode("${stage}"`), `${name}: no-code follow-up`);
+    assert.equal(source.includes("DISCOVERY20"), false, `${name}: code`);
+    assert.equal(/-\s?20\s?%/u.test(source), false, `${name}: discount`);
+    assert.equal(source.includes("discoveryCoachingBridgeUrl"), false, `${name}: promo bridge`);
+    assert.equal(source.includes("getDiscoveryPromoBanner"), false, `${name}: promo banner`);
+  }
+});
+
+test("the Discovery follow-up without code follows the content rules and keeps click tracking", () => {
+  const emailService = readFileSync(resolve(repositoryRoot, "server/emailService.ts"), "utf8");
+  const start = emailService.indexOf("type DiscoveryNoCodeStage");
+  const end = emailService.indexOf("\n}\n", emailService.indexOf("async function sendDiscoveryFollowupWithoutCode("));
+  assert.ok(start > -1 && end > start);
+  const source = emailService.slice(start, end);
+  // Executable code only (comments state the rules themselves).
+  const code = source.split("\n").filter((line) => !line.trim().startsWith("//")).join("\n");
+
+  assert.equal(code.includes("DISCOVERY20"), false, "code");
+  assert.equal(/-\s?20\s?%/u.test(code), false, "discount");
+  assert.equal(/searchParams\.set\("(?:promo|code)"/u.test(code), false, "promo parameter");
+  assert.ok(code.includes("promoCode: null"), "tracking metadata records no code");
+  assert.equal(code.includes("/go/coaching"), false, "promo bridge");
+  assert.equal(/\b(?:visio|visioconf[ée]rence|appel|t[ée]l[ée]phone|rendez-vous|rdv|zoom|google meet)\b/iu.test(code), false, "visio/appel/RDV");
+  assert.equal(/\b\d+(?:[.,]\d+)?\s?(?:mg|g|mcg|µg|ui|iu|ml)\b/iu.test(code), false, "dosage");
+  assert.equal(/\bdose|dosage|posologie\b/iu.test(code), false, "dosage wording");
+  assert.equal(/\b(?:étude|etude|study|pubmed|publié)\b/iu.test(code), false, "study cited");
+  assert.equal(/\bcoach\s+[A-Z][a-z]+/u.test(code), false, "other coach name");
+  assert.equal(/\bvous\b/iu.test(code), false, "tutoiement");
+  assert.ok(code.includes("/offers/anabolic-bioscan"), "Anabolic Bioscan");
+  assert.ok(code.includes("https://www.achzodcoaching.com/formules-coaching"), "coaching at normal price");
+  // Every link of the email goes through the first-party click redirect.
+  for (const link of ["trackedReportLink", "trackedFormulasLink", "trackedBioscanLink", "trackedTierLink"]) {
+    assert.match(code, new RegExp(`const ${link} = [^;]*withEmailClickTracking\\(baseUrl, trackingId,`, "u"), link);
+  }
+  const hrefs = [...code.matchAll(/href="\$\{([A-Za-z]+)\}"/gu)].map((match) => match[1]);
+  for (const href of hrefs) assert.match(href, /^tracked/u, `untracked href ${href}`);
+});
+
+test("the report-ready email shows DISCOVERY20 only with a dated window and a bridge link with until=", () => {
+  const emailService = readFileSync(resolve(repositoryRoot, "server/emailService.ts"), "utf8");
+  const sectionStart = emailService.indexOf("function getCoachingSection(");
+  const section = emailService.slice(sectionStart, emailService.indexOf("\nexport async function ", sectionStart));
+  assert.ok(section.includes("const discoveryPromo = isDiscovery && discoveryOffer"), "code gated on the window");
+  assert.ok(section.includes("Valable 7 jours, jusqu'au"), "dated validity");
+
+  const ready = emailFunctionSource(emailService, "sendReportReadyEmail");
+  assert.ok(ready.includes("resolveDiscoveryOfferWindow({ reportSentAt: new Date() })"), "window starts at delivery");
+  assert.match(ready, /discoveryCoachingBridgeUrl\([^;]*discoveryWindow\.untilIso\)/u, "bridge link with until=");
+  assert.ok(ready.includes("getCoachingSection(auditType, planColor, trackLink, discoveryOffer)"), "tracked coaching section");
+});
+
+test("the sequence schedulers hand J3, J5 and J7 the report-based offer window", () => {
+  const routes = readFileSync(resolve(repositoryRoot, "server/routes.ts"), "utf8");
+  for (const name of ["sendGratuitUpsellEmail", "sendGratuitJ5Email", "sendGratuitJ7Email"]) {
+    const calls = routes.match(new RegExp(`await ${name}\\([\\s\\S]*?\\);`, "gu")) ?? [];
+    assert.ok(calls.length > 0, name);
+    for (const call of calls) {
+      assert.match(call, /offerWindow|loadDiscoveryOfferWindow/u, `${name}: ${call}`);
+    }
+  }
+  assert.ok(routes.includes('import { loadDiscoveryOfferWindow } from "./discoveryOfferWindow";'));
 });
 
 test("the coaching bridge exposes only eligible durations at exact 20 percent prices", () => {
