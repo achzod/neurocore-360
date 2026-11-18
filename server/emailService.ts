@@ -6548,3 +6548,46 @@ export async function sendPeptidesPreviewAdminNotification(
   const delivery = await sendEmailWithTracking({ html: encodeBase64(content.html), text: content.text, subject: content.subject, from: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [{ email: adminEmail }] }, { emailType: "peptidesPreviewAdmin", recipientEmail: adminEmail, recipientName: "Achzod", auditId: leadId, auditType: "PEPTIDES_PREVIEW", metadata: { leadId, clientEmail: input.email, status: result.status, nextStep: result.nextStep, grandTotalUsd: result.estimatedGrandTotalUsd } });
   return delivery.result === true;
 }
+
+export async function sendAdminBloodQaHoldNotification(
+  reportId: string,
+  clientEmail: string,
+  reasons: string[],
+): Promise<boolean> {
+  try {
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
+    const items = reasons.map((r) => `<li style="margin: 0 0 6px;">${r}</li>`).join("");
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 24px; font-size: 22px; font-weight: 700;">
+        Rapport Blood bloque avant envoi
+      </h2>
+      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8;">
+        <strong style="color: ${COLORS.text};">Client:</strong> ${clientEmail || "inconnu"}<br/>
+        <strong style="color: ${COLORS.text};">Bilan:</strong> <code>${reportId}</code>
+      </p>
+      <p style="color: ${COLORS.text}; font-size: 14px;">Valeurs biologiquement improbables (probable erreur d'extraction ou d'unite) :</p>
+      <ul style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.6;">${items}</ul>
+      <p style="color: ${COLORS.primary}; font-size: 14px;">Corrige le marqueur (patch-marker) puis force-send. Rien n'est parti chez le client.</p>
+    `;
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(getEmailWrapper(content)),
+        text: `Rapport Blood ${reportId} (${clientEmail}) bloque: ${reasons.join(" | ")}`,
+        subject: `[ApexLabs] Rapport Blood bloque: valeur improbable (${clientEmail || reportId})`,
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email: adminEmail }],
+      },
+      {
+        emailType: "sendAdminBloodQaHoldNotification",
+        recipientEmail: adminEmail,
+        auditId: reportId,
+        auditType: "BLOOD",
+        metadata: { clientEmail, reasons },
+      },
+    );
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending blood QA hold notification:", error);
+    return false;
+  }
+}

@@ -14,7 +14,7 @@
 
 import { searchArticles } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
-import { OPENAI_REPORT_MODEL, runOpenAIText } from "../openaiResponses";
+import { OPENAI_REPORT_MODEL, retrieveStoredOpenAIResponseText, runOpenAIText } from "../openaiResponses";
 import { hasExactNumericMention } from "./quality-gates";
 import {
   BIOMARKER_RANGES,
@@ -1387,6 +1387,40 @@ function enforceExpertSupplementsSection(
  * Each call generates a batch of related sections using streaming.
  * Returns a map of { sectionKey: sectionContent }.
  */
+// A background Response that outlives the client deadline is still paid,
+// durable provider work. Falling back to the deterministic template here
+// produced a generic report with wrong directions (Younes Youssfi
+// 2026-11-18: all 3 batches pending after 12 min, completed ~15 min later).
+// Wait for the stored response instead of throwing it away.
+const DURABLE_PENDING_WAIT_MS = Number(process.env.BLOOD_DURABLE_PENDING_WAIT_MS || 25 * 60_000);
+const DURABLE_PENDING_POLL_MS = 30_000;
+
+export function extractDurablePendingResponseId(error: unknown): string | null {
+  const message = String((error as any)?.message || error || "");
+  const match = message.match(/OPENAI_DURABLE_RESPONSE_PENDING:(resp_[A-Za-z0-9]+)/);
+  return match ? match[1] : null;
+}
+
+async function waitForDurableBatchResponse(error: unknown, label: string): Promise<string> {
+  const responseId = extractDurablePendingResponseId(error);
+  if (!responseId) throw error;
+  const deadline = Date.now() + DURABLE_PENDING_WAIT_MS;
+  console.warn(`[BatchHTML] ${label}: response ${responseId} still running, waiting for stored result`);
+  let lastError: unknown = error;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, DURABLE_PENDING_POLL_MS));
+    try {
+      const stored = await retrieveStoredOpenAIResponseText(responseId);
+      console.log(`[BatchHTML] ${label}: recovered stored response ${responseId}, ${stored.text.length} chars`);
+      return stored.text;
+    } catch (pollError: any) {
+      lastError = pollError;
+      if (!/not completed/i.test(String(pollError?.message || ""))) throw pollError;
+    }
+  }
+  throw lastError;
+}
+
 async function generateBatchedContent(
   ctx: BatchContext,
   batchResponseTexts?: readonly string[],
@@ -1413,7 +1447,7 @@ async function generateBatchedContent(
             batch.prompt,
             batch.maxTokens,
             batch.label,
-          );
+          ).catch((error) => waitForDurableBatchResponse(error, batch.label));
       if (!rawContent) {
         throw new Error(`${batch.label} returned an empty response`);
       }

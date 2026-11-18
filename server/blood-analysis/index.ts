@@ -3136,10 +3136,28 @@ export function buildFallbackAnalysis(
   };
   const getMarkerDirection = (marker: MarkerAnalysis): "high" | "low" | "in-range" => {
     const bounds = parseRangeBounds(marker.normalRange);
-    if (bounds.min == null || bounds.max == null) return "in-range";
-    if (marker.value < bounds.min) return "low";
-    if (marker.value > bounds.max) return "high";
+    if (bounds.min != null && bounds.max != null) {
+      if (marker.value < bounds.min) return "low";
+      if (marker.value > bounds.max) return "high";
+    }
     return "in-range";
+  };
+  // Direction against the optimal range, used for wording. A B12 at 285 with
+  // optimal 500-800 is "bas", never "haut" (fallback bug 2026-11-18).
+  const getOptimalDirection = (marker: MarkerAnalysis): "high" | "low" | "in-range" => {
+    const strict = getMarkerDirection(marker);
+    if (strict !== "in-range") return strict;
+    const opt = parseRangeBounds(marker.optimalRange);
+    if (opt.min != null && marker.value < opt.min) return "low";
+    if (opt.max != null && opt.max < 999 && marker.value > opt.max) return "high";
+    return "in-range";
+  };
+  const formatTargetRange = (range?: string): string => {
+    if (!range) return "zone optimale";
+    const b = parseRangeBounds(range);
+    if (b.min != null && b.max != null && b.max >= 999) return `> ${b.min}`;
+    if (b.min != null && b.max != null && b.min <= 0) return `< ${b.max}`;
+    return range;
   };
   const buildDeepDiveNarrative = (marker: MarkerAnalysis) => {
     const direction = getMarkerDirection(marker);
@@ -3275,7 +3293,7 @@ export function buildFallbackAnalysis(
     formatList(
       [...critical, ...suboptimal].slice(0, 6).map(
         (marker) =>
-          `[${statusToPriority(marker.status)}] ${marker.name} (${marker.value} ${marker.unit || ""}) -> cible ${marker.optimalRange || "zone optimale"}`
+          `[${statusToPriority(marker.status)}] ${marker.name} (${marker.value} ${marker.unit || ""}) -> cible ${formatTargetRange(marker.optimalRange)}`
       ),
       "Aucune alerte majeure."
     )
@@ -3693,7 +3711,7 @@ export function buildFallbackAnalysis(
         .map((candidate) => `${candidate.name} (${candidate.value} ${candidate.unit || ""})`)
         .join(" + ");
       const panel = getMarkerPanelName(marker.markerId, marker.category).toLowerCase();
-      const direction = getMarkerDirection(marker);
+      const direction = getOptimalDirection(marker);
       sections.push(
         `${index + 1}. ${marker.name} (${marker.value} ${marker.unit || ""}) en signal ${direction === "in-range" ? "hors-optimal modere" : direction === "high" ? "haut" : "bas"} est relie a ${linked || "d'autres signaux du panel"} via l'axe ${panel}.`
       );
@@ -3766,7 +3784,7 @@ export function buildFallbackAnalysis(
   sections.push("### Retest & conditions de prelevement");
   if (critical.length || suboptimal.length) {
     [...critical, ...suboptimal].slice(0, 8).forEach((marker) => {
-      sections.push(`- ${marker.name}: actuel ${marker.value} ${marker.unit || ""} -> cible ${marker.optimalRange || "zone optimale"} -> retest a J+60/J+90`);
+      sections.push(`- ${marker.name}: actuel ${marker.value} ${marker.unit || ""} -> cible ${formatTargetRange(marker.optimalRange)} -> retest a J+60/J+90`);
     });
   } else {
     sections.push("- Retest de consolidation a 12 semaines.");
