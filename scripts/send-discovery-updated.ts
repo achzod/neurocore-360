@@ -77,6 +77,10 @@ async function buildList() {
   const res = await pool.query(
     `SELECT a.id, lower(trim(a.email)) AS email, a.created_at, a.report_delivery_status, a.report_sent_at,
             a.narrative_report, a.report_txt, a.report_html, a.responses,
+            COALESCE((SELECT json_agg(json_build_object('txt', r.txt, 'html', r.html, 'contentSha256', r.content_sha256)
+                                      ORDER BY r.created_at DESC)
+                        FROM report_artifacts r
+                       WHERE r.audit_id = a.id AND r.artifact_state = 'ACTIVE'), '[]'::json) AS report_artifacts,
             EXISTS (SELECT 1 FROM email_unsubscribes u WHERE lower(u.email) = lower(trim(a.email))) AS unsub,
             EXISTS (SELECT 1 FROM email_tracking e WHERE lower(e.recipient_email) = lower(trim(a.email))
                      AND ((coalesce(e.sendpulse_error,'') || coalesce(e.metadata::text,'')) ILIKE '%hard_fail%'
@@ -96,6 +100,9 @@ async function buildList() {
     const gq = row.narrative_report?.generationQuality;
     const gate = evaluateCanonicalDiscoveryArtifacts(resolveCanonicalDiscoveryArtifacts({
       narrativeReport: row.narrative_report, reportTxt: row.report_txt, reportHtml: row.report_html,
+      // La gate canonique exige exactement un artefact ACTIF identique au rendu
+      // déterministe : sans ces lignes, tout audit était exclu (report_artifact_count:0/1).
+      reportArtifacts: Array.isArray(row.report_artifacts) ? row.report_artifacts : [],
     }));
     const reason =
       row.report_delivery_status !== "SENT" || !row.report_sent_at ? "pas_SENT"
