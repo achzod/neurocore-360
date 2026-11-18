@@ -1967,6 +1967,19 @@ export function registerBloodTestsRoutes(app: Express): void {
         analysis: { ...deriveAiProcessingMeta("upload_generation_pending") },
       });
 
+      // Dashboard uploads never notified the admin (2026-11-18). Same alert as
+      // the other paid flows, fire-and-forget so the client is never blocked.
+      if (!isInternalQaEmail(profile.email)) {
+        import("../emailService.js")
+          .then(({ sendAdminEmailNewAudit }) => sendAdminEmailNewAudit(
+            String(profile.email || user.email || ""),
+            [profile.prenom, profile.nom].filter(Boolean).join(" ") || String(profile.email || ""),
+            "BLOOD_ANALYSIS",
+            baseRecord.id,
+          ))
+          .catch((err) => console.error("[BloodTests] Admin notification failed:", err));
+      }
+
       const age = getAgeFromDob(profile.dob);
       const analysisResult = await analyzeBloodwork(extractedMarkers, {
         gender: profile.gender,

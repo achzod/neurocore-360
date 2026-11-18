@@ -1602,6 +1602,7 @@ REGLES CRITIQUES:
   * TESTOSTERONE LIBRE (R.I.A.) = testosterone_libre → prends la valeur en pg/ml (PAS pmol/l)
 - Si un marqueur apparait en DEUX unites (ex: nmol/l ET pg/ml), prends l'unite listee ci-dessous comme unite attendue
 - EXCEPTION Lp(a): prefere obligatoirement la valeur en mg/dL; si elle est fournie en mg/L, retourne la valeur brute avec unit_source=mg/L. Si seule une valeur en nmol/L est disponible, ne retourne pas Lp(a), car aucune conversion universelle fiable vers mg/dL n'existe.
+- FORMULE LEUCOCYTAIRE (neutrophiles, lymphocytes, monocytes, eosinophiles, basophiles): le laboratoire imprime souvent un POURCENTAGE puis une valeur ABSOLUE (G/L, giga/L, 10^9/L, /mm3). Prends TOUJOURS la valeur absolue, jamais le pourcentage. Si seul le pourcentage existe, retourne-le avec unit_source="%". Extrais aussi les leucocytes totaux (globules_blancs).
 - Pour les valeurs avec virgule francaise (ex: 6,7) interprete comme 6.7 (point decimal)
 - ATTENTION aux en-tetes de page (ex: "TESTOSTERONE LIBRE" suivi de "TESTOSTERONE HOMME") : ce ne sont PAS des resultats, ignore-les
 
@@ -1650,12 +1651,41 @@ ${cleaned.slice(0, 20000)}`;
 
     const rawItems: Array<Record<string, unknown>> = JSON.parse(response.text)?.markers || [];
     console.log(`[BloodAnalysis] OpenAI raw extraction: ${JSON.stringify(rawItems.filter((i: any) => /testost/i.test(i.markerId)).slice(0, 5))}`);
+    // A leukocyte differential printed as a percentage must never be read as
+    // G/L (2026-11-18: 39.2 % neutrophils stored as 39.2 G/L produced a false
+    // "critical" report). Convert with the total white count when we have it,
+    // otherwise drop the marker rather than invent an absolute count.
+    const CBC_DIFFERENTIAL_IDS = new Set(["neutrophiles", "lymphocytes", "monocytes", "eosinophiles", "basophiles"]);
+    const wbcItem = rawItems.find((item: any) => String(item?.markerId || "").trim() === "globules_blancs");
+    const wbcValue = wbcItem && !/%/.test(String((wbcItem as any).unit_source || "")) ? Number((wbcItem as any).value) : NaN;
+    const wbcGL = Number.isFinite(wbcValue) && wbcValue > 0
+      ? (wbcValue > 300 ? wbcValue / 1000 : wbcValue)
+      : NaN;
+    const droppedDifferentials = new Set<string>();
     const extracted = rawItems
       .flatMap((item: Record<string, unknown>): Array<{ markerId: string; value: number; unit?: string }> => {
         const markerId = String((item as any).markerId || "").trim();
         const unitSource = String((item as any).unit_source || (item as any).unit || "").trim();
         const normalizedSourceUnit = normalizeUnit(unitSource || undefined);
         if (markerId === "lpa" && normalizedSourceUnit === "nmol/L") return [];
+        if (CBC_DIFFERENTIAL_IDS.has(markerId)) {
+          const rawValue = Number((item as any).value);
+          const looksLikePercent = /%/.test(unitSource) ||
+            (Number.isFinite(wbcGL) && rawValue > wbcGL) ||
+            (markerId === "neutrophiles" && rawValue > 25) ||
+            (markerId === "lymphocytes" && rawValue > 15) ||
+            (markerId !== "neutrophiles" && markerId !== "lymphocytes" && rawValue > 3);
+          if (looksLikePercent) {
+            if (!Number.isFinite(wbcGL) || !Number.isFinite(rawValue) || rawValue > 100) {
+              console.warn(`[BloodAnalysis] Dropped ${markerId}=${rawValue} (${unitSource || "no unit"}): percentage without total WBC`);
+              droppedDifferentials.add(markerId);
+              return [];
+            }
+            const absolute = Math.round(((rawValue * wbcGL) / 100) * 100) / 100;
+            console.warn(`[BloodAnalysis] Converted ${markerId} ${rawValue}% x WBC ${wbcGL} G/L -> ${absolute} G/L`);
+            return [{ markerId, value: absolute, unit: BIOMARKER_RANGES[markerId]?.unit }];
+          }
+        }
         return [{
           markerId,
           value: normalizeMarkerValue(markerId, Number((item as any).value), unitSource || undefined),
@@ -1670,6 +1700,7 @@ ${cleaned.slice(0, 20000)}`;
     for (const item of extracted) {
       unique.set(item.markerId, item);
     }
+    for (const markerId of droppedDifferentials) unique.delete(markerId);
     if (!hasExplicitApoBResult) unique.delete("apob");
     console.log(`[BloodAnalysis] OpenAI extracted ${extracted.length} markers (overriding regex)`);
 
