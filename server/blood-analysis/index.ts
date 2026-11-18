@@ -2379,8 +2379,20 @@ export const validateReportStructure = (
     availableSourceIds && availableSourceIds.size > 0
       ? Math.max(1, Math.min(baseMinSourceCitations, availableSourceIds.size))
       : 0;
-  if (minSourceCitations > 0 && citedSourceIds.length < minSourceCitations) {
+  // A report that cites almost every required source is still a complete,
+  // client-ready report. Rejecting it threw away a full paid generation and
+  // relaunched it several times (2026-11-18: 7/8 citations, ~10 USD for one
+  // client, who only received the deterministic fallback). Only fail when the
+  // shortfall is real: fewer than 75 % of the target, or none at all.
+  const citationTolerance = Math.max(1, Math.floor(minSourceCitations * 0.25));
+  if (
+    minSourceCitations > 0 &&
+    citedSourceIds.length < minSourceCitations &&
+    (citedSourceIds.length === 0 || citedSourceIds.length < minSourceCitations - citationTolerance)
+  ) {
     reasons.push(`insufficient_source_citations:${citedSourceIds.length}/${minSourceCitations}`);
+  } else if (minSourceCitations > 0 && citedSourceIds.length < minSourceCitations) {
+    console.warn(`[BloodAnalysis] Source citations slightly below target (${citedSourceIds.length}/${minSourceCitations}), accepted`);
   }
 
   if (availableSourceIds && availableSourceIds.size > 0) {

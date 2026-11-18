@@ -494,6 +494,8 @@ type BloodTestOperationalRecord = {
   markers?: unknown;
   analysis?: unknown;
   patientProfile?: unknown;
+  fileName?: string | null;
+  fileSize?: number | null;
 };
 
 const getStoredBloodNarrative = (analysisValue: unknown): string => {
@@ -595,15 +597,31 @@ const collapseRecentBloodDuplicates = <T extends BloodTestOperationalRecord>(rec
 const findRecentBloodDuplicate = <T extends BloodTestOperationalRecord>(
   records: T[],
   markers: unknown,
+  file?: { fileName?: string; fileSize?: number },
 ): T | undefined => {
   const fingerprint = getBloodMarkerFingerprint(markers);
   if (!fingerprint) return undefined;
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const fileName = String(file?.fileName || "").trim().toLowerCase();
+  const fileSize = Number(file?.fileSize || 0);
+  // AI extraction is not deterministic: the same PDF uploaded twice gave 25
+  // then 26 markers (2026-11-18), so an exact fingerprint missed the duplicate
+  // and billed a second full report. Same file, or an equivalent panel, counts.
+  const isSameFile = (record: T) => {
+    const recordName = String(record.fileName || "").trim().toLowerCase();
+    const recordSize = Number(record.fileSize || 0);
+    return Boolean(fileName) && recordName === fileName &&
+      (!fileSize || !recordSize || recordSize === fileSize);
+  };
   return records
     .filter((record) =>
       new Date(record.createdAt).getTime() >= cutoff &&
       ["processing", "completed"].includes(String(record.status || "")) &&
-      getBloodMarkerFingerprint(record.markers) === fingerprint
+      (
+        getBloodMarkerFingerprint(record.markers) === fingerprint ||
+        haveEquivalentBloodMarkerPanels(record.markers, markers) ||
+        isSameFile(record)
+      )
     )
     .sort((a, b) => getBloodReportQualityRank(b) - getBloodReportQualityRank(a))[0];
 };
@@ -1856,7 +1874,10 @@ export function registerBloodTestsRoutes(app: Express): void {
       // Protect credits and the dashboard from accidental double submissions.
       // The same marker set within 24 hours resolves to the existing job.
       const existingTests = await storage.getBloodTestsByUserId(user.id);
-      const duplicate = findRecentBloodDuplicate(existingTests, extractedMarkers);
+      const duplicate = findRecentBloodDuplicate(existingTests, extractedMarkers, {
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+      });
       if (duplicate) {
         res.status(409).json({
           error: "Ce bilan a deja ete importe. Ton credit n'a pas ete debite.",
