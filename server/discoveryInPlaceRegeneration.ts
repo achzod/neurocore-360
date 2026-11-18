@@ -138,7 +138,11 @@ export function validateInPlaceV3Report(report: any, assets: { txt: string; html
   }
   const words = narrative ? discoveryCoachWordCount(narrative) : 0;
   if (words < DISCOVERY_COACH_MIN_WORDS || words > DISCOVERY_COACH_MAX_WORDS + 50) errors.push(`v3:words:${words}`);
-  if (/QUALITY_[A-Z_]+|consigne interne|note interne/i.test(all)) errors.push("v3:internal_note");
+  // report_txt legitimately carries QUALITY_* metadata lines; only the
+  // rendered sections are checked for internal notes.
+  const sectionsPlain = (Array.isArray(report?.sections) ? report.sections : [])
+    .map((section: any) => plainText(String(section?.content || ""))).join("\n");
+  if (/QUALITY_[A-Z_]+|consigne interne|note interne/i.test(sectionsPlain)) errors.push("v3:internal_note");
   return errors;
 }
 
@@ -401,19 +405,10 @@ export async function regenerateDiscoveryReportInPlace(input: {
       coachNarrative: result.coachNarrative,
       coachProvenance,
     };
-    const regeneratedAt = new Date().toISOString();
     const assembled: any = await convertToNarrativeReport(result, claim.responses as any);
-    assembled.remediation = {
-      ...(assembled.remediation || {}),
-      inPlaceRegeneration: {
-        runId: input.runId,
-        itemId: claim.itemId,
-        backupId: claim.backupId,
-        previousArtifactHash: claim.expectedArtifactHash,
-        previousVersion: (claim.previous.narrativeReport as any)?.generationQuality?.version ?? null,
-        regeneratedAt,
-      },
-    };
+    // No extra key is added to the report: the v3 gate rebuilds it
+    // deterministically and compares it byte for byte. Provenance of this
+    // regeneration lives in discovery_inplace_regen_items / discovery_report_backups.
     const assets = buildDiscoveryReportAssets(assembled);
     const validation = validateDiscoveryReportForDelivery(assembled, assets, nonRenderedMetadata);
     const factual = validateDiscoveryReportAgainstResponses(assembled, claim.responses as any, nonRenderedMetadata);
