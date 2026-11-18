@@ -259,27 +259,34 @@ async function claimInPlaceItem(runId: string, auditId: string): Promise<InPlace
     if (reasons.length > 0) throw new Error(`DISCOVERY_INPLACE_INELIGIBLE:${reasons.join("|")}`);
     const expectedArtifactHash = discoveryInPlaceArtifactHash(audit.report_txt, audit.report_html);
     const claimedAt = new Date().toISOString();
-    await client.query(
+    // preserved_sent_at and the backup are copied in SQL straight from the
+    // audit row so report_sent_at keeps its exact microsecond value (a JS Date
+    // round-trip truncates to milliseconds and would break the swap CAS).
+    const insertedItem = await client.query(
       `INSERT INTO discovery_inplace_regen_items
          (id, run_id, audit_id, token, state, fence_token, preserved_status, preserved_sent_at,
           expected_artifact_hash, expected_narrative_sha256, expected_responses_sha256,
           tracking_count, delivery_claim_count, claimed_at)
-       VALUES ($1,$2::uuid,$3,$4::uuid,'GENERATING',$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-      [itemId, runId, auditId, token, fenceToken, audit.report_delivery_status, audit.report_sent_at,
-        expectedArtifactHash, discoveryInPlaceSha256(audit.narrative_report),
+       SELECT $1,$2::uuid,a.id,$3::uuid,'GENERATING',$4,a.report_delivery_status,a.report_sent_at,
+              $5,$6,$7,$8,$9,$10
+         FROM audits a WHERE a.id = $11
+       RETURNING id`,
+      [itemId, runId, token, fenceToken, expectedArtifactHash, discoveryInPlaceSha256(audit.narrative_report),
         discoveryInPlaceSha256(audit.responses), Number(audit.tracking_count || 0),
-        Number(audit.claim_count || 0), claimedAt],
+        Number(audit.claim_count || 0), claimedAt, auditId],
     );
-    await client.query(
+    if ((insertedItem.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_INPLACE_ITEM_INSERT_FAILED");
+    const insertedBackup = await client.query(
       `INSERT INTO discovery_report_backups
          (id, run_id, item_id, audit_id, report_delivery_status, report_sent_at,
           narrative_report, report_txt, report_html, scores, artifact_hash)
-       VALUES ($1,$2::uuid,$3::uuid,$4,$5,$6,$7::jsonb,$8,$9,$10::jsonb,$11)`,
-      [backupId, runId, itemId, auditId, audit.report_delivery_status, audit.report_sent_at,
-        audit.narrative_report == null ? null : JSON.stringify(audit.narrative_report),
-        audit.report_txt, audit.report_html,
-        audit.scores == null ? null : JSON.stringify(audit.scores), expectedArtifactHash],
+       SELECT $1,$2::uuid,$3::uuid,a.id,a.report_delivery_status,a.report_sent_at,
+              a.narrative_report::jsonb,a.report_txt,a.report_html,a.scores::jsonb,$4
+         FROM audits a WHERE a.id = $5
+       RETURNING id`,
+      [backupId, runId, itemId, expectedArtifactHash, auditId],
     );
+    if ((insertedBackup.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_INPLACE_BACKUP_INSERT_FAILED");
     await client.query("COMMIT");
     return {
       itemId,
@@ -582,7 +589,9 @@ async function swapInPlace(
           SET narrative_report = $2::jsonb, scores = $3::jsonb, report_txt = $4, report_html = $5
         WHERE id = $1 AND type = 'GRATUIT'
           AND report_delivery_status = $6
-          AND report_sent_at IS NOT DISTINCT FROM $7::timestamptz
+          AND report_sent_at IS NOT DISTINCT FROM (
+            SELECT i.preserved_sent_at FROM discovery_inplace_regen_items i WHERE i.id = $7::uuid
+          )
           AND report_txt IS NOT DISTINCT FROM $8
           AND report_html IS NOT DISTINCT FROM $9
           AND NOT EXISTS (
@@ -592,7 +601,7 @@ async function swapInPlace(
           AND ${DISCOVERY_SUPERSEDED_TERMINAL_SQL}
         RETURNING id`,
       [input.auditId, JSON.stringify(next.narrativeReport), JSON.stringify(next.scores), next.txt, next.html,
-        claim.preservedStatus, claim.preservedSentAt, audit.report_txt, audit.report_html],
+        claim.preservedStatus, claim.itemId, audit.report_txt, audit.report_html],
     );
     if ((updated.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_INPLACE_AUDIT_CAS_FAILED");
     const invariant = await client.query(
@@ -658,12 +667,14 @@ export async function restoreDiscoveryReportFromBackup(input: { runId: string; a
     const updated = await client.query(
       `UPDATE audits SET narrative_report = $2::jsonb, report_txt = $3, report_html = $4, scores = $5::jsonb
         WHERE id = $1 AND report_delivery_status = $6
-          AND report_sent_at IS NOT DISTINCT FROM $7::timestamptz
+          AND report_sent_at IS NOT DISTINCT FROM (
+            SELECT i.preserved_sent_at FROM discovery_inplace_regen_items i WHERE i.id = $7::uuid
+          )
           AND report_txt IS NOT DISTINCT FROM $8 AND report_html IS NOT DISTINCT FROM $9
         RETURNING id`,
       [input.auditId, backup.narrative_report == null ? null : JSON.stringify(backup.narrative_report),
         backup.report_txt, backup.report_html, backup.scores == null ? null : JSON.stringify(backup.scores),
-        backup.preserved_status, backup.preserved_sent_at, current.report_txt, current.report_html],
+        backup.preserved_status, backup.item_id, current.report_txt, current.report_html],
     );
     if ((updated.rowCount ?? 0) !== 1) throw new Error("DISCOVERY_INPLACE_RESTORE_CAS_FAILED");
     const active = await client.query(
