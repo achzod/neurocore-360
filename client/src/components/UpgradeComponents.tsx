@@ -34,7 +34,7 @@ function getHeroText(analysis: ReturnType<typeof analyzeDiscoveryRecommendation>
   return {
     label: 'Passe au niveau supérieur',
     headline: 'Ton Discovery a identifié tes leviers de progression',
-    subline: 'Pour aller plus loin, approfondis les données avant de choisir une stratégie personnalisée.',
+    subline: 'Pour aller plus loin, approfondis les données avant de choisir une stratégie sur mesure.',
     primaryCta: 'Anabolic Bioscan · 59€',
     primaryLink: '/offers/anabolic-bioscan',
     secondaryCta: 'Coaching Achzod',
@@ -146,7 +146,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ theme }) => {
   const features = [
     { label: 'Problèmes détectés', discovery: true, anabolic: true, ultimate: true },
     { label: 'Recommandations', discovery: 'Générales', anabolic: 'Précises', ultimate: 'Précises' },
-    { label: 'Stack Suppléments', discovery: false, anabolic: 'Personnalisé', ultimate: 'Personnalisé' },
+    { label: 'Stack Suppléments', discovery: false, anabolic: 'Sur mesure', ultimate: 'Sur mesure' },
     { label: 'Protocoles Matin/Soir', discovery: false, anabolic: true, ultimate: true },
     { label: 'Reset Digestif 14j', discovery: false, anabolic: true, ultimate: true },
     { label: 'Analyse Posturale 3D', discovery: false, anabolic: false, ultimate: true },
@@ -491,7 +491,7 @@ export const SmartRecommendation: React.FC<SmartRecommendationProps> = ({
             className="text-[10px] font-bold uppercase tracking-widest mb-1"
             style={{ color: theme.colors.primary }}
           >
-            Recommandation personnalisée ,  basée sur tes résultats Discovery
+            Ma recommandation ,  basée sur tes résultats Discovery
           </p>
           <h4 className="text-lg font-bold" style={{ color: theme.colors.text }}>
             {headline}
@@ -569,7 +569,7 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show, clientName })
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
         <div className="hidden md:block">
           <p className="text-sm font-bold" style={{ color: theme.colors.text }}>
-            Ton protocole peptides personnalisé
+            Ton protocole peptides sur mesure
           </p>
           <p className="text-xs" style={{ color: theme.colors.textMuted }}>
             Dosages exacts, source -90%, jusqu'à 2 bilans sanguins inclus
@@ -734,7 +734,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
               <h4 className="font-bold" style={{ color: theme.colors.text }}>Peptides Engine</h4>
             </div>
             <p className="text-sm mb-4" style={{ color: theme.colors.text }}>
-              Protocole peptides personnalisé avec dosages exacts, accès à la source, guide complet et jusqu'à 2 bilans sanguins inclus
+              Protocole peptides sur mesure avec dosages exacts, accès à la source, guide complet et jusqu'à 2 bilans sanguins inclus
             </p>
             <div className="text-xs" style={{ color: '#F59E0B' }}>
               399€ · Livraison 48h par email
@@ -754,7 +754,7 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({ theme, auditId }) => {
               <h4 className="font-bold" style={{ color: theme.colors.text }}>Coaching Achzod</h4>
             </div>
             <p className="text-sm mb-4" style={{ color: theme.colors.textMuted }}>
-              Suivi personnalisé : nutrition, entraînement, supplémentation. Ajustements en temps réel selon tes bilans.
+              Suivi sur mesure : nutrition, entraînement, supplémentation. Ajustements en temps réel selon tes bilans.
             </p>
             <div className="text-xs" style={{ color: theme.colors.primary }}>
               À partir de 249€ · Code ANALYSE20 = -20%

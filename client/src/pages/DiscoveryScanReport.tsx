@@ -176,7 +176,7 @@ const DiscoveryScanReport: React.FC = () => {
           if (nextAttempt <= maxRegenAttempts) {
             regenTimer.current = window.setTimeout(() => fetchReport(nextAttempt), 3500);
           } else {
-            setError("Regeneration en attente trop longue. Clique sur Recalculer ou reessaie plus tard.");
+            setError("Ton rapport prend plus de temps que prévu. Clique sur Recalculer ou réessaie plus tard.");
             setIsRegenerating(false);
           }
           return;
@@ -405,7 +405,7 @@ const DiscoveryScanReport: React.FC = () => {
           <Loader2 className="w-12 h-12 animate-spin text-white/50 mx-auto mb-4" />
           <p className="text-white/70">
             {isRegenerating
-              ? "Je recalcule ton rapport Discovery. La page se met a jour automatiquement..."
+              ? "Je prépare ton rapport Discovery. La page s'affiche dès qu'il est prêt..."
               : "Chargement du rapport..."}
           </p>
           {isRegenerating && (
@@ -782,7 +782,7 @@ const DiscoveryScanReport: React.FC = () => {
                     features={[
                       'Analyse posturale 3D (upload 3 photos)',
                       'Analyse HRV & récupération avancée',
-                      'Protocoles matin et soir personnalisés',
+                      'Protocoles matin et soir sur mesure',
                       'Stack Suppléments basé sur TES données exactes',
                       "Plan d'action 30-60-90 jours avec milestones",
                       'Dashboard temps réel à vie'
