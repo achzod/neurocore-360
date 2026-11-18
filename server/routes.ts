@@ -49,6 +49,7 @@ import {
   type CoachingFormulaLeadInput,
 } from "./emailService";
 import { loadDiscoveryOfferWindow } from "./discoveryOfferWindow";
+import { discoveryOfferWindowForRecipient } from "./discoveryOfferRecipient";
 import { isEmailSequenceAttempted } from "./emailSequencePolicy";
 import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } from "./peptidesPreviewDeliveryQueue";
 import { processPeptidesPreviewFollowups, setPeptidesPreviewFollowupEnabled, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
@@ -9535,13 +9536,16 @@ export async function registerRoutes(
             "sendRecoveryCtaEmail",
             candidate.email
           );
+          // DISCOVERY20 window: latest delivered Discovery report + 7 days.
+          // Outside it (clicked_no_conversion included) the email has no code.
+          const offerWindow = await discoveryOfferWindowForRecipient(candidate.email);
           const ok = await sendRecoveryCtaEmail(candidate.email, {
             cohort: candidate.cohort,
             baseUrl,
             trackingId: trackingRecord.id,
             percentComplete: candidate.percentComplete,
             resumeUrl,
-            expiresText: "7 jours",
+            offerWindow,
           });
 
           if (ok) {
@@ -9742,11 +9746,12 @@ export async function registerRoutes(
             "sendRecoveryCtaEmail",
             candidate.email
           );
+          const offerWindow = await discoveryOfferWindowForRecipient(candidate.email);
           const ok = await sendRecoveryCtaEmail(candidate.email, {
             cohort: "clicked_help",
             baseUrl,
             trackingId: trackingRecord.id,
-            expiresText: "72 heures",
+            offerWindow,
           });
           if (ok) sent++;
           else failed++;
@@ -9991,17 +9996,34 @@ export async function registerRoutes(
         }
         const promoCode = promoConfig.code;
 
-        console.log(`[Review] Sending promo code ${promoCode} to ${review.email} (${review.auditType})`);
+        // DISCOVERY20 follows the report window (report_sent_at + 7 days):
+        // after it, the review thank-you goes out without code or discount
+        // and the code is not marked as sent.
+        let discovery: { offerWindow: Awaited<ReturnType<typeof loadDiscoveryOfferWindow>>; baseUrl: string; trackingId: string | null } | null = null;
+        if (promoCode === "DISCOVERY20") {
+          const reviewedAudit = review.auditId ? await storage.getAudit(review.auditId).catch(() => null) : null;
+          const offerWindow = reviewedAudit
+            ? await loadDiscoveryOfferWindow({ id: reviewedAudit.id, reportSentAt: (reviewedAudit as any).reportSentAt ?? null }, (id) => storage.getAudit(id))
+            : null;
+          const tracking = await storage.createEmailTracking(review.auditId || crypto.randomUUID(), "sendPromoCodeEmail", review.email).catch(() => null);
+          discovery = { offerWindow, baseUrl: getBaseUrl(req), trackingId: tracking?.id ?? null };
+        }
+        const codeIncluded = promoCode !== "DISCOVERY20" || Boolean(discovery?.offerWindow?.active);
+
+        console.log(`[Review] Sending ${codeIncluded ? `promo code ${promoCode}` : "thank-you without code"} to ${review.email} (${review.auditType})`);
         const emailSent = await sendPromoCodeEmail(
           review.email,
           clientName,
           review.auditType,
-          promoCode
+          promoCode,
+          discovery
         );
 
-        if (emailSent) {
+        if (emailSent && codeIncluded) {
           await reviewStorage.markPromoCodeSent(reviewId, promoCode);
           console.log(`[Review] ✅ Promo code email sent successfully to ${review.email}`);
+        } else if (emailSent) {
+          console.log(`[Review] ✅ Thank-you without code sent to ${review.email} (Discovery offer window over)`);
         } else {
           console.error(`[Review] ❌ Failed to send promo code email to ${review.email}`);
         }
@@ -10550,7 +10572,6 @@ export async function registerRoutes(
       const lead = (body.lead || body) as CoachingFormulaLeadInput & { email?: string };
       const email = String(lead.email || "").trim().toLowerCase();
       const dryRun = body.dryRun === true;
-      const expiresText = String(body.expiresText || "5 jours");
 
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         res.status(400).json({ success: false, error: "email valide requis" });
@@ -10589,6 +10610,9 @@ export async function registerRoutes(
 
       const baseUrl = getBaseUrl(req);
       const trackingId = crypto.randomUUID();
+      // DISCOVERY20 window: latest delivered Discovery report of this lead + 7 days.
+      const offerWindow = await discoveryOfferWindowForRecipient(email);
+      const offerActive = Boolean(offerWindow?.active);
       if (dryRun) {
         res.json({
           success: true,
@@ -10597,6 +10621,8 @@ export async function registerRoutes(
           trackingId,
           tier: lead.tier || null,
           baseUrl,
+          offerVariant: offerActive ? "code" : "no_code",
+          offerUntil: offerWindow?.untilIso ?? null,
         });
         return;
       }
@@ -10609,7 +10635,7 @@ export async function registerRoutes(
       const sent = await sendCoachingFormulaChoiceLeadEmail(email, lead, {
         baseUrl,
         trackingId: trackingRecord.id,
-        expiresText,
+        offerWindow,
       });
 
       if (!sent) {
@@ -10617,7 +10643,7 @@ export async function registerRoutes(
         return;
       }
 
-      res.json({ success: true, email, trackingId: trackingRecord.id });
+      res.json({ success: true, email, trackingId: trackingRecord.id, offerVariant: offerActive ? "code" : "no_code", offerUntil: offerWindow?.untilIso ?? null });
     } catch (error) {
       console.error("[Admin] send-coaching-formula-choice-lead error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur", message: error instanceof Error ? error.message : String(error) });
