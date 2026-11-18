@@ -1,6 +1,11 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
 import { DISCOVERY_TRANSACTION_FENCE_KEY } from "./discoveryTransactionalPersistence";
+import {
+  DISCOVERY_INPLACE_MAX_CALLS_PER_ITEM,
+  DISCOVERY_INPLACE_MAX_RUN_USD,
+  discoveryInPlaceIncidentKey,
+} from "./discoveryInPlaceRegenerationSchema";
 
 export interface AICostBudgetLimits {
   perOrderUsd: number;
@@ -28,6 +33,37 @@ export interface AICostBudgetContext {
   /** Discovery v3: the single corrective call after a candidate failed
    * deterministic validation, inside the same generic generation. */
   discoveryValidationRetry?: boolean;
+  /** Discovery in-place regeneration of an existing report: durable run and
+   * item token. Mutually exclusive with generic and batch ownership. */
+  discoveryInPlaceRunId?: string;
+  discoveryInPlaceItemToken?: string;
+}
+
+/** Exact artifact hash shared with discoverySentRemediation.discoveryArtifactHash. */
+function discoveryInPlaceArtifactHash(txt: unknown, html: unknown): string {
+  return createHash("sha256")
+    .update(String(txt || ""), "utf8")
+    .update("\0", "utf8")
+    .update(String(html || ""), "utf8")
+    .digest("hex");
+}
+
+/** Pure decision used before every in-place provider reservation. */
+export function evaluateDiscoveryInPlaceReservation(input: {
+  itemCalls: number;
+  itemUnsettled: number;
+  validationRetry: boolean;
+  runSpentUsd: number;
+  runMaxUsd: number;
+  perCallUsd: number;
+}): string | null {
+  if (!(input.runMaxUsd > 0) || input.runMaxUsd > DISCOVERY_INPLACE_MAX_RUN_USD) return "DISCOVERY_INPLACE_RUN_CAP_INVALID";
+  if (input.itemUnsettled !== 0) return "DISCOVERY_INPLACE_UNSETTLED_CALL";
+  if (input.itemCalls >= DISCOVERY_INPLACE_MAX_CALLS_PER_ITEM) return "DISCOVERY_INPLACE_CALL_LIMIT_REACHED";
+  if (input.itemCalls === 0 && input.validationRetry) return "DISCOVERY_INPLACE_RETRY_WITHOUT_FIRST_CALL";
+  if (input.itemCalls === 1 && !input.validationRetry) return "DISCOVERY_INPLACE_SECOND_CALL_MUST_BE_RETRY";
+  if (input.runSpentUsd + input.perCallUsd > input.runMaxUsd + 1e-9) return "DISCOVERY_INPLACE_RUN_BUDGET_EXHAUSTED";
+  return null;
 }
 
 export interface AICostBudgetSpendSnapshot {
@@ -412,7 +448,14 @@ export async function reserveAICostBudget(
     discoveryBatchId: rawContext.discoveryBatchId,
     discoveryBatchLockToken: rawContext.discoveryBatchLockToken,
     discoveryValidationRetry: rawContext.discoveryValidationRetry === true,
+    discoveryInPlaceRunId: rawContext.discoveryInPlaceRunId,
+    discoveryInPlaceItemToken: rawContext.discoveryInPlaceItemToken,
   };
+  if (context.product === "discovery" && context.discoveryInPlaceItemToken) {
+    // The in-place ledger binds every reservation to its run and item.
+    context.authorizationId = String(context.discoveryInPlaceRunId || "").trim().slice(0, 160);
+    context.incidentKey = discoveryInPlaceIncidentKey(context.discoveryInPlaceItemToken);
+  }
   if (!context.orderId) {
     throw new Error("AI cost budget requires an orderId");
   }
@@ -443,10 +486,65 @@ export async function reserveAICostBudget(
       const hasBatchOwnership = Boolean(
         context.discoveryBatchId && context.discoveryBatchLockToken,
       );
-      if (hasGenericOwnership === hasBatchOwnership) {
+      const hasInPlaceOwnership = Boolean(
+        context.discoveryInPlaceRunId && context.discoveryInPlaceItemToken,
+      );
+      if ([hasGenericOwnership, hasBatchOwnership, hasInPlaceOwnership].filter(Boolean).length !== 1) {
         throw new Error("DISCOVERY_PROVIDER_OWNERSHIP_REQUIRED");
       }
-      if (hasBatchOwnership) {
+      if (hasInPlaceOwnership) {
+        const owned = await client.query(
+          `SELECT i.state, i.fence_token, i.preserved_status, i.preserved_sent_at,
+                  i.expected_artifact_hash, r.max_total_usd, r.status AS run_status,
+                  a.type, a.report_delivery_status, a.report_sent_at, a.report_txt, a.report_html
+             FROM discovery_inplace_regen_items i
+             JOIN discovery_inplace_regen_runs r ON r.id = i.run_id
+             JOIN audits a ON a.id = i.audit_id
+            WHERE i.run_id = $1::uuid AND i.audit_id = $2 AND i.token = $3::uuid
+            FOR UPDATE OF i, a`,
+          [context.discoveryInPlaceRunId, context.orderId, context.discoveryInPlaceItemToken],
+        );
+        const item = owned.rows[0];
+        if (!item || item.state !== "GENERATING" || item.run_status !== "OPEN" || item.type !== "GRATUIT"
+          || item.report_delivery_status !== item.preserved_status
+          || (item.report_sent_at ? new Date(item.report_sent_at).getTime() : null)
+            !== (item.preserved_sent_at ? new Date(item.preserved_sent_at).getTime() : null)
+          || discoveryInPlaceArtifactHash(item.report_txt, item.report_html) !== item.expected_artifact_hash) {
+          throw new Error("DISCOVERY_INPLACE_PROVIDER_OWNERSHIP_LOST");
+        }
+        const fence = await client.query(
+          `SELECT token::text AS token, (expires_at > NOW()) AS active
+             FROM discovery_operation_lock WHERE lock_key = 'discovery-global'`,
+        );
+        const currentFenceToken = fence.rows[0]?.token ? String(fence.rows[0].token) : null;
+        if (fence.rows[0]?.active || currentFenceToken !== (item.fence_token ?? null)) {
+          throw new Error("DISCOVERY_INPLACE_PROVIDER_FENCE_STALE");
+        }
+        const itemCalls = await client.query(
+          `SELECT COUNT(*)::int AS count,
+                  COUNT(*) FILTER (WHERE status <> 'COMPLETED')::int AS unsettled
+             FROM ai_cost_budget_reservations
+            WHERE product = 'discovery' AND order_id = $1 AND incident_key = $2`,
+          [context.orderId, context.incidentKey],
+        );
+        const runSpend = await client.query(
+          `SELECT COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN COALESCE(actual_cost_usd, 0)
+                                    ELSE GREATEST(COALESCE(actual_cost_usd, 0), reserved_cost_usd) END), 0) AS spent
+             FROM ai_cost_budget_reservations
+            WHERE product = 'discovery' AND authorization_id = $1
+              AND incident_key LIKE 'discovery-inplace:%'`,
+          [context.authorizationId],
+        );
+        const refusal = evaluateDiscoveryInPlaceReservation({
+          itemCalls: Number(itemCalls.rows[0]?.count || 0),
+          itemUnsettled: Number(itemCalls.rows[0]?.unsettled || 0),
+          validationRetry: context.discoveryValidationRetry === true,
+          runSpentUsd: Number(runSpend.rows[0]?.spent || 0),
+          runMaxUsd: Number(item.max_total_usd),
+          perCallUsd: reservedUsd,
+        });
+        if (refusal) throw new Error(refusal);
+      } else if (hasBatchOwnership) {
         const batchOwnership = await client.query(
           `SELECT b.stage,i.retry_of_candidate_id
              FROM discovery_batch_items i
@@ -528,10 +626,12 @@ export async function reserveAICostBudget(
       if (regenerationAuthorized || legacyRepairRetryAuthorized) {
         limits = { ...limits, perOrderUsd: 1.50 };
       }
-      if (
+      // In-place regeneration owns its own per-item call ledger (above); the
+      // lifetime per-audit USD ceiling below still applies unchanged.
+      if (!hasInPlaceOwnership && (
         (!regenerationAuthorized && !legacyRepairRetryAuthorized && !validationRetryAuthorized && previousCount !== 0)
         || (regenerationAuthorized && (previousCount !== 1 || unsettled !== 0))
-      ) {
+      )) {
         throw new Error("DISCOVERY_MONO_CALL_ALREADY_RESERVED");
       }
     }

@@ -61,13 +61,16 @@ test("notification requires premium provenance and becomes one-shot after claim"
   }), ["superseded_terminal"]);
 });
 
-test("provider-based SENT remediation is fail-closed before any provider or transaction", () => {
+test("provider-based SENT remediation delegates to the durable in-place v3 path only", () => {
   const source = readFileSync(new URL("./discoverySentRemediation.ts", import.meta.url), "utf8");
   const start = source.indexOf("export async function regenerateSentDiscoveryInPlace");
   const end = source.indexOf("export async function repairSentDiscoveryFactsInPlace", start);
   const providerRemediation = source.slice(start, end);
-  assert.match(providerRemediation, /DISCOVERY_SENT_REMEDIATION_PROVIDER_DISABLED/);
-  assert.doesNotMatch(providerRemediation, /analyzeDiscoveryScan|pool\.connect|BEGIN/);
+  assert.match(providerRemediation, /regenerateDiscoveryReportInPlace/);
+  assert.match(providerRemediation, /runId/);
+  assert.match(providerRemediation, /expectedPreviousFallbackHash/);
+  // No provider call, transaction or status write of its own.
+  assert.doesNotMatch(providerRemediation, /analyzeDiscoveryScan|pool\.connect|BEGIN|UPDATE audits|report_delivery_status\s*=/);
 });
 
 test("sent remediation stores canonical Discovery scores with the replacement artifacts", () => {

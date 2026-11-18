@@ -697,6 +697,8 @@ export interface OpenAITextRequest {
     | "discoveryBatchId"
     | "discoveryBatchLockToken"
     | "discoveryValidationRetry"
+    | "discoveryInPlaceRunId"
+    | "discoveryInPlaceItemToken"
   >;
 }
 
@@ -715,8 +717,9 @@ export async function runOpenAIText(request: OpenAITextRequest): Promise<OpenAIT
     const budget = request.costBudget;
     const hasGenericOwnership = Boolean(budget?.discoveryGenerationToken);
     const hasBatchOwnership = Boolean(budget?.discoveryBatchId && budget?.discoveryBatchLockToken);
+    const hasInPlaceOwnership = Boolean(budget?.discoveryInPlaceRunId && budget?.discoveryInPlaceItemToken);
     if (!budget || budget.product !== "discovery" || !budget.orderId
-      || hasGenericOwnership === hasBatchOwnership) {
+      || [hasGenericOwnership, hasBatchOwnership, hasInPlaceOwnership].filter(Boolean).length !== 1) {
       throw new Error("DISCOVERY_DURABLE_PROVIDER_AUTHORIZATION_REQUIRED");
     }
   }
