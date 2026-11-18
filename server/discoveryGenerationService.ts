@@ -9,6 +9,7 @@ import {
   discoveryCatalogSelectionSha256,
   isDiscoveryRejectedCandidateError,
   validateDiscoveryCatalogReportProvenance,
+  validateDiscoveryCoachReportProvenance,
   validateDiscoveryReportAgainstResponses,
   validateDiscoveryReportForDelivery,
 } from "./discovery-scan";
@@ -17,6 +18,7 @@ import {
   evaluateDiscoveryDeliveryGate,
 } from "./discoveryDeliveryGate";
 import { storage } from "./storage";
+import { DISCOVERY_COACH_VERSION, discoveryCoachNarrativeSha256 } from "./discoveryCoachNarrative";
 import { isDiscoverySupersededTerminal } from "./discoverySupersededPolicy";
 import { isDiscoveryTransactionalAutomationEligible } from "./discoveryAutomationPolicy";
 import {
@@ -62,7 +64,16 @@ async function runClaimedDiscoveryGeneration(
     });
     const evidence = result.providerEvidence;
     const catalogProvenance = result.catalogProvenance;
-    if (!evidence?.responseId || !catalogProvenance
+    const coachProvenance = result.coachProvenance;
+    if (coachProvenance || result.coachNarrative) {
+      if (!evidence?.responseId || !coachProvenance || !result.coachNarrative
+        || coachProvenance.version !== DISCOVERY_COACH_VERSION
+        || coachProvenance.providerResponseId !== evidence.responseId
+        || coachProvenance.narrativeSha256 !== discoveryCoachNarrativeSha256(result.coachNarrative)
+        || evidence.narrativeSha256 !== coachProvenance.narrativeSha256) {
+        throw new Error("DISCOVERY_GENERIC_COACH_PROVIDER_EVIDENCE_MISMATCH");
+      }
+    } else if (!evidence?.responseId || !catalogProvenance
       || catalogProvenance.editorialSourceSha256 !== DISCOVERY_MECHANISM_EDITORIAL_SOURCE_SHA256
       || evidence.catalogVersion !== DISCOVERY_MECHANISM_CATALOG_VERSION
       || evidence.catalogSha256 !== DISCOVERY_MECHANISM_CATALOG_SHA256
@@ -73,12 +84,20 @@ async function runClaimedDiscoveryGeneration(
       || catalogProvenance.providerResponseId !== evidence.responseId) {
       throw new Error("DISCOVERY_GENERIC_CATALOG_PROVIDER_EVIDENCE_MISMATCH");
     }
-    const nonRenderedMetadata = {
-      blocages: result.blocages,
-      ctaMessage: result.ctaMessage,
-      questionnaireCoverage: result.questionnaireCoverage,
-      catalogProvenance,
-    };
+    const nonRenderedMetadata = coachProvenance
+      ? {
+        blocages: result.blocages,
+        ctaMessage: result.ctaMessage,
+        questionnaireCoverage: result.questionnaireCoverage,
+        coachNarrative: result.coachNarrative,
+        coachProvenance,
+      }
+      : {
+        blocages: result.blocages,
+        ctaMessage: result.ctaMessage,
+        questionnaireCoverage: result.questionnaireCoverage,
+        catalogProvenance,
+      };
     let report: Awaited<ReturnType<typeof convertToNarrativeReport>> | undefined;
     let assets: ReturnType<typeof buildDiscoveryReportAssets> | undefined;
     let gate: ReturnType<typeof evaluateDiscoveryDeliveryGate> | undefined;
@@ -92,7 +111,9 @@ async function runClaimedDiscoveryGeneration(
         nonRenderedMetadata,
       );
       gate = evaluateDiscoveryDeliveryGate(report, assets, undefined, nonRenderedMetadata);
-      const catalogErrors = validateDiscoveryCatalogReportProvenance(report, evidence.responseId);
+      const catalogErrors = coachProvenance
+        ? validateDiscoveryCoachReportProvenance(report, evidence.responseId)
+        : validateDiscoveryCatalogReportProvenance(report, evidence.responseId);
       if (!validation.ok || !factual.ok || !gate.ok || catalogErrors.length > 0) {
         throw new Error([...validation.errors, ...factual.errors, ...gate.errors, ...catalogErrors].join("|"));
       }

@@ -1184,6 +1184,24 @@ export async function registerRoutes(
       return cleaned || fallback;
     };
     const code = cleanParam(req.query.code, "DISCOVERY20").toUpperCase();
+    // Discovery v3 report links carry the 7-day validity date shown in the
+    // report. Past that date the bridge no longer hands out the code.
+    const untilRaw = String(req.query.until || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(untilRaw)) {
+      const todayParis = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(new Date());
+      if (todayParis > untilRaw) {
+        const untilLabel = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })
+          .format(new Date(`${untilRaw}T12:00:00Z`));
+        const formulas = new URL("/formules-coaching", "https://www.achzodcoaching.com");
+        formulas.searchParams.set("utm_source", "apexlabs");
+        formulas.searchParams.set("utm_medium", "bridge");
+        formulas.searchParams.set("utm_campaign", "discovery_offer_expired");
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store");
+        res.status(410).send(`<!doctype html><html lang="fr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Offre expirée - Achzod Coaching</title><style>body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f8fb;color:#111827}main{width:min(640px,calc(100% - 32px));margin:48px auto;background:#fff;border:1px solid #d9dde5;border-radius:8px;padding:28px}a{color:#1166ff;font-weight:800}</style></head><body><main><h1>Cette offre a expiré</h1><p>Ton -20 % lié au Discovery Scan était valable jusqu'au ${escapeHtml(untilLabel)}.</p><p>Tu peux toujours voir les formules ou m'écrire si tu as une question.</p><p><a href="${escapeHtml(formulas.toString())}">Voir les formules coaching</a></p></main></body></html>`);
+        return;
+      }
+    }
     const campaign = cleanParam(req.query.utm_campaign, "discovery20");
     const content = cleanParam(req.query.utm_content, "coaching_bridge");
     const selectedTier = cleanParam(req.query.tier, "");
@@ -11577,14 +11595,21 @@ export async function registerRoutes(
       const allowedCoachingHosts = new Set(["achzodcoaching.com", "www.achzodcoaching.com"]);
       const allowedApexBridgeHosts = new Set([
         "apexlabs.achzodcoaching.com",
+        "apexlabs.onrender.com",
         "neurocore-360.onrender.com",
       ]);
       const isCoachingDestination = allowedCoachingHosts.has(redirectUrl.hostname);
       const isApexCoachingBridge =
         allowedApexBridgeHosts.has(redirectUrl.hostname) &&
         redirectUrl.pathname === "/go/coaching";
+      // Report links ("Consulter le rapport", review anchor, offer pages) are
+      // first-party too. Before this, the report-ready email linked straight
+      // to the report, so no click could ever be recorded for it.
+      const isApexReportDestination =
+        allowedApexBridgeHosts.has(redirectUrl.hostname) &&
+        /^\/(?:scan|anabolic|ultimate|analysis|offers)\/[A-Za-z0-9_-]+\/?$/.test(redirectUrl.pathname);
 
-      if (redirectUrl.protocol !== "https:" || (!isCoachingDestination && !isApexCoachingBridge)) {
+      if (redirectUrl.protocol !== "https:" || (!isCoachingDestination && !isApexCoachingBridge && !isApexReportDestination)) {
         res.status(400).send("Invalid redirect URL");
         return;
       }
@@ -12310,10 +12335,12 @@ export async function registerRoutes(
       const existingReport = audit.narrativeReport as any;
       const storedTxt = String((audit as any).reportTxt || existingReport?.txt || "").trim();
       const storedHtml = String((audit as any).reportHtml || existingReport?.html || "").trim();
+      // v3 (coach) reports are deliberately short: 7 sections instead of 12.
+      const minimumSectionCount = existingReport?.generationQuality?.version === 3 ? 7 : 10;
       const reportHasEnoughSections =
         existingReport &&
         Array.isArray(existingReport.sections) &&
-        existingReport.sections.length >= 10;
+        existingReport.sections.length >= minimumSectionCount;
       const reportHasEnoughMetrics =
         existingReport &&
         Array.isArray(existingReport.metrics) &&

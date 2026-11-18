@@ -17,7 +17,7 @@ test("transactional Discovery generation is cutoff-gated and budgeted by exact a
       < generation.indexOf("analyzeDiscoveryScan(audit.responses"),
   );
   assert.match(generation, /costBudgetAuditId: audit\.id/);
-  assert.match(scan, /product: "discovery"[\s\S]*orderId: costBudgetAuditId[\s\S]*estimatedCostUsd: DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD/);
+  assert.match(scan, /product: "discovery"[\s\S]*orderId: costBudgetAuditId[\s\S]*estimatedCostUsd: DISCOVERY_COACH_MAX_COST_PER_CALL_USD/);
   assert.match(generation, /costBudgetGenerationToken: claim\.token/);
   assert.match(persistence, /created_at >= \$3/);
 

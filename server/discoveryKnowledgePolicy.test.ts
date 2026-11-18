@@ -34,7 +34,15 @@ import {
   validateDiscoveryNonRenderedMetadata,
   validateDiscoveryReportForDelivery,
   validateDiscoverySectionContent,
+  preflightDiscoveryKnowledge,
+  buildDiscoveryCoachProviderRequest,
 } from "./discovery-scan";
+import {
+  buildDiscoveryCoachSchema,
+  DISCOVERY_COACH_MAX_ATTEMPTS,
+  DISCOVERY_COACH_MAX_COST_PER_CALL_USD,
+  DISCOVERY_COACH_MAX_OUTPUT_TOKENS,
+} from "./discoveryCoachNarrative";
 import { deriveDiscoverySafetyPolicy } from "./discoverySafetyPolicy";
 
 function completeDiscoveryResponses(overrides: Record<string, unknown> = {}) {
@@ -157,72 +165,57 @@ test("zero training cannot be presented as a correct 70/100", () => {
   }), 67);
 });
 
-test("Discovery generation has no degraded path and preflights all knowledge before OpenAI", () => {
+test("Discovery v3 generation has no degraded path and no knowledge-base read before OpenAI", () => {
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
 
   assert.doesNotMatch(source, /Generation en mode degrade/);
-  assert.match(source, /const knowledgePreflight = await preflightDiscoveryKnowledge/);
+  // v3 sends no generic knowledge-base excerpt to the provider, so the
+  // analysis no longer reads the knowledge base at all.
+  assert.doesNotMatch(source, /const knowledgePreflight = await preflightDiscoveryKnowledge/);
+  assert.match(source, /const knowledgePreflight: DiscoveryKnowledgePreflight = \{ synthesis: "", domains: \{\} \}/);
   assert.match(source, /for \(const domain of domains\)/);
   assert.match(source, /dependencies\.generateNarrative \|\| generateDiscoveryNarrativeAI/);
-  assert.match(source, /label:\s*"discovery-unified-report"/);
+  assert.match(source, /label: request\.attempt > 1 \? "discovery-coach-report-retry" : "discovery-coach-report"/);
   assert.doesNotMatch(source, /knowledgeContexts = await Promise\.all/);
 });
 
-test("transient DB timeout exhausts bounded retries with zero OpenAI calls", async () => {
+test("knowledge preflight (offline tooling) exhausts bounded retries on a transient DB timeout", async () => {
   const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
-  let openAICalls = 0;
   let domainCalls = 0;
   const retryDelays: number[] = [];
 
   await assert.rejects(
-    analyzeDiscoveryScan(
-      completeDiscoveryResponses(),
-      {
-        loadSynthesisKnowledge: async () => canonicalContext,
-        loadDomainKnowledge: async () => {
-          domainCalls += 1;
-          const error = new Error("timeout exceeded when trying to connect");
-          (error as Error & { code?: string }).code = "ETIMEDOUT";
-          throw error;
-        },
-        generateNarrative: async () => {
-          openAICalls += 1;
-          return { synthesis: "must not run", sections: {} };
-        },
-        retryDelay: async (milliseconds) => { retryDelays.push(milliseconds); },
+    preflightDiscoveryKnowledge([], DISCOVERY_PREMIUM_DOMAINS, {
+      loadSynthesisKnowledge: async () => canonicalContext,
+      loadDomainKnowledge: async () => {
+        domainCalls += 1;
+        const error = new Error("timeout exceeded when trying to connect");
+        (error as Error & { code?: string }).code = "ETIMEDOUT";
+        throw error;
       },
-    ),
+      retryDelay: async (milliseconds) => { retryDelays.push(milliseconds); },
+    }),
     /timeout exceeded/i,
   );
 
   assert.equal(domainCalls, 3);
   assert.deepEqual(retryDelays, [250, 750]);
-  assert.equal(openAICalls, 0);
 });
 
-test("sleep 0/200 fails closed before OpenAI and exposes only safe structured metadata", async () => {
+test("knowledge preflight sleep 0/200 fails closed and exposes only safe structured metadata", async () => {
   const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
-  let openAICalls = 0;
   let capturedError: unknown;
 
   try {
-    await analyzeDiscoveryScan(
-      completeDiscoveryResponses({ email: "secret@example.test" }),
-      {
-        loadSynthesisKnowledge: async () => canonicalContext,
-        loadDomainKnowledge: async (domain) => domain === "sommeil" ? "" : canonicalContext,
-        generateNarrative: async () => {
-          openAICalls += 1;
-          return { synthesis: "must not run", sections: {} };
-        },
-        retryDelay: async () => {},
-      },
-    );
+    await preflightDiscoveryKnowledge([], DISCOVERY_PREMIUM_DOMAINS, {
+      loadSynthesisKnowledge: async () => canonicalContext,
+      loadDomainKnowledge: async (domain) => domain === "sommeil" ? "" : canonicalContext,
+      retryDelay: async () => {},
+    });
   } catch (error) {
     capturedError = error;
   }
 
-  assert.equal(openAICalls, 0);
   assert.match(String(capturedError), /section sommeil: 0\/200 characters/i);
   const diagnostic = getDiscoveryKnowledgePreflightDiagnostic(capturedError);
   assert.deepEqual(diagnostic, {
@@ -437,12 +430,11 @@ test("isolated canary normal mode without an OpenAI key blocks before the provid
   assert.equal(providerCalls, 0);
 });
 
-test("knowledge preflight is sequential and covers synthesis plus all eight domains", async () => {
+test("knowledge preflight is sequential; v3 analysis never touches the knowledge base", async () => {
   const canonicalContext = "Canonical scientific mechanism with enough precise evidence for premium generation. ".repeat(6);
   const loaded: string[] = [];
   let concurrent = 0;
   let maxConcurrent = 0;
-  let openAICalls = 0;
   const load = async (scope: string) => {
     concurrent += 1;
     maxConcurrent = Math.max(maxConcurrent, concurrent);
@@ -452,23 +444,32 @@ test("knowledge preflight is sequential and covers synthesis plus all eight doma
     return canonicalContext;
   };
 
+  const preflight = await preflightDiscoveryKnowledge([], DISCOVERY_PREMIUM_DOMAINS, {
+    loadSynthesisKnowledge: async () => load("synthesis"),
+    loadDomainKnowledge: async (domain) => load(domain),
+    retryDelay: async () => {},
+  });
+  assert.equal(maxConcurrent, 1);
+  assert.deepEqual(loaded, ["synthesis", ...DISCOVERY_PREMIUM_DOMAINS]);
+  assert.deepEqual(Object.keys(preflight.domains), [...DISCOVERY_PREMIUM_DOMAINS]);
+
+  let knowledgeReads = 0;
+  let openAICalls = 0;
   const result = await analyzeDiscoveryScan(
     completeDiscoveryResponses(),
     {
-      loadSynthesisKnowledge: async () => load("synthesis"),
-      loadDomainKnowledge: async (domain) => load(domain),
+      loadSynthesisKnowledge: async () => { knowledgeReads += 1; return canonicalContext; },
+      loadDomainKnowledge: async () => { knowledgeReads += 1; return canonicalContext; },
       generateNarrative: async () => {
         openAICalls += 1;
-        assert.deepEqual(loaded, ["synthesis", ...DISCOVERY_PREMIUM_DOMAINS]);
         return { synthesis: "Synthese premium valide", sections: {} };
       },
       retryDelay: async () => {},
     },
   );
-
-  assert.equal(maxConcurrent, 1);
+  assert.equal(knowledgeReads, 0);
   assert.equal(openAICalls, 1);
-  assert.deepEqual(Object.keys(result.knowledgePreflight.domains), [...DISCOVERY_PREMIUM_DOMAINS]);
+  assert.deepEqual(result.knowledgePreflight, { synthesis: "", domains: {} });
 });
 
 test("an encyclopedic 13,910-char section is rejected as commercially overlong", () => {
@@ -570,7 +571,7 @@ test("zero-blockage opening never claims invisible blockages or plateaus", () =>
   assert.doesNotMatch(source, /\$\{result\.blocages\.length\} blocages structurants, souvent invisibles/);
 });
 
-test("provider receives mechanism scopes and no supplied questionnaire facts", () => {
+test("v3 provider receives the answers in French but never the identity fields", () => {
   const facts = buildDiscoveryQuestionnaireFacts({
     prenom: "Thomas",
     email: "private@example.test",
@@ -582,14 +583,28 @@ test("provider receives mechanism scopes and no supplied questionnaire facts", (
     profession: "bureau",
     "qualite-sommeil": "moyenne",
   });
-
+  // The legacy catalogue scope builder stays identity-free.
   assert.match(facts, /sommeil: rythmes circadiens/);
-  assert.match(facts, /training: stimulus, charge, adaptation/);
-  assert.doesNotMatch(facts, /79|184|3 a 4|musculation|bureau|moyenne|private@example\.test/);
+  assert.doesNotMatch(facts, /79|184|private@example\.test/);
 
-  const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
-  assert.ok((source.match(/buildDiscoveryQuestionnaireFacts\(responses\)/g) || []).length >= 1);
-  assert.match(source, /MISSION UNIQUE: selectionner uniquement des identifiants de mecanismes approuves/);
+  const responses = completeDiscoveryResponses({
+    prenom: "Thomas",
+    email: "private@example.test",
+    instagram: "@thomas_secret",
+    telephone: "+33 6 12 34 56 78",
+    "ideal-6mois": "Je veux que Thomas soit fier, ecris-moi a private@example.test ou @thomas_secret",
+  });
+  const { request, answerIds } = buildDiscoveryCoachProviderRequest(responses as any);
+  const sent = `${request.instructions}\n${request.input}`;
+  assert.doesNotMatch(sent, /Thomas|private@example\.test|thomas_secret|12 34 56 78/i);
+  assert.match(sent, /\[prénom\]|\[email retiré\]|\[pseudo retiré\]/);
+  assert.match(sent, /\[PRENOM\]/);
+  assert.ok(answerIds.length > 20);
+  for (const identityKey of ["prenom", "email", "instagram", "telephone"]) {
+    assert.equal(answerIds.includes(identityKey), false, identityKey);
+  }
+  // Answers are sent as natural French, never as raw codes.
+  assert.doesNotMatch(request.input, /\] (?:moins-1L|baisse-moderee|constipe|inconnu|leger)\b/);
 });
 
 test("provided weight, height and training frequency cannot be declared absent", () => {
@@ -1073,31 +1088,43 @@ test("every post-surface text transformer avoids forbidden accentless literals",
   assert.match(tail, /return normalizeDiscoveryFrenchSurface\(repairDiscoveryKnownFrenchCorruptions\(cleaned\)\)/);
 });
 
-test("unified prompt exposes only the bounded catalogue selection contract", () => {
-  const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
+test("v3 provider contract is a strict, closed JSON schema", () => {
+  const schema = buildDiscoveryCoachSchema(["eau-jour", "transit"]) as any;
 
-  assert.match(source, /catalogVersion doit etre exactement/);
-  assert.match(source, /synthesisDomains contient exactement quatre domaines distincts/);
-  assert.match(source, /Chaque domaine contient exactement deux identifiants distincts/);
-  assert.match(source, /additionalProperties:\s*false/);
+  assert.equal(schema.additionalProperties, false);
+  assert.deepEqual(schema.required, ["intro", "lecture", "freins", "actions", "si_rien_ne_change", "dans_6_mois", "domaines", "offre"]);
+  assert.equal(schema.properties.freins.minItems, 3);
+  assert.equal(schema.properties.freins.maxItems, 3);
+  assert.equal(schema.properties.actions.minItems, 3);
+  assert.equal(schema.properties.actions.maxItems, 3);
+  assert.deepEqual(schema.properties.freins.items.properties.reponses.items.enum, ["eau-jour", "transit"]);
+  assert.equal(schema.properties.domaines.additionalProperties, false);
+  assert.deepEqual(schema.properties.domaines.required, [...DISCOVERY_PREMIUM_DOMAINS]);
+  const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
   assert.doesNotMatch(source, /280 a 500 mots, avec au moins 1 400 caracteres visibles hors balises et espaces multiples/);
 });
 
-test("Discovery generation uses one bounded structured call and still rejects incomplete responses", () => {
+test("Discovery generation uses bounded structured calls (one retry max) and still rejects incomplete responses", () => {
   const source = readFileSync(new URL("./discovery-scan.ts", import.meta.url), "utf8");
   const runner = readFileSync(new URL("./openaiResponses.ts", import.meta.url), "utf8");
   const canaryRunner = readFileSync(new URL("../scripts/discovery-unified-isolated-canary.ts", import.meta.url), "utf8");
 
-  assert.match(source, /schemaName:\s*"discovery_unified_report_v1"[\s\S]{0,260}maxOutputTokens:\s*DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS[\s\S]{0,120}retries:\s*1[\s\S]{0,120}label:\s*"discovery-unified-report"/);
-  assert.match(source, /One structured provider call owns the synthesis and all eight domains/);
+  assert.match(source, /schemaName: request\.schemaName,\s*maxOutputTokens: request\.maxOutputTokens,\s*retries: 1,\s*label: request\.attempt > 1 \? "discovery-coach-report-retry" : "discovery-coach-report"/);
+  assert.match(source, /One structured provider call \(plus at most one corrective retry inside\s*\/\/ the generator\) owns the whole narrative/);
+  assert.equal(DISCOVERY_COACH_MAX_ATTEMPTS, 2);
+  assert.equal(DISCOVERY_COACH_MAX_OUTPUT_TOKENS, 6_000);
+  assert.equal(DISCOVERY_COACH_MAX_COST_PER_CALL_USD, 0.25);
+  // Legacy catalogue constants stay available for offline replay only.
   assert.equal(DISCOVERY_UNIFIED_MAX_INPUT_CHARS, 60_000);
   assert.equal(DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS, 14_000);
   assert.equal(DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD, 0.75);
-  assert.match(runner, /DISCOVERY_REASONING_EFFORT\s*=\s*"high"/);
+  // The runner comment pins Discovery to one medium-reasoning contract (the
+  // previous "high" expectation was stale since the profile moved to medium).
+  assert.match(runner, /DISCOVERY_REASONING_EFFORT\s*=\s*"medium"/);
   assert.match(runner, /discovery:\s*{[\s\S]{0,300}effort:\s*DISCOVERY_REASONING_EFFORT[\s\S]{0,300}maxOutputTokens:\s*7_000[\s\S]{0,300}verbosity:\s*"medium"/);
   assert.match(runner, /response\?\.status\s*!==\s*"completed"/);
   assert.match(runner, /OpenAI response incomplete:/);
-  assert.match(runner, /const attempts = request\.profile === "discovery"\s*\? 1\s*:/);
+  assert.match(runner, /const attempts = request\.profile === "discovery"\s*\|\|\s*request\.profile === "peptides"\s*\?\s*1\s*:/);
   assert.match(runner, /client\.responses\.create\([\s\S]{0,900}maxRetries:\s*0/);
   assert.match(canaryRunner, /EXPECTED_DISCOVERY_SAFETY_SHA256/);
   assert.match(canaryRunner, /server\/discoverySafetyPolicy\.ts/);

@@ -8,6 +8,9 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const productionRoots = [resolve(repositoryRoot, "server"), resolve(repositoryRoot, "client/src")];
 const allowedLiteralSources = new Set([
   "client/src/components/CoachingPromoBanner.tsx",
+  // Discovery v3 shows the -20 % code directly in the report offer section
+  // (owner decision 2026-11-18: the review no longer gates the discount).
+  "server/discoveryCoachNarrative.ts",
   "server/emailService.ts",
   "server/routes.ts",
   "server/storage.ts",
@@ -43,12 +46,18 @@ test("the retired Discovery promotion is absent from production sources", () => 
   assert.deepEqual(occurrences, []);
 });
 
-test("stored Discovery report templates never contain the promo code before approval", () => {
+test("legacy report templates keep the review-gated copy; v3 reports show the code with its scope and 7-day validity", () => {
   const reportGenerator = readFileSync(resolve(repositoryRoot, "server/discovery-scan.ts"), "utf8");
   assert.equal(reportGenerator.includes("DISCOVERY20"), false);
   assert.ok(reportGenerator.includes("Laisse un avis validé pour recevoir -20 % par email."));
-});
 
+  const coach = readFileSync(resolve(repositoryRoot, "server/discoveryCoachNarrative.ts"), "utf8");
+  assert.ok(coach.includes('DISCOVERY_COACH_PROMO_CODE = "DISCOVERY20"'));
+  assert.ok(coach.includes("DISCOVERY_COACH_PROMO_VALIDITY_DAYS = 7"));
+  assert.ok(coach.includes("sur les formules 8 et 12 semaines (pas sur les 4 semaines)"));
+  assert.ok(coach.includes("Il ne conditionne rien, ton code est déjà à toi."));
+  assert.equal(coach.includes("4 semaines\", price"), false);
+});
 test("public Discovery promo copy limits DISCOVERY20 to coaching 8 and 12 weeks", () => {
   const banner = readFileSync(resolve(repositoryRoot, "client/src/components/CoachingPromoBanner.tsx"), "utf8");
   const emailService = readFileSync(resolve(repositoryRoot, "server/emailService.ts"), "utf8");

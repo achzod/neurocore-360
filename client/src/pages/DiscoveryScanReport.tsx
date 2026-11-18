@@ -77,7 +77,7 @@ const getScoreStatus = (value: number) => {
   if (value >= 8) return { label: 'FORT', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
   if (value >= 6) return { label: 'MOYEN', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
   if (value >= 4) return { label: 'FAIBLE', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
-  return { label: 'CRITIQUE', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
+  return { label: 'PRIORITÉ', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
 };
 
 const stripCitationHtml = (html: string): string => {
@@ -106,6 +106,8 @@ const DiscoveryScanReport: React.FC = () => {
   const regenTimer = useRef<number | null>(null);
   const reviewRequestSequence = useRef(0);
   const displayName = reportData ? formatName(reportData.clientName) : "Profil";
+  // Discovery v3 ("coach") reports: short, personalised, offer already inside.
+  const isCoachReport = (reportData as any)?.generationQuality?.version === 3;
   const rawMetrics = reportData?.metrics ?? [];
   const displayMetrics = rawMetrics.map(metric => ({
     ...metric,
@@ -772,7 +774,7 @@ const DiscoveryScanReport: React.FC = () => {
                   />
                 )}
 
-                {idx === 2 && (
+                {idx === 2 && !isCoachReport && (
                   <UpgradeTeaser
                     theme={currentTheme}
                     title="Tu veux approfondir ces axes ?"
@@ -798,7 +800,7 @@ const DiscoveryScanReport: React.FC = () => {
                   />
                 )}
 
-                {idx === 5 && (
+                {idx === 5 && !isCoachReport && (
                   <UpgradeTeaser
                     theme={currentTheme}
                     title="Ce que Discovery ne peut PAS analyser"
@@ -817,12 +819,15 @@ const DiscoveryScanReport: React.FC = () => {
             ))}
           </div>
 
-          {/* Smart Recommendation - personalized scan suggestion */}
-          <SmartRecommendation
-            theme={currentTheme}
-            metrics={reportData.metrics}
-            globalScore={displayGlobalScore}
-          />
+          {/* Smart Recommendation - personalized scan suggestion. v3 reports
+              already carry a personalised offer section, so it is skipped. */}
+          {!isCoachReport && (
+            <SmartRecommendation
+              theme={currentTheme}
+              metrics={reportData.metrics}
+              globalScore={displayGlobalScore}
+            />
+          )}
 
           {/* Review Section */}
           <section id="review" className="py-16" style={{ borderTop: `1px solid var(--color-border)` }}>
@@ -831,7 +836,9 @@ const DiscoveryScanReport: React.FC = () => {
                 <Star className="w-10 h-10 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
                 <h3 className="text-2xl font-bold mb-2">Ton avis compte</h3>
                 <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  Laisse un avis et reçois ton code promo <strong>-20%</strong> sur le coaching Achzod par email !
+                  {isCoachReport
+                    ? <>Ce scan t'a parlé ? Dis-moi ce que tu en penses en 30 secondes. Ton avis m'aide à l'améliorer, et ton code <strong>-20%</strong> reste valable quoi qu'il arrive.</>
+                    : <>Laisse un avis et reçois ton code promo <strong>-20%</strong> sur le coaching Achzod par email !</>}
                 </p>
               </div>
 
@@ -842,7 +849,9 @@ const DiscoveryScanReport: React.FC = () => {
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                     {hasExistingReview
                       ? 'Ton avis est deja enregistre.'
-                      : 'Je t envoie ton code promo par email apres validation.'}
+                      : isCoachReport
+                        ? "Merci, ton retour m'aide vraiment à améliorer ce scan."
+                        : 'Je t envoie ton code promo par email apres validation.'}
                   </p>
                 </div>
               ) : (
