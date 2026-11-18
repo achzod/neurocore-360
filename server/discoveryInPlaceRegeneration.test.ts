@@ -102,7 +102,10 @@ test("the swap never writes delivery state and is a CAS on the exact previous re
   const update = swap.slice(swap.indexOf("`UPDATE audits"), swap.indexOf("RETURNING id`", swap.indexOf("`UPDATE audits")));
   assert.doesNotMatch(update.split("WHERE")[0], /report_delivery_status|report_sent_at|report_generated_at/);
   assert.match(update, /report_delivery_status = \$6/);
-  assert.match(update, /report_sent_at IS NOT DISTINCT FROM \$7::timestamptz/);
+  // Exact (microsecond) report_sent_at: compared to the value copied in SQL at claim time.
+  assert.match(update, /report_sent_at IS NOT DISTINCT FROM \(\s*SELECT i\.preserved_sent_at FROM discovery_inplace_regen_items i WHERE i\.id = \$7::uuid/);
+  assert.match(source, /SELECT \$1,\$2::uuid,a\.id,\$3::uuid,'GENERATING',\$4,a\.report_delivery_status,a\.report_sent_at/);
+  assert.doesNotMatch(source, /\$7::timestamptz/);
   assert.match(update, /report_txt IS NOT DISTINCT FROM \$8/);
   assert.match(update, /report_html IS NOT DISTINCT FROM \$9/);
   assert.match(swap, /DISCOVERY_INPLACE_REPORT_CHANGED_MEANWHILE/);

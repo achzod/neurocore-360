@@ -603,7 +603,7 @@ export function buildDiscoveryCoachInstructions(safety: DiscoveryCoachSafety): s
     `- Chaque paragraphe s'appuie sur SES réponses (fournies plus bas en français) et les relie entre elles. Reformule-les en français naturel ("tu bois moins d'1 litre d'eau par jour"). N'écris jamais un identifiant technique, un code de réponse, un tiret entre deux nombres (écris "1 à 2", pas "1-2") ni le nom d'une clé du questionnaire.`,
     `- Quand tu reprends ses champs libres, cite-les fidèlement entre guillemets « » (ses propres mots), sans corriger leur sens.`,
     `- Tu n'as pas son prénom. Écris exactement ${DISCOVERY_COACH_FIRST_NAME_TOKEN} une seule fois, au tout début de l'intro, à l'endroit où tu dirais son prénom. Nulle part ailleurs.`,
-    `- Interdits absolus : aucun dosage ni quantité de médicament, de peptide, de complément ou de vitamine ; aucun nom de complément, de peptide, de médicament ou de produit ; aucune étude, aucun chercheur, aucun auteur, aucune marque, aucune application ; aucun diagnostic ni nom de maladie ; aucun autre nom de coach ; aucune visio, aucun appel, aucun rendez-vous, aucun créneau ; aucun prix, aucun code promo, aucun lien.`,
+    `- Interdits absolus : aucun dosage ni quantité de médicament, de peptide, de complément ou de vitamine ; aucun nom de complément, de peptide, de médicament ou de produit ; aucune étude, aucun chercheur, aucun auteur, aucune marque, aucune application ; aucun diagnostic ni nom de maladie ; aucun autre nom de coach ; aucune visio, aucun appel, aucun rendez-vous, aucun créneau ; aucun prix, aucun code promo, aucun lien. N'écris jamais les mots téléphone, appel, appeler, visio, rendez-vous, rdv, créneau, call, zoom, meet ni FaceTime, même dans un conseil sur les écrans (écris « écran » ou « portable »).`,
     `- Les 3 actions de la semaine sont simples, faisables tout de suite, sans aucun chiffre de quantité (pas de litres, grammes, calories, verres, portions). Une habitude concrète chacune.`,
     `- Ne parle jamais de "blocage critique" ni de nombre de blocages. Tu parles de "3 freins principaux".`,
     `- Voix : uniquement "je" (moi, Ach) et "tu". N'utilise jamais "on", "nous", "notre" ni "nos" : écris "je", "tu", "ensemble", "avec moi".`,
@@ -991,6 +991,7 @@ export function discoveryCoachWordCount(narrative: DiscoveryCoachNarrative): num
 export function describeDiscoveryCoachErrorsForRetry(errors: string[]): string[] {
   return errors.map((error) => {
     if (error.startsWith("raw_code:")) return `code brut interdit (${error.split(":")[1]}) dans ${error.split(":")[2] || "le texte"} : reformule en français naturel`;
+    if (error.startsWith("forbidden:call_or_meeting")) return `contenu interdit dans ${error.split(":")[2] || "le texte"} : supprime les mots téléphone, appel, appeler, visio, rendez-vous, rdv, créneau, call, zoom, meet (pour les écrans, écris « écran » ou « portable »)`;
     if (error.startsWith("forbidden:")) return `contenu interdit (${error.split(":")[1]}) dans ${error.split(":")[2] || "le texte"}`;
     if (error.startsWith("too_short:")) return `${error.split(":")[1]} trop court (${error.split(":")[2]} mots)`;
     if (error.startsWith("too_long:")) return `${error.split(":")[1]} trop long (${error.split(":")[2]} mots)`;
