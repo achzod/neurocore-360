@@ -102,17 +102,31 @@ function canonicalDiscoveryScores(report: any): Record<string, number> {
   return scores;
 }
 
-/** Generate a premium replacement and atomically swap only the report fields.
- * SENT, report_sent_at and email_tracking are never modified. */
+/** Provider-based replacement of a delivered SENT report, re-enabled for the
+ * v3 coach engine through the durable in-place regeneration contract
+ * (discoveryInPlaceRegeneration): run-scoped cost ownership, backup before
+ * swap, exact-hash CAS, SENT and report_sent_at never written, no email. */
 export async function regenerateSentDiscoveryInPlace(input: {
   auditId: string;
   expectedPreviousFallbackHash: string;
+  runId: string;
 }): Promise<SentDiscoveryRemediationResult> {
-  void input;
-  // Provider-based SENT replacement is intentionally closed until it can use
-  // the same durable one-call ownership contract as normal generation. The
-  // deterministic exact-hash repair below remains available and provider-free.
-  throw new Error("DISCOVERY_SENT_REMEDIATION_PROVIDER_DISABLED");
+  assertSha256(input.expectedPreviousFallbackHash, "expectedPreviousFallbackHash");
+  const { regenerateDiscoveryReportInPlace } = await import("./discoveryInPlaceRegeneration");
+  const result = await regenerateDiscoveryReportInPlace({ runId: input.runId, auditId: input.auditId });
+  if (result.previousArtifactHash !== input.expectedPreviousFallbackHash.toLowerCase()) {
+    throw new Error(`Expected previous hash mismatch (in-place result ok=${result.ok})`);
+  }
+  if (!result.ok || !result.newArtifactHash || result.status !== "SENT" || !result.reportSentAt) {
+    throw new Error(`DISCOVERY_SENT_INPLACE_REGENERATION_FAILED:${result.error || result.status}`);
+  }
+  return {
+    auditId: input.auditId,
+    previousFallbackHash: result.previousArtifactHash,
+    premiumHash: result.newArtifactHash,
+    reportDeliveryStatus: "SENT",
+    reportSentAt: new Date(result.reportSentAt),
+  };
 }
 
 /** Repairs only known questionnaire restatement defects in an already premium

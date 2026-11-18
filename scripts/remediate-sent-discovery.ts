@@ -19,12 +19,14 @@ const valueAfter = (flag: string) => {
 const auditId = valueAfter("--expected-id");
 const expectedPreviousFallbackHash = valueAfter("--expected-fallback-hash")?.toLowerCase();
 const generateOnly = args.has("--generate-only");
+const runId = valueAfter("--run-id");
 const notifyOnly = args.has("--notify-only");
 
 if (generateOnly && notifyOnly) throw new Error("Choose one stage only");
 if ((generateOnly || notifyOnly) && (!auditId || !expectedPreviousFallbackHash)) {
   throw new Error("--expected-id and --expected-fallback-hash are mandatory for staged actions");
 }
+if (generateOnly && !runId) throw new Error("--run-id (in-place regeneration run) is mandatory for generate-only");
 if (generateOnly) {
   if (String(process.env.REMEDIATION_SIDE_EFFECTS_DISABLED || "").toLowerCase() !== "true") {
     throw new Error("REMEDIATION_SIDE_EFFECTS_DISABLED=true is mandatory for generate-only");
@@ -98,6 +100,7 @@ try {
     console.log(JSON.stringify(await regenerateSentDiscoveryInPlace({
       auditId: auditId!,
       expectedPreviousFallbackHash: expectedPreviousFallbackHash!,
+      runId: runId!,
     }), null, 2));
   } else {
     const rows = await classify(auditId);

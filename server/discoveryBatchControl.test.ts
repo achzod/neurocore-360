@@ -508,7 +508,12 @@ test("generic monitoring, generation and AutoSend all honor the durable lock", (
   assert.match(routes, /discovery_batch_lock_active/);
   assert.match(routes, /audit\.type === "GRATUIT" && discoveryBatchLocked/);
   assert.match(storage, /if \(!audit \|\| audit\.type === "GRATUIT"\)/);
-  assert.match(sentRemediation, /DISCOVERY_SENT_REMEDIATION_PROVIDER_DISABLED/);
+  // Provider-based SENT replacement goes through the fenced in-place path.
+  assert.match(sentRemediation, /regenerateDiscoveryReportInPlace/);
+  const inPlace = readFileSync(new URL("./discoveryInPlaceRegeneration.ts", import.meta.url), "utf8");
+  assert.match(inPlace, /pg_advisory_xact_lock\(hashtext\(\$1\)\)/);
+  assert.match(inPlace, /DISCOVERY_GLOBAL_LOCK_ACTIVE/);
+  assert.match(inPlace, /DISCOVERY_INPLACE_FENCE_STALE/);
 });
 
 test("reconciler is read-only by default and delivery claims before provider", () => {
