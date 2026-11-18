@@ -10,8 +10,10 @@ import {
   type DiscoveryProviderEvidence,
   type DiscoveryRejectedCandidatePayload,
   validateDiscoveryCatalogReportProvenance,
+  validateDiscoveryCoachReportProvenance,
   validateDiscoveryPersistenceContract,
 } from "./discovery-scan";
+import { normalizeDiscoveryCoachProvenanceForLedger } from "./discoveryCoachNarrative";
 import {
   hasPassingPersistedDiscoveryDeliveryGate,
   normalizeDiscoveryCatalogProvenanceForLedger,
@@ -257,12 +259,12 @@ export async function persistClaimedDiscoveryGeneration(
       throw new Error("DISCOVERY_GENERATION_RESPONSES_CHANGED");
     }
     const evidence = input.providerEvidence;
-    const catalogErrors = validateDiscoveryCatalogReportProvenance(
-      input.narrativeReport as any,
-      evidence.responseId,
-    );
-    if ((input.narrativeReport as any)?.generationQuality?.version !== 2
-      || catalogErrors.length > 0) {
+    const reportVersion = (input.narrativeReport as any)?.generationQuality?.version;
+    const coachBacked = reportVersion === 3;
+    const catalogErrors = coachBacked
+      ? validateDiscoveryCoachReportProvenance(input.narrativeReport as any, evidence.responseId)
+      : validateDiscoveryCatalogReportProvenance(input.narrativeReport as any, evidence.responseId);
+    if ((reportVersion !== 2 && reportVersion !== 3) || catalogErrors.length > 0) {
       throw new Error(`DISCOVERY_GENERIC_CATALOG_PROVENANCE_FAILED:${catalogErrors.join("|")}`);
     }
     const ledger = await client.query(
@@ -289,9 +291,13 @@ export async function persistClaimedDiscoveryGeneration(
       || Math.abs(Number(proof.estimated_openai_cost_usd) - Number(evidence.actualCostUsd)) > 0.000001) {
       throw new Error("DISCOVERY_GENERIC_PROVIDER_LEDGER_MISMATCH");
     }
-    const durableCatalogProvenance = normalizeDiscoveryCatalogProvenanceForLedger(
-      (input.narrativeReport as any)?.analysisMetadata?.catalogProvenance,
-    );
+    const durableCatalogProvenance = coachBacked
+      ? normalizeDiscoveryCoachProvenanceForLedger(
+        (input.narrativeReport as any)?.analysisMetadata?.coachProvenance,
+      )
+      : normalizeDiscoveryCatalogProvenanceForLedger(
+        (input.narrativeReport as any)?.analysisMetadata?.catalogProvenance,
+      );
     if (!durableCatalogProvenance) {
       throw new Error("DISCOVERY_GENERIC_CATALOG_PROVENANCE_NOT_CANONICAL");
     }

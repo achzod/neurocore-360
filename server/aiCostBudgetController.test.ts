@@ -101,7 +101,16 @@ test("Discovery has its own fail-closed audit/hour/day budget", () => {
 
   const controllerSource = readFileSync(new URL("./aiCostBudgetController.ts", import.meta.url), "utf8");
   assert.match(controllerSource, /requestedProduct !== "discovery" && !isAICostBudgetControllerEnabled/);
-  assert.match(controllerSource, /context\.product === "discovery"[\s\S]*DEFAULT_DISCOVERY_LIMITS\.perOrderUsd/);
+  // v3 reserves one bounded call at a time (initial call or the single
+  // corrective retry); the per-order ceiling above still caps the audit.
+  assert.match(controllerSource, /context\.product === "discovery"\s*\?\s*DISCOVERY_PER_CALL_RESERVATION_USD/);
+  assert.match(controllerSource, /DISCOVERY_PER_CALL_RESERVATION_USD = 0\.25/);
+  assert.match(controllerSource, /validationRetryAuthorized = hasGenericOwnership[\s\S]*discoveryValidationRetry === true[\s\S]*previousCount === 1[\s\S]*unsettled === 0/);
+  assert.equal(evaluateAICostBudget(
+    { orderUsd: 0.25, hourUsd: 0.25, dayUsd: 0.25 },
+    0.25,
+    discovery,
+  ).allowed, true);
   assert.match(controllerSource, /DISCOVERY_MONO_CALL_ALREADY_RESERVED/);
   assert.match(controllerSource, /legacyRepairRetryAuthorized[\s\S]*context\.discoveryAllowLegacy[\s\S]*previousCount === 1[\s\S]*unsettled === 0/);
   assert.match(controllerSource, /regenerationAuthorized \|\| legacyRepairRetryAuthorized[\s\S]*perOrderUsd: 1\.50/);

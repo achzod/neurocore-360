@@ -37,6 +37,30 @@ import {
   getDiscoveryQuestionnaireVersion,
   hasDiscoveryRequiredResponseValue,
 } from '@shared/discoveryQuestionnaireContract';
+import {
+  DISCOVERY_COACH_DOMAINS,
+  DISCOVERY_COACH_MAX_ATTEMPTS,
+  DISCOVERY_COACH_MAX_COST_PER_CALL_USD,
+  DISCOVERY_COACH_MAX_INPUT_CHARS,
+  DISCOVERY_COACH_MAX_OUTPUT_TOKENS,
+  DISCOVERY_COACH_SECTION_IDS,
+  DISCOVERY_COACH_VERSION,
+  buildDiscoveryCoachCtaMessage,
+  buildDiscoveryCoachInput,
+  buildDiscoveryCoachInstructions,
+  buildDiscoveryCoachPayload,
+  buildDiscoveryCoachSchema,
+  describeDiscoveryCoachErrorsForRetry,
+  discoveryCoachAnswerIds,
+  discoveryCoachNarrativeSha256,
+  discoveryCoachProse,
+  findDiscoveryCoachIdentityLeaks,
+  normalizeDiscoveryCoachProvenanceForLedger,
+  renderDiscoveryCoachSections,
+  validateDiscoveryCoachNarrative,
+  type DiscoveryCoachNarrative,
+  type DiscoveryCoachProvenance,
+} from './discoveryCoachNarrative';
 
 // ============================================
 // TYPES
@@ -153,6 +177,9 @@ export interface DiscoveryAnalysisResult {
   questionnaireCoverage: ReturnType<typeof getDiscoveryQuestionnaireCoverage>;
   providerEvidence?: DiscoveryProviderEvidence;
   catalogProvenance?: DiscoveryCatalogProvenance;
+  /** v3: provider-authored, validated coach narrative ([PRENOM] placeholder kept). */
+  coachNarrative?: DiscoveryCoachNarrative;
+  coachProvenance?: DiscoveryCoachProvenance;
 }
 
 export const DISCOVERY_PREMIUM_DOMAINS = [
@@ -200,6 +227,8 @@ export interface DiscoveryGeneratedNarrative {
   sections: Record<string, string>;
   providerEvidence?: DiscoveryProviderEvidence;
   catalogProvenance?: DiscoveryCatalogProvenance;
+  coachNarrative?: DiscoveryCoachNarrative;
+  coachProvenance?: DiscoveryCoachProvenance;
 }
 
 export interface DiscoveryCatalogProvenance {
@@ -219,9 +248,15 @@ export interface DiscoveryProviderEvidence {
   outputTokens: number;
   totalTokens: number;
   actualCostUsd: number;
-  catalogVersion: string;
-  catalogSha256: string;
-  selectionSha256: string;
+  /** v2 catalogue bindings (absent on v3 coach reports). */
+  catalogVersion?: string;
+  catalogSha256?: string;
+  selectionSha256?: string;
+  /** v3 coach bindings. */
+  narrativeSha256?: string;
+  attempts?: number;
+  /** Sum of every provider attempt for this generation (initial + retry). */
+  attemptsActualCostUsd?: number;
 }
 
 export interface DiscoveryRejectedCandidatePayload {
@@ -260,11 +295,11 @@ export function isDiscoveryRejectedCandidateError(
 }
 
 export interface DiscoveryPremiumGenerationEvidence {
-  mode: 'premium_ai' | 'catalog_selected';
-  version: 1 | 2;
+  mode: 'premium_ai' | 'catalog_selected' | 'coach_ai';
+  version: 1 | 2 | 3;
   provider: 'openai';
-  providerRole?: 'selection';
-  synthesis: 'ai_validated' | 'catalog_rendered';
+  providerRole?: 'selection' | 'author';
+  synthesis: 'ai_validated' | 'catalog_rendered' | 'ai_authored';
   validatedDomains: string[];
   fallbackUsed: false;
   safety: {
@@ -2526,6 +2561,233 @@ export function validateDiscoveryGeneratedNarrative(
   return assembleDiscoveryMechanismSelection(validateDiscoveryMechanismSelection(raw));
 }
 
+export interface DiscoveryCoachProviderRequest {
+  instructions: string;
+  input: string;
+  schema: Record<string, unknown>;
+  schemaName: string;
+  maxOutputTokens: number;
+  /** 1 for the initial call, 2 for the single corrective retry. */
+  attempt: number;
+}
+
+export interface DiscoveryCoachProviderResult {
+  text: string;
+  responseId: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  actualCostUsd: number;
+}
+
+export type DiscoveryCoachProvider = (
+  request: DiscoveryCoachProviderRequest,
+) => Promise<DiscoveryCoachProviderResult>;
+
+export interface DiscoveryCoachAttemptRecord {
+  attempt: number;
+  responseId: string;
+  actualCostUsd: number;
+  inputTokens: number;
+  outputTokens: number;
+  errors: string[];
+}
+
+export interface DiscoveryCoachGenerationOutcome extends DiscoveryGeneratedNarrative {
+  coachNarrative: DiscoveryCoachNarrative;
+  coachProvenance: DiscoveryCoachProvenance;
+  providerEvidence: DiscoveryProviderEvidence;
+  attempts: DiscoveryCoachAttemptRecord[];
+  wordCount: number;
+}
+
+/** Builds the exact provider request. No identity field (first name, email,
+ * Instagram, phone) is ever part of it; this is enforced fail-closed. */
+export function buildDiscoveryCoachProviderRequest(
+  responses: DiscoveryResponses,
+  previousErrors?: string[],
+): { request: Omit<DiscoveryCoachProviderRequest, "attempt">; answerIds: string[]; strictEatingSafety: boolean } {
+  const deterministic = calculateDiscoveryDeterministicProfile(responses);
+  const normalized = deterministic.normalized as Record<string, unknown>;
+  const safety = {
+    strictEatingSafety: deterministic.safetyPolicy.strictEatingSafety,
+    tcaMode: deterministic.safetyPolicy.tcaMode,
+    hasMedicalContext: discoveryHasDeclaredMedicalContext(normalized),
+  };
+  const payload = buildDiscoveryCoachPayload({
+    responses: normalized,
+    scoresByDomain: deterministic.scoresByDomain,
+    globalScore: deterministic.globalScore,
+    blocages: deterministic.blocages,
+    safety,
+  });
+  const instructions = buildDiscoveryCoachInstructions(safety);
+  const input = buildDiscoveryCoachInput(payload, previousErrors);
+  const leaks = findDiscoveryCoachIdentityLeaks(`${instructions}\n${input}`, normalized);
+  if (leaks.length > 0) throw new Error(`DISCOVERY_COACH_IDENTITY_LEAK:${leaks.join("|")}`);
+  if (input.length + instructions.length > DISCOVERY_COACH_MAX_INPUT_CHARS) {
+    throw new Error(`DISCOVERY_COACH_INPUT_TOO_LARGE:${input.length + instructions.length}`);
+  }
+  const answerIds = discoveryCoachAnswerIds(payload);
+  return {
+    request: {
+      instructions,
+      input,
+      schema: buildDiscoveryCoachSchema(answerIds),
+      schemaName: "discovery_coach_report_v3",
+      maxOutputTokens: DISCOVERY_COACH_MAX_OUTPUT_TOKENS,
+    },
+    answerIds,
+    strictEatingSafety: safety.strictEatingSafety,
+  };
+}
+
+function discoveryHasDeclaredMedicalContext(normalized: Record<string, unknown>): boolean {
+  const treatment = normalizeDiscoveryFactText(String(normalized["traitement-medical"] ?? "")).trim();
+  const diagnoses = Array.isArray(normalized["diagnostic-medical"])
+    ? (normalized["diagnostic-medical"] as unknown[]).map(String)
+    : [];
+  return (treatment.length > 0 && treatment !== "non")
+    || diagnoses.some((value) => value !== "aucun");
+}
+
+/** Full deterministic assembly + every delivery gate, used before accepting a
+ * provider candidate. Returns the blocking errors (empty when deliverable). */
+export function validateDiscoveryCoachCandidateForDelivery(
+  responses: DiscoveryResponses,
+  narrative: DiscoveryCoachNarrative,
+  provenance: DiscoveryCoachProvenance,
+  generatedAt: string,
+): { errors: string[]; report?: ReportData } {
+  try {
+    const deterministic = calculateDiscoveryDeterministicProfile(responses);
+    const report = convertToNarrativeReport({
+      globalScore: deterministic.globalScore,
+      scoresByDomain: deterministic.scoresByDomain,
+      blocages: deterministic.blocages,
+      synthese: "",
+      sectionContents: {},
+      ctaMessage: buildDiscoveryCoachCtaMessage(deterministic.safetyPolicy.strictEatingSafety),
+      knowledgePreflight: { synthesis: "", domains: {} },
+      safetyPolicy: deterministic.safetyPolicy,
+      questionnaireCoverage: deterministic.questionnaireCoverage,
+      coachNarrative: narrative,
+      coachProvenance: provenance,
+    }, responses, { generatedAt });
+    const assets = buildDiscoveryReportAssets(report);
+    const errors = [
+      ...validateDiscoveryReportForDelivery(report, assets, report.analysisMetadata).errors,
+      ...validateDiscoveryReportAgainstResponses(report, responses, report.analysisMetadata).errors,
+    ];
+    return { errors: [...new Set(errors)], report };
+  } catch (error) {
+    return { errors: [`assembly:${error instanceof Error ? error.message : String(error)}`] };
+  }
+}
+
+/**
+ * Provider-agnostic v3 generation: at most two provider calls (initial + one
+ * corrective retry carrying the validation errors). Any remaining failure
+ * throws DiscoveryRejectedCandidateError so the caller marks the audit for
+ * review; nothing is ever delivered from a failed candidate.
+ */
+export async function generateDiscoveryCoachNarrative(
+  responses: DiscoveryResponses,
+  provider: DiscoveryCoachProvider,
+  options: { generatedAt?: string } = {},
+): Promise<DiscoveryCoachGenerationOutcome> {
+  const generatedAt = options.generatedAt || new Date().toISOString();
+  const attempts: DiscoveryCoachAttemptRecord[] = [];
+  let previousErrors: string[] | undefined;
+  let lastRaw: unknown = null;
+  let lastResult: DiscoveryCoachProviderResult | null = null;
+  for (let attempt = 1; attempt <= DISCOVERY_COACH_MAX_ATTEMPTS; attempt += 1) {
+    const { request, answerIds } = buildDiscoveryCoachProviderRequest(responses, previousErrors);
+    const result = await provider({ ...request, attempt });
+    lastResult = result;
+    let errors: string[] = [];
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(result.text);
+    } catch (error) {
+      errors.push(`json:invalid:${error instanceof Error ? error.message : String(error)}`);
+    }
+    lastRaw = parsed ?? result.text;
+    const deterministic = calculateDiscoveryDeterministicProfile(responses);
+    const validation = parsed
+      ? validateDiscoveryCoachNarrative(parsed, {
+        responses: deterministic.normalized as Record<string, unknown>,
+        safety: {
+          strictEatingSafety: deterministic.safetyPolicy.strictEatingSafety,
+          tcaMode: deterministic.safetyPolicy.tcaMode,
+          hasMedicalContext: discoveryHasDeclaredMedicalContext(deterministic.normalized as Record<string, unknown>),
+        },
+        answerIds,
+      })
+      : null;
+    if (validation) errors.push(...validation.errors);
+    let provenance: DiscoveryCoachProvenance | null = null;
+    if (validation?.ok && validation.narrative) {
+      provenance = {
+        version: DISCOVERY_COACH_VERSION,
+        providerResponseId: result.responseId,
+        narrativeSha256: discoveryCoachNarrativeSha256(validation.narrative),
+        attempts: attempt,
+      };
+      errors.push(...validateDiscoveryCoachCandidateForDelivery(
+        responses, validation.narrative, provenance, generatedAt,
+      ).errors);
+    }
+    attempts.push({
+      attempt,
+      responseId: result.responseId,
+      actualCostUsd: result.actualCostUsd,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+      errors: [...new Set(errors)],
+    });
+    if (errors.length === 0 && validation?.narrative && provenance) {
+      const attemptsActualCostUsd = attempts.reduce((sum, item) => sum + Number(item.actualCostUsd || 0), 0);
+      const providerEvidence: DiscoveryProviderEvidence = {
+        responseId: result.responseId,
+        model: result.model,
+        rawCandidate: parsed,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        totalTokens: result.totalTokens,
+        actualCostUsd: result.actualCostUsd,
+        narrativeSha256: provenance.narrativeSha256,
+        attempts: attempt,
+        attemptsActualCostUsd,
+      };
+      return {
+        synthesis: "",
+        sections: {},
+        coachNarrative: validation.narrative,
+        coachProvenance: provenance,
+        providerEvidence,
+        attempts,
+        wordCount: validation.wordCount,
+      };
+    }
+    previousErrors = describeDiscoveryCoachErrorsForRetry([...new Set(errors)]);
+    console.warn(`[Discovery v3] Attempt ${attempt} rejected: ${[...new Set(errors)].slice(0, 12).join(" | ")}`);
+  }
+  throw new DiscoveryRejectedCandidateError({
+    providerRaw: lastRaw,
+    responseId: lastResult?.responseId || "",
+    model: lastResult?.model || "",
+    validationErrors: attempts.flatMap((item) => item.errors.map((error) => `attempt${item.attempt}:${error}`)),
+    usage: {
+      inputTokens: Number(lastResult?.inputTokens || 0),
+      outputTokens: Number(lastResult?.outputTokens || 0),
+      totalTokens: Number(lastResult?.totalTokens || 0),
+      actualCostUsd: Number(lastResult?.actualCostUsd || 0),
+    },
+  });
+}
+
 async function generateDiscoveryNarrativeAI(
   responses: DiscoveryResponses,
   scores: DiscoveryAnalysisResult['scoresByDomain'],
@@ -2548,128 +2810,77 @@ async function generateDiscoveryNarrativeAI(
   if (hasGenericOwnership === hasBatchOwnership) {
     throw new Error("DISCOVERY_PROVIDER_OWNERSHIP_REQUIRED");
   }
+  // Scores, signals and safety are recomputed deterministically from the
+  // responses inside the request builder; the knowledge base is no longer
+  // sent (no generic biology lecture, no source can leak into the prose).
   void scores;
   void blocages;
+  void knowledge;
   void safetyPolicy;
-  const mechanismScopes = buildDiscoveryQuestionnaireFacts({});
-  const instructionBlock = DISCOVERY_PREMIUM_DOMAINS
-    .map((domain) => `${domain}: ${SECTION_INSTRUCTIONS[domain]}`)
-    .join("\n");
-  const knowledgeBlock = [
-    `synthese:\n${assertDiscoveryPremiumKnowledgeContext(knowledge.synthesis, "synthesis")}`,
-    ...DISCOVERY_PREMIUM_DOMAINS.map((domain) => (
-      `${domain}:\n${assertDiscoveryPremiumKnowledgeContext(knowledge.domains[domain], `section ${domain}`)}`
-    )),
-  ].join("\n\n=== DOMAINE SUIVANT ===\n\n");
-
-  const input = `MISSION UNIQUE: selectionner uniquement des identifiants de mecanismes approuves pour un Discovery Scan.
-
-Aucune donnee personnelle, reponse, identite, score, priorite ou information medicale ne t'est fournie. N'en deduis aucune. La personnalisation factuelle sera ajoutee apres ton appel par un moteur deterministe.
-
-PERIMETRES DE MECANISMES AUTORISES:
-${mechanismScopes}
-
-CONSIGNES PAR DOMAINE:
-${instructionBlock}
-
-BASE SCIENTIFIQUE INTERNE. Elle sert seulement a expliquer les mecanismes pertinents. Ne cite aucun titre, auteur, media, marque ou source. Ignore tout exemple hors profil:
-${knowledgeBlock}
-
-CONTRAT DE SORTIE FERME:
-catalogVersion doit etre exactement ${DISCOVERY_MECHANISM_CATALOG_VERSION}.
-catalogSha256 doit etre exactement ${DISCOVERY_MECHANISM_CATALOG_SHA256}.
-synthesisDomains contient exactement quatre domaines distincts parmi: ${DISCOVERY_PREMIUM_DOMAINS.join(", ")}.
-sections contient exactement les huit domaines. Chaque domaine contient exactement deux identifiants distincts choisis dans sa liste:
-${DISCOVERY_PREMIUM_DOMAINS.map((domain) => `${domain}: ${DISCOVERY_MECHANISM_CATALOG_IDS[domain].join(", ")}`).join("\n")}
-Ne redige aucun texte. Ne renvoie aucun champ libre, commentaire, explication, nom, valeur ou propriete supplementaire. Le moteur local assemble toute la prose depuis le catalogue scelle.`;
-
-  if (input.length > DISCOVERY_UNIFIED_MAX_INPUT_CHARS) {
-    throw new Error(
-      `Discovery unified prompt exceeds budget: ${input.length}/${DISCOVERY_UNIFIED_MAX_INPUT_CHARS} chars`,
-    );
-  }
-
-  const response = await withTimeout(
-    runOpenAIText({
-      profile: "discovery",
-      instructions: `Tu selectionnes uniquement des identifiants enum dans le JSON strict demande. Tu ne rediges aucune prose et n'ajoutes aucune propriete.`,
-      input,
-      safetyId: `discovery:${costBudgetAuditId}`,
-      schema: DISCOVERY_UNIFIED_SCHEMA as unknown as Record<string, unknown>,
-      schemaName: "discovery_unified_report_v1",
-      maxOutputTokens: DISCOVERY_UNIFIED_MAX_OUTPUT_TOKENS,
-      retries: 1,
-      label: "discovery-unified-report",
-      costBudget: {
-        product: "discovery",
-        orderId: costBudgetAuditId,
-        estimatedCostUsd: DISCOVERY_UNIFIED_MAX_ESTIMATED_COST_USD,
-        discoveryGenerationToken: costBudgetGenerationToken,
-        discoveryFenceToken: costBudgetFenceToken,
-        discoveryAllowLegacy: costBudgetAllowLegacy,
-        discoveryBatchId: costBudgetBatchId,
-        discoveryBatchLockToken: costBudgetBatchLockToken,
-      },
-    }),
-    DISCOVERY_AI_TIMEOUT_MS,
-    "OpenAI unified Discovery report",
-  );
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(response.text);
-  } catch (error) {
-    throw new DiscoveryRejectedCandidateError({
-      providerRaw: response.text,
-      responseId: response.responseId,
-      model: response.model,
-      validationErrors: [`Discovery unified JSON invalid: ${error instanceof Error ? error.message : String(error)}`],
-      usage: {
-        inputTokens: Number(response.usage?.tokens.inputTokens || 0),
-        outputTokens: Number(response.usage?.tokens.outputTokens || 0),
-        totalTokens: Number(response.usage?.tokens.totalTokens || 0),
-        actualCostUsd: Number(response.usage?.costs.openaiGpt56SolUsd || 0),
-      },
-    });
-  }
-  const providerEvidence: DiscoveryProviderEvidence = {
-    responseId: response.responseId,
-    model: response.model,
-    rawCandidate: parsed,
-    inputTokens: Number(response.usage?.tokens.inputTokens || 0),
-    outputTokens: Number(response.usage?.tokens.outputTokens || 0),
-    totalTokens: Number(response.usage?.tokens.totalTokens || 0),
-    actualCostUsd: Number(response.usage?.costs.openaiGpt56SolUsd || 0),
-    catalogVersion: DISCOVERY_MECHANISM_CATALOG_VERSION,
-    catalogSha256: DISCOVERY_MECHANISM_CATALOG_SHA256,
-    selectionSha256: discoveryCatalogSelectionSha256(parsed),
-  };
-  try {
-    const generated = validateDiscoveryGeneratedNarrative(parsed, responses, safetyPolicy);
-    if (!generated.catalogProvenance
-      || generated.catalogProvenance.selectionSha256 !== providerEvidence.selectionSha256) {
-      throw new Error("Discovery mechanism selection provenance mismatch");
+  const provider: DiscoveryCoachProvider = async (request) => {
+    // The batch path owns exactly one provider call per item. Only the
+    // generic transactional path may spend its single corrective retry.
+    if (request.attempt > 1 && !hasGenericOwnership) {
+      throw new Error("DISCOVERY_COACH_RETRY_REQUIRES_GENERIC_OWNERSHIP");
     }
-    generated.catalogProvenance.providerResponseId = response.responseId;
-    return { ...generated, providerEvidence };
-  } catch (error) {
-    const validationErrors = error instanceof Error
-      ? [error.message]
-      : [String(error)];
-    throw new DiscoveryRejectedCandidateError({
-      providerRaw: parsed,
+    const response = await withTimeout(
+      runOpenAIText({
+        profile: "discovery",
+        instructions: request.instructions,
+        input: request.input,
+        safetyId: `discovery:${costBudgetAuditId}`,
+        schema: request.schema,
+        schemaName: request.schemaName,
+        maxOutputTokens: request.maxOutputTokens,
+        retries: 1,
+        label: request.attempt > 1 ? "discovery-coach-report-retry" : "discovery-coach-report",
+        costBudget: {
+          product: "discovery",
+          orderId: costBudgetAuditId,
+          estimatedCostUsd: DISCOVERY_COACH_MAX_COST_PER_CALL_USD,
+          discoveryGenerationToken: costBudgetGenerationToken,
+          discoveryFenceToken: costBudgetFenceToken,
+          discoveryAllowLegacy: costBudgetAllowLegacy,
+          discoveryBatchId: costBudgetBatchId,
+          discoveryBatchLockToken: costBudgetBatchLockToken,
+          discoveryValidationRetry: request.attempt > 1,
+        },
+      }),
+      DISCOVERY_AI_TIMEOUT_MS,
+      "OpenAI Discovery coach report",
+    );
+    return {
+      text: response.text,
       responseId: response.responseId,
       model: response.model,
-      validationErrors,
-      usage: {
-        inputTokens: providerEvidence.inputTokens,
-        outputTokens: providerEvidence.outputTokens,
-        totalTokens: providerEvidence.totalTokens,
-        actualCostUsd: providerEvidence.actualCostUsd,
-      },
-    });
-  }
+      inputTokens: Number(response.usage?.tokens.inputTokens || 0),
+      outputTokens: Number(response.usage?.tokens.outputTokens || 0),
+      totalTokens: Number(response.usage?.tokens.totalTokens || 0),
+      actualCostUsd: Number(response.usage?.costs.openaiGpt56SolUsd || 0),
+    };
+  };
+  return generateDiscoveryCoachNarrative(responses, provider);
 }
+
+/** v3 provenance gate: the persisted narrative is bound to its provider
+ * response and to its hash. Legacy reports return no error here. */
+export function validateDiscoveryCoachReportProvenance(
+  report: Partial<ReportData> | null | undefined,
+  expectedProviderResponseId?: string,
+): string[] {
+  if (report?.generationQuality?.version !== 3) return [];
+  const provenance = normalizeDiscoveryCoachProvenanceForLedger(report.analysisMetadata?.coachProvenance);
+  const narrative = report.analysisMetadata?.coachNarrative;
+  if (!provenance || !narrative) return ["coach_provenance_missing"];
+  if (provenance.narrativeSha256 !== discoveryCoachNarrativeSha256(narrative)) {
+    return ["coach_narrative_hash_mismatch"];
+  }
+  if (expectedProviderResponseId && provenance.providerResponseId !== expectedProviderResponseId) {
+    return ["coach_provider_response_mismatch"];
+  }
+  return [];
+}
+
 
 // Get knowledge context for a specific domain
 async function getKnowledgeContextForDomain(domain: string): Promise<string> {
@@ -3275,16 +3486,14 @@ export async function analyzeDiscoveryScan(
   const globalScore = deterministic.globalScore;
   const blocages = deterministic.blocages;
 
-  // Fetch and validate synthesis + all eight domain contexts before the first
-  // OpenAI request. A DB timeout therefore produces zero provider calls.
-  const knowledgePreflight = await preflightDiscoveryKnowledge(
-    blocages,
-    DISCOVERY_PREMIUM_DOMAINS,
-    dependencies,
-  );
+  // v3: the provider writes the personalised prose from the anonymised
+  // answers. No generic knowledge-base excerpt is sent anymore, so no
+  // database read is needed before the provider call. The legacy catalogue
+  // path (v2) only survives through injected generators and offline replay.
+  const knowledgePreflight: DiscoveryKnowledgePreflight = { synthesis: "", domains: {} };
 
-  // One structured provider call owns the synthesis and all eight domains.
-  // There is no section retry fan-out and no degraded/fallback report.
+  // One structured provider call (plus at most one corrective retry inside
+  // the generator) owns the whole narrative. No degraded/fallback report.
   const generatedNarrative = await (dependencies.generateNarrative || generateDiscoveryNarrativeAI)(
     normalized,
     scoresByDomain,
@@ -3299,7 +3508,9 @@ export async function analyzeDiscoveryScan(
     dependencies.costBudgetBatchLockToken,
   );
 
-  const ctaMessage = buildDiscoveryDeterministicCta(blocages, safetyPolicy);
+  const ctaMessage = generatedNarrative.coachNarrative
+    ? buildDiscoveryCoachCtaMessage(safetyPolicy.strictEatingSafety)
+    : buildDiscoveryDeterministicCta(blocages, safetyPolicy);
 
   console.log(`[Discovery] Analysis complete. Score: ${globalScore}/100, Blocages: ${blocages.length}`);
 
@@ -3315,6 +3526,8 @@ export async function analyzeDiscoveryScan(
     questionnaireCoverage: deterministic.questionnaireCoverage,
     providerEvidence: generatedNarrative.providerEvidence,
     catalogProvenance: generatedNarrative.catalogProvenance,
+    coachNarrative: generatedNarrative.coachNarrative,
+    coachProvenance: generatedNarrative.coachProvenance,
   };
 }
 
@@ -3351,6 +3564,8 @@ export interface ReportData {
     ctaMessage: string;
     questionnaireCoverage: ReturnType<typeof getDiscoveryQuestionnaireCoverage>;
     catalogProvenance?: DiscoveryCatalogProvenance;
+    coachNarrative?: DiscoveryCoachNarrative;
+    coachProvenance?: DiscoveryCoachProvenance;
   };
 }
 
@@ -3535,6 +3750,7 @@ export function convertToNarrativeReport(
   responses: DiscoveryResponses,
   options: { generatedAt?: string } = {},
 ): ReportData {
+  if (result.coachNarrative) return convertCoachToNarrativeReport(result, responses, options);
   const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
   const prenom = getDiscoveryFirstName(normalized);
   const objectif = normalized.objectif || 'tes objectifs';
@@ -3795,6 +4011,78 @@ export function convertToNarrativeReport(
   return report;
 }
 
+function discoveryMetricsFromScores(scoresByDomain: DiscoveryAnalysisResult["scoresByDomain"]): Metric[] {
+  return Object.entries(scoresByDomain).map(([key, value]) => ({
+    label: DOMAIN_CONFIG[key]?.label || key,
+    value: Math.round(value / 10 * 10) / 10,
+    max: 10,
+    description: DOMAIN_CONFIG[key]?.description || '',
+    key,
+  }));
+}
+
+/** v3 assembly: deterministic HTML around the validated coach narrative. */
+function convertCoachToNarrativeReport(
+  result: DiscoveryAnalysisResult,
+  responses: DiscoveryResponses,
+  options: { generatedAt?: string } = {},
+): ReportData {
+  const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
+  const prenom = getDiscoveryFirstName(normalized);
+  if (!result.coachNarrative || !result.coachProvenance) {
+    throw new Error("[Discovery v3] coach narrative or provenance missing");
+  }
+  const generatedAt = options.generatedAt || new Date().toISOString();
+  const sections = renderDiscoveryCoachSections({
+    narrative: result.coachNarrative,
+    firstName: prenom,
+    responses: normalized as Record<string, unknown>,
+    scoresByDomain: result.scoresByDomain,
+    globalScore: result.globalScore,
+    strictEatingSafety: result.safetyPolicy.strictEatingSafety,
+    generatedAt,
+  });
+  const report: ReportData = {
+    globalScore: Math.round((result.globalScore / 10) * 10) / 10,
+    metrics: discoveryMetricsFromScores(result.scoresByDomain),
+    sections,
+    clientName: prenom,
+    generatedAt,
+    auditType: "GRATUIT",
+    analysisMetadata: {
+      blocages: result.blocages.map((blocage) => ({
+        ...blocage,
+        consequences: [...blocage.consequences],
+        sources: [...blocage.sources],
+      })),
+      ctaMessage: result.ctaMessage,
+      questionnaireCoverage: result.questionnaireCoverage,
+      coachNarrative: structuredClone(result.coachNarrative),
+      coachProvenance: { ...result.coachProvenance },
+    },
+    generationQuality: {
+      mode: 'coach_ai',
+      version: 3,
+      provider: 'openai',
+      providerRole: 'author',
+      synthesis: 'ai_authored',
+      validatedDomains: [...DISCOVERY_COACH_DOMAINS].sort(),
+      fallbackUsed: false,
+      safety: {
+        version: 1,
+        tcaMode: result.safetyPolicy.tcaMode,
+        bodyCheckingSignal: result.safetyPolicy.bodyCheckingSignal,
+        strictEatingSafety: result.safetyPolicy.strictEatingSafety,
+        gatePassed: true,
+      },
+    },
+  };
+  if (!report.clientName || /^(profil|client|prenom|utilisateur)$/i.test(report.clientName.trim())) {
+    throw new Error(`[Discovery Validation] clientName invalide ou template: "${report.clientName}"`);
+  }
+  return report;
+}
+
 export function buildDiscoveryReportTxt(report: ReportData): string {
   const lines: string[] = [
     "DISCOVERY_REPORT_V1",
@@ -4018,7 +4306,12 @@ export function validateDiscoveryReportForDelivery(
   const weakSections = sections.filter((s) => stripHtml((s as any).content || "").length < 80);
   const txt = String(assets?.txt || "").trim();
   const html = String(assets?.html || "").trim();
-  const expectedSectionIds = [
+  const coachEvidenceValid = report?.generationQuality?.version === 3
+    && report.generationQuality.mode === "coach_ai"
+    && report.generationQuality.provider === "openai"
+    && report.generationQuality.providerRole === "author"
+    && report.generationQuality.synthesis === "ai_authored";
+  const expectedSectionIds: string[] = coachEvidenceValid ? [...DISCOVERY_COACH_SECTION_IDS] : [
     "intro", "global", "sommeil", "stress", "energie", "digestion",
     "training", "nutrition", "lifestyle", "mindset", "scans", "coaching",
   ];
@@ -4044,10 +4337,31 @@ export function validateDiscoveryReportForDelivery(
     && evidence.provider === "openai"
     && evidence.providerRole === "selection"
     && evidence.synthesis === "catalog_rendered";
-  if ((!legacyEvidenceValid && !catalogEvidenceValid) || evidence?.fallbackUsed !== false) {
+  if ((!legacyEvidenceValid && !catalogEvidenceValid && !coachEvidenceValid) || evidence?.fallbackUsed !== false) {
     errors.push("premium_ai_evidence_missing");
   }
   errors.push(...validateDiscoveryCatalogReportProvenance(report));
+  errors.push(...validateDiscoveryCoachReportProvenance(report));
+  if (coachEvidenceValid) {
+    const narrative = report?.analysisMetadata?.coachNarrative;
+    const coachValidation = validateDiscoveryCoachNarrative(narrative, {
+      responses: {},
+      safety: {
+        strictEatingSafety: safetyPolicy.strictEatingSafety,
+        tcaMode: safetyPolicy.tcaMode,
+        hasMedicalContext: false,
+      },
+      answerIds: Array.isArray((narrative as any)?.freins)
+        ? (narrative as any).freins.flatMap((frein: any) => Array.isArray(frein?.reponses) ? frein.reponses : [])
+        : [],
+    });
+    errors.push(...coachValidation.errors.map((error) => `coach:${error}`));
+    for (const section of sections as any[]) {
+      const visible = stripHtml(section?.content || "");
+      if (!visible) errors.push(`empty_section:${section?.id || "unknown"}`);
+      if (/\[PRENOM\]/.test(visible)) errors.push(`first_name_placeholder_visible:${section?.id || "unknown"}`);
+    }
+  }
   if (catalogEvidenceValid && report?.analysisMetadata?.catalogProvenance) {
     try {
       const selection = validateDiscoveryMechanismSelection(report.analysisMetadata.catalogProvenance.selection);
@@ -4083,7 +4397,7 @@ export function validateDiscoveryReportForDelivery(
   for (const sectionId of expectedSectionIds) {
     if (!sectionById.has(sectionId)) errors.push(`section_missing:${sectionId}`);
   }
-  for (const domain of expectedDomains) {
+  for (const domain of coachEvidenceValid ? [] : expectedDomains) {
     const domainChars = stripHtml((sectionById.get(domain) as any)?.content || "").length;
     if (domainChars < MIN_DISCOVERY_SECTION_CHARS) {
       errors.push(`premium_section:${domain}:${domainChars}/${MIN_DISCOVERY_SECTION_CHARS}`);
@@ -4097,8 +4411,13 @@ export function validateDiscoveryReportForDelivery(
     errors.push(`sections:${sections.length}/${DISCOVERY_DELIVERY_MIN_SECTIONS}`);
   }
   if (weakSections.length > 2) errors.push(`weak_sections:${weakSections.length}`);
-  if (totalContent < 14_000) errors.push(`total_content:${totalContent}/14000`);
-  if (totalContent > 45_000) errors.push(`total_content_max:${totalContent}/45000`);
+  if (coachEvidenceValid) {
+    if (totalContent < 5_500) errors.push(`total_content:${totalContent}/5500`);
+    if (totalContent > 16_000) errors.push(`total_content_max:${totalContent}/16000`);
+  } else {
+    if (totalContent < 14_000) errors.push(`total_content:${totalContent}/14000`);
+    if (totalContent > 45_000) errors.push(`total_content_max:${totalContent}/45000`);
+  }
   if (typeof report?.globalScore !== "number" || !Number.isFinite(report.globalScore) || report.globalScore < 0 || report.globalScore > 10) {
     errors.push(`global_score:${String(report?.globalScore)}`);
   }
@@ -4115,15 +4434,18 @@ export function validateDiscoveryReportForDelivery(
     const firstNameLower = String(report.clientName).toLowerCase();
     const hasPersonalization = sections.some((s) => stripHtml((s as any).content || "").toLowerCase().includes(firstNameLower));
     if (!hasPersonalization) errors.push(`personalization_missing:${report.clientName}`);
-    for (const domain of expectedDomains) {
+    for (const domain of coachEvidenceValid ? [] : expectedDomains) {
       const domainText = stripHtml((sectionById.get(domain) as any)?.content || "").toLowerCase();
       if (!domainText.includes(firstNameLower)) errors.push(`domain_personalization_missing:${domain}`);
     }
   }
   if (!report?.generatedAt) errors.push("generated_at_missing");
-  if (txt.length < 16_000) errors.push(`report_txt:${txt.length}/16000`);
-  if (txt.length > 65_000) errors.push(`report_txt_max:${txt.length}/65000`);
-  if (html.length < 30_000 || !/(<!doctype html|<html[\s>])/i.test(html)) errors.push(`report_html:${html.length}/30000`);
+  const minTxt = coachEvidenceValid ? 6_000 : 16_000;
+  const maxTxt = coachEvidenceValid ? 20_000 : 65_000;
+  const minHtml = coachEvidenceValid ? 12_000 : 30_000;
+  if (txt.length < minTxt) errors.push(`report_txt:${txt.length}/${minTxt}`);
+  if (txt.length > maxTxt) errors.push(`report_txt_max:${txt.length}/${maxTxt}`);
+  if (html.length < minHtml || !/(<!doctype html|<html[\s>])/i.test(html)) errors.push(`report_html:${html.length}/${minHtml}`);
 
   const assembledContent = sections.map((section: any) => stripHtml(section?.content || "")).join("\n");
   const completeVisibleArtifact = [
@@ -4166,8 +4488,11 @@ export function validateDiscoveryReportForDelivery(
     ? JSON.stringify(Object.fromEntries(
       Object.entries(metadata).filter(([key]) => (
         key !== "questionnaireCoverage" && key !== "catalogProvenance"
+        && key !== "coachProvenance" && key !== "coachNarrative"
       )),
-    ))
+    )) + (coachEvidenceValid && (metadata as any)?.coachNarrative
+      ? `\n${discoveryCoachProse((metadata as any).coachNarrative)}`
+      : "")
     : metadataText;
   for (const linguisticError of validateDiscoveryLinguisticQuality(metadataProse)) {
     errors.push(`metadata_linguistic:${linguisticError}`);
@@ -4211,8 +4536,12 @@ export function validateDiscoveryReportAgainstResponses(
   const errors = validateDiscoveryFactualConsistency(factualText, responses)
     .map((error) => `factual:${error}`);
   const catalogBacked = report?.generationQuality?.version === 2;
+  const coachBacked = report?.generationQuality?.version === 3;
   if (catalogBacked) {
     errors.push(...validateDiscoveryCatalogReportProvenance(report).map((error) => `catalog:${error}`));
+  }
+  if (coachBacked) {
+    errors.push(...validateDiscoveryCoachReportProvenance(report).map((error) => `coach:${error}`));
   }
   const metadata = nonRenderedMetadata && typeof nonRenderedMetadata === "object"
     ? nonRenderedMetadata as Record<string, unknown>
@@ -4261,7 +4590,9 @@ export function validateDiscoveryReportAgainstResponses(
   if (stableDiscoveryCatalogJson(metadataBlocages) !== stableDiscoveryCatalogJson(deterministic.blocages)) {
     errors.push("metadata:deterministic_blockages_mismatch");
   }
-  const expectedCta = buildDiscoveryDeterministicCta(deterministic.blocages, deterministic.safetyPolicy);
+  const expectedCta = coachBacked
+    ? buildDiscoveryCoachCtaMessage(deterministic.safetyPolicy.strictEatingSafety)
+    : buildDiscoveryDeterministicCta(deterministic.blocages, deterministic.safetyPolicy);
   if (String(metadata.ctaMessage || "") !== expectedCta) {
     errors.push("metadata:deterministic_cta_mismatch");
   }
@@ -4277,7 +4608,9 @@ export function validateDiscoveryReportAgainstResponses(
     deterministic.scoresByDomain[a] - deterministic.scoresByDomain[b]
     || DISCOVERY_PREMIUM_DOMAINS.indexOf(a) - DISCOVERY_PREMIUM_DOMAINS.indexOf(b)
   ));
-  const expectedSectionOrder = ["intro", "global", ...expectedDomainOrder, "scans", "coaching"];
+  const expectedSectionOrder: string[] = coachBacked
+    ? [...DISCOVERY_COACH_SECTION_IDS]
+    : ["intro", "global", ...expectedDomainOrder, "scans", "coaching"];
   const actualSectionOrder = sections.map((section) => String(section?.id || ""));
   if (JSON.stringify(actualSectionOrder) !== JSON.stringify(expectedSectionOrder)) {
     errors.push("sections:deterministic_order_mismatch");
@@ -4285,7 +4618,60 @@ export function validateDiscoveryReportAgainstResponses(
   // v2 prose is assembled locally from the immutable, hash-bound catalogue.
   // Its exact render/provenance gate above replaces the obsolete free-prose
   // parser. Legacy v1 reports retain that parser until they are regenerated.
-  if (!catalogBacked) {
+  if (coachBacked) {
+    const narrative = (report?.analysisMetadata as any)?.coachNarrative;
+    const answerIds = Object.keys(buildDiscoveryCoachPayload({
+      responses: deterministic.normalized as Record<string, unknown>,
+      scoresByDomain: deterministic.scoresByDomain,
+      globalScore: deterministic.globalScore,
+      blocages: deterministic.blocages,
+      safety: {
+        strictEatingSafety: deterministic.safetyPolicy.strictEatingSafety,
+        tcaMode: deterministic.safetyPolicy.tcaMode,
+        hasMedicalContext: discoveryHasDeclaredMedicalContext(deterministic.normalized as Record<string, unknown>),
+      },
+    }).answers);
+    const coachValidation = validateDiscoveryCoachNarrative(narrative, {
+      responses: deterministic.normalized as Record<string, unknown>,
+      safety: {
+        strictEatingSafety: deterministic.safetyPolicy.strictEatingSafety,
+        tcaMode: deterministic.safetyPolicy.tcaMode,
+        hasMedicalContext: discoveryHasDeclaredMedicalContext(deterministic.normalized as Record<string, unknown>),
+      },
+      answerIds,
+    });
+    errors.push(...coachValidation.errors.map((error) => `coach:${error}`));
+    if (coachValidation.ok && report?.analysisMetadata?.coachProvenance) {
+      try {
+        const expectedReport = convertToNarrativeReport({
+          globalScore: deterministic.globalScore,
+          scoresByDomain: deterministic.scoresByDomain,
+          blocages: deterministic.blocages,
+          synthese: "",
+          sectionContents: {},
+          ctaMessage: expectedCta,
+          knowledgePreflight: { synthesis: "", domains: {} },
+          safetyPolicy: deterministic.safetyPolicy,
+          questionnaireCoverage: deterministic.questionnaireCoverage,
+          coachNarrative: narrative,
+          coachProvenance: report.analysisMetadata.coachProvenance,
+        }, responses, { generatedAt: String(report.generatedAt || "") });
+        const strip = (value: Partial<ReportData>) => {
+          const cloned = structuredClone(value) as Record<string, unknown>;
+          delete cloned.validationResult;
+          delete cloned.txt;
+          delete cloned.html;
+          return cloned;
+        };
+        if (stableDiscoveryCatalogJson(strip(report)) !== stableDiscoveryCatalogJson(strip(expectedReport))) {
+          errors.push("report:coach_deterministic_reconstruction_mismatch");
+        }
+      } catch (error) {
+        errors.push(`report:coach_deterministic_reconstruction_failed:${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  }
+  if (!catalogBacked && !coachBacked) {
     const deterministicBlockageTitles = new Set(deterministic.blocages.map((blocage) => blocage.title));
     const providerProse = sections
       .filter((section) => String(section?.id || "") === "global"

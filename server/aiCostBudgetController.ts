@@ -25,6 +25,9 @@ export interface AICostBudgetContext {
   discoveryAllowLegacy?: boolean;
   discoveryBatchId?: string;
   discoveryBatchLockToken?: string;
+  /** Discovery v3: the single corrective call after a candidate failed
+   * deterministic validation, inside the same generic generation. */
+  discoveryValidationRetry?: boolean;
 }
 
 export interface AICostBudgetSpendSnapshot {
@@ -69,6 +72,10 @@ const DEFAULT_PEPTIDES_TEST_LIMITS: AICostBudgetLimits = {
   perDayUsd: 5,
   reservationTtlMinutes: 45,
 };
+
+/** Discovery v3 reserves one bounded call at a time (initial or corrective
+ * retry). The per-order ceiling below still caps the whole generation. */
+export const DISCOVERY_PER_CALL_RESERVATION_USD = 0.25;
 
 const DEFAULT_DISCOVERY_LIMITS: AICostBudgetLimits = {
   perOrderUsd: 0.75,
@@ -404,6 +411,7 @@ export async function reserveAICostBudget(
     discoveryAllowLegacy: rawContext.discoveryAllowLegacy === true,
     discoveryBatchId: rawContext.discoveryBatchId,
     discoveryBatchLockToken: rawContext.discoveryBatchLockToken,
+    discoveryValidationRetry: rawContext.discoveryValidationRetry === true,
   };
   if (!context.orderId) {
     throw new Error("AI cost budget requires an orderId");
@@ -415,7 +423,7 @@ export async function reserveAICostBudget(
   let limits = getAICostBudgetLimits(context.product, env, context.costCategory);
   if (!Number.isFinite(limits.perOrderUsd)) return null;
   const reservedUsd = context.product === "discovery"
-    ? DEFAULT_DISCOVERY_LIMITS.perOrderUsd
+    ? DISCOVERY_PER_CALL_RESERVATION_USD
     : boundedNumber(context.estimatedCostUsd, limits.perOrderUsd, 0.01, limits.perOrderUsd);
 
   await ensureBudgetTables();
@@ -511,11 +519,17 @@ export async function reserveAICostBudget(
         && context.discoveryAllowLegacy
         && previousCount === 1
         && unsettled === 0;
+      // v3: exactly one corrective retry, same generic generation, only after
+      // the first call settled. Bounded to two provider calls per audit.
+      const validationRetryAuthorized = hasGenericOwnership
+        && context.discoveryValidationRetry === true
+        && previousCount === 1
+        && unsettled === 0;
       if (regenerationAuthorized || legacyRepairRetryAuthorized) {
         limits = { ...limits, perOrderUsd: 1.50 };
       }
       if (
-        (!regenerationAuthorized && !legacyRepairRetryAuthorized && previousCount !== 0)
+        (!regenerationAuthorized && !legacyRepairRetryAuthorized && !validationRetryAuthorized && previousCount !== 0)
         || (regenerationAuthorized && (previousCount !== 1 || unsettled !== 0))
       ) {
         throw new Error("DISCOVERY_MONO_CALL_ALREADY_RESERVED");

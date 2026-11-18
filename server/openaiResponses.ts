@@ -696,6 +696,7 @@ export interface OpenAITextRequest {
     | "discoveryAllowLegacy"
     | "discoveryBatchId"
     | "discoveryBatchLockToken"
+    | "discoveryValidationRetry"
   >;
 }
 

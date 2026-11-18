@@ -1158,7 +1158,7 @@ function getPrimaryButton(text: string, href: string, color: string = COLORS.pri
 }
 
 // Review Stars Section
-function getReviewSection(dashboardLink: string): string {
+function getReviewSection(dashboardLink: string, trackedReviewLink?: string): string {
   return `
     <div style="margin: 32px 0; padding: 28px; background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.2); text-align: center;">
       <div style="font-size: 11px; margin-bottom: 12px; letter-spacing: 1px; text-transform: uppercase; color: ${COLORS.textMuted};">Note sur 5</div>
@@ -1166,14 +1166,18 @@ function getReviewSection(dashboardLink: string): string {
       <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 20px; line-height: 1.6;">
         30 secondes pour noter ton experience.<br>Ton retour aide d'autres personnes a decouvrir APEXLABS.
       </p>
-      ${getPrimaryButton('Laisser un avis', `${dashboardLink}#review`, COLORS.warning)}
+      ${getPrimaryButton('Laisser un avis', trackedReviewLink || `${dashboardLink}#review`, COLORS.warning)}
     </div>
   `;
 }
 
 // Coaching CTA Section
-function getCoachingSection(auditType: string, color: string = COLORS.purple): string {
-  const coachingLink = "https://www.achzodcoaching.com/formules-coaching";
+function getCoachingSection(
+  auditType: string,
+  color: string = COLORS.purple,
+  trackLink: (url: string) => string = (url) => url,
+): string {
+  const coachingLink = trackLink("https://www.achzodcoaching.com/formules-coaching");
   const deductionAmount = getDeductionAmount(auditType);
   const promo = getPromoCodeForAuditType(auditType);
   const whatsappMessage = `Salut Achzod, je viens de recevoir mon rapport APEXLABS (${auditType}). Je veux ton avis pour savoir si je dois appliquer seul, faire une analyse plus avancee ou partir sur coaching.`;
@@ -1297,10 +1301,19 @@ export async function sendReportReadyEmail(
         ? "biomarqueurs clés"
         : "18 domaines de santé";
 
-    // Generate a tracking ID for the open pixel
+    // One tracking id = the email_tracking row id (logEmail uses
+    // metadata.trackingId as the row id). It drives the open pixel AND the
+    // first-party click redirect: every link of this email goes through
+    // /api/track/email/:id/click so email_tracking.clicked gets filled.
+    // SendPulse SMTP click webhooks are not delivered to this app (only
+    // Automation360 events are), so provider-side click tracking alone never
+    // reached the database.
     const { randomUUID } = await import("crypto");
     const pixelTrackingId = randomUUID();
     const trackingPixel = `${baseUrl}/api/track/email/${pixelTrackingId}/open.gif`;
+    const trackedReportLink = withEmailClickTracking(baseUrl, pixelTrackingId, reportLink);
+    const trackedReviewLink = withEmailClickTracking(baseUrl, pixelTrackingId, reviewLink);
+    const trackLink = (url: string) => withEmailClickTracking(baseUrl, pixelTrackingId, url);
 
     const content = `
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px 0;">
@@ -1316,17 +1329,17 @@ export async function sendReportReadyEmail(
       <p style="color:${COLORS.textMuted};font-size:16px;line-height:1.65;margin:0 0 10px 0;text-align:center;">J'ai terminé l'analyse complète de ton profil à travers les <strong style="color:${COLORS.text};">${domainsCount}</strong>.</p>
       <p style="color:${COLORS.textMuted};font-size:16px;line-height:1.65;margin:0 0 8px 0;text-align:center;">Tu vas y trouver tes scores par domaine, tes axes à corriger en priorité, et les recommandations que j'aurais faites en face à face.</p>
 
-      ${getPrimaryButton('Consulter le rapport', reportLink, planColor)}
+      ${getPrimaryButton('Consulter le rapport', trackedReportLink, planColor)}
 
-      ${getReviewSection(reviewLink)}
+      ${getReviewSection(reportLink, trackedReviewLink)}
 
-      ${getCoachingSection(auditType, planColor)}
+      ${getCoachingSection(auditType, planColor, trackLink)}
 
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:28px;">
         <tr>
           <td style="padding:18px 20px;background-color:${COLORS.background};border-radius:8px;border:1px solid ${COLORS.border};text-align:center;">
             <p style="color:${COLORS.textMuted};font-size:12px;margin:0 0 6px 0;">Si le bouton ne fonctionne pas, copie ce lien :</p>
-            <p style="margin:0;"><a href="${reportLink}" style="color:${planColor};font-size:11px;word-break:break-all;text-decoration:underline;">${reportLink}</a></p>
+            <p style="margin:0;"><a href="${trackedReportLink}" style="color:${planColor};font-size:11px;word-break:break-all;text-decoration:underline;">${reportLink}</a></p>
           </td>
         </tr>
       </table>
@@ -1365,7 +1378,7 @@ export async function sendReportReadyEmail(
         recipientEmail: email,
         auditId,
         auditType,
-        metadata: { reportLink, planLabel, trackingId: pixelTrackingId },
+        metadata: { reportLink, trackedReportLink, planLabel, trackingId: pixelTrackingId },
       }
     );
 
