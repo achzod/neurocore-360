@@ -1050,12 +1050,6 @@ function getCoachingAppleWrapper(
 </html>`;
 }
 
-// Format a deadline date in French (e.g., "mardi 19 mai")
-function formatDeadlineFR(daysFromNow: number): string {
-  const date = new Date(Date.now() + daysFromNow * 24 * 60 * 60 * 1000);
-  return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-}
-
 // Reusable Discovery coaching promotion banner. `deadline` is the exact label
 // of the last valid day (report-based window for the Discovery sequence).
 function getDiscoveryPromoBanner(deadline: string): string {
@@ -3773,6 +3767,14 @@ const escapeEmailHtml = (value: unknown): string =>
 // Recovery CTA campaign after fixing the DISCOVERY20 checkout expectation.
 // Every coaching link goes through the first-party click redirect so APEXLABS
 // owns click attribution even if SendPulse click tracking is unavailable.
+//
+// Owner rule (2026-11-18): DISCOVERY20 is valid 7 days after the recipient's
+// Discovery report was delivered (report_sent_at + 7 days, Paris time, last day
+// included). The caller hands the recipient's window (loadDiscoveryOfferWindowForEmail).
+// - Inside the window: code + exact deadline + /go/coaching?until=<same date>.
+// - No window or window over (any cohort, clicked_no_conversion included):
+//   version without code or discount, coaching at the normal price or the
+//   Anabolic Bioscan (59 €). See sendRecoveryCtaEmailWithoutCode.
 export async function sendRecoveryCtaEmail(
   email: string,
   opts: {
@@ -3781,14 +3783,19 @@ export async function sendRecoveryCtaEmail(
     trackingId: string;
     percentComplete?: number | null;
     resumeUrl?: string | null;
-    expiresText?: string;
+    offerWindow?: DiscoveryOfferWindow | null;
   }
 ): Promise<boolean> {
   try {
-    const expiresText = opts.expiresText || "7 jours";
+    const offer = activeDiscoveryOffer(opts.offerWindow);
+    if (!offer) {
+      return await sendRecoveryCtaEmailWithoutCode(email, opts);
+    }
+    const deadlineDate = offer.label;
+    const countdown = discoveryOfferCountdown(offer);
     const cohort = opts.cohort;
     const campaign = "recovery_cta_2026_06";
-    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, cohort);
+    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, cohort, undefined, offer.untilIso);
     const trackedCoachingUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, coachingUrl);
     const trackingPixel = `${opts.baseUrl}/api/track/email/${opts.trackingId}/open.gif`;
     const safePercent = typeof opts.percentComplete === "number" && Number.isFinite(opts.percentComplete)
@@ -3798,7 +3805,7 @@ export async function sendRecoveryCtaEmail(
     const trackedPrimaryUrl = cohort.startsWith("abandon_") && resumeUrl ? resumeUrl : trackedCoachingUrl;
 
     const subjectByCohort: Record<RecoveryCtaCohort, string> = {
-      clicked_no_conversion: "DISCOVERY20 : le checkout est clair maintenant",
+      clicked_no_conversion: `DISCOVERY20 : le checkout est clair maintenant (jusqu'au ${deadlineDate})`,
       clicked_help: "Tu hesites sur la formule ?",
       abandon_high: "Ton Discovery est presque fini",
       abandon_medium: "Reprends ton Discovery cette semaine",
@@ -3815,9 +3822,9 @@ export async function sendRecoveryCtaEmail(
       clicked_help:
         "Tu as cliqué sur le coaching mais tu n'es pas allé au bout. Si c'est le choix de la formule, le budget ou le code promo qui bloque, réponds à ce mail avec ton objectif et je te dis exactement quoi prendre. Sinon je te remets le lien direct.",
       abandon_high:
-        `Tu étais à ${safePercent ?? "plus de 75"}% du questionnaire. Ton scan est sauvegardé, reprends-le d'abord : derrière, je te garde DISCOVERY20 pour passer au coaching si tu veux appliquer le plan.`,
+        `Tu étais à ${safePercent ?? "plus de 75"}% du questionnaire. Ton scan est sauvegardé, reprends-le d'abord : derrière, ton code DISCOVERY20 reste valable jusqu'au ${deadlineDate} si tu veux passer au coaching.`,
       abandon_medium:
-        `Tu avais commencé ton Discovery${safePercent !== null ? ` et tu étais à ${safePercent}%` : ""}. Finis-le, récupère ton rapport, puis utilise DISCOVERY20 si tu veux que je transforme le diagnostic en plan concret.`,
+        `Tu avais commencé ton Discovery${safePercent !== null ? ` et tu étais à ${safePercent}%` : ""}. Finis-le, récupère ton rapport, puis utilise DISCOVERY20 avant le ${deadlineDate} si tu veux que je transforme le diagnostic en plan concret.`,
       opened_no_click:
         "Tu as ouvert une relance mais tu n'as pas cliqué. Je te remets la suite simplement : si tu veux que le Discovery devienne un vrai plan semaine après semaine, c'est le coaching.",
       apex_buyer:
@@ -3825,9 +3832,9 @@ export async function sendRecoveryCtaEmail(
       warm_report:
         "Tu as ton Discovery. Maintenant la vraie question, c'est l'application : nutrition, entraînement, suivi hebdo, ajustements quand ça bloque.",
       abandon_last_chance:
-        "Ton questionnaire est encore sauvegardé. Si tu veux reprendre proprement, fais-le maintenant puis garde DISCOVERY20 pour le coaching.",
+        `Ton questionnaire est encore sauvegardé. Si tu veux reprendre proprement, fais-le maintenant : DISCOVERY20 reste valable jusqu'au ${deadlineDate} pour le coaching.`,
       cold_base:
-        "Je reprends les dossiers Discovery cette semaine. Si tu veux passer du rapport à un plan suivi, je te remets l'accès coaching avec DISCOVERY20.",
+        `Je reprends les dossiers Discovery cette semaine. Si tu veux passer du rapport à un plan suivi, ton code DISCOVERY20 est encore valable jusqu'au ${deadlineDate}.`,
     };
 
     const primaryLabel = cohort.startsWith("abandon_") && resumeUrl
@@ -3835,7 +3842,7 @@ export async function sendRecoveryCtaEmail(
       : "Voir les formules coaching";
 
     const content = `
-      ${getDiscoveryPromoBanner(formatDeadlineFR(7))}
+      ${getDiscoveryPromoBanner(deadlineDate)}
 
       <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 20px;">
         ${escapeEmailHtml(introByCohort[cohort])}
@@ -3845,7 +3852,7 @@ export async function sendRecoveryCtaEmail(
         <p style="color:${APPLE_COLORS.ink};font-size:15px;line-height:1.65;margin:0;">
           <strong>Important :</strong> au paiement sur AchzodCoaching, colle
           <strong>DISCOVERY20</strong> dans le champ <strong>Code promotionnel ?</strong>.
-          Le code est valable ${escapeEmailHtml(expiresText)} sur les formules coaching 8 et 12 semaines.
+          Le code donne -20% sur les formules coaching 8 et 12 semaines, jusqu'au <strong>${escapeEmailHtml(deadlineDate)}</strong> (7 jours après ton rapport).
         </p>
       </div>
 
@@ -3870,13 +3877,13 @@ export async function sendRecoveryCtaEmail(
 
     const emailContent = getCoachingAppleWrapper(
       content,
-      cohort.startsWith("abandon_") ? "Ton Discovery est sauvegardé" : "DISCOVERY20 est actif",
-      "Code à coller au checkout"
+      cohort.startsWith("abandon_") ? "Ton Discovery est sauvegardé" : `DISCOVERY20 actif jusqu'au ${deadlineDate}`,
+      `${countdown} : code à coller au checkout`
     );
 
     const plainText = `${introByCohort[cohort]}
 
-Code DISCOVERY20 : -20% sur formules coaching 8 et 12 semaines, valable ${expiresText}.
+Code DISCOVERY20 : -20% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (7 jours après ton rapport).
 Au paiement, copie DISCOVERY20 dans le champ "Code promotionnel ?".
 
 ${cohort.startsWith("abandon_") && resumeUrl ? `Reprendre mon Discovery : ${resumeUrl}\nVoir les formules coaching : ${trackedCoachingUrl}` : `Voir les formules coaching : ${trackedCoachingUrl}`}
@@ -3900,6 +3907,9 @@ Achzod`;
           trackingId: opts.trackingId,
           cohort,
           promoCode: "DISCOVERY20",
+          offerVariant: "code",
+          offerUntil: offer.untilIso,
+          countdown,
           coachingUrl,
           trackedCoachingUrl,
           resumeUrl,
@@ -3913,6 +3923,158 @@ Achzod`;
     console.error("[SendPulse] Error sending recovery CTA email:", error);
     return false;
   }
+}
+
+// Recovery CTA WITHOUT code: no Discovery window for this recipient (no
+// delivered Discovery report, or report_sent_at + 7 days is over). Coaching at
+// the normal price or the Anabolic Bioscan (59 €), every link click-tracked
+// (the resume link stays direct, as before: its host is not on the click
+// redirect allow-list).
+// Content rules: tutoiement, no video call / phone call / appointment, no
+// other coach named, no dosage, no study cited.
+const RECOVERY_NO_CODE_SUBJECT: Record<RecoveryCtaCohort, string> = {
+  clicked_no_conversion: "Tu avais cliqué sur le coaching",
+  clicked_help: "Tu hésites sur la formule ?",
+  abandon_high: "Ton Discovery est presque fini",
+  abandon_medium: "Reprends ton Discovery cette semaine",
+  opened_no_click: "Je reprends ton dossier Discovery",
+  apex_buyer: "Ton audit peut devenir ton plan coaching",
+  warm_report: "Ton Discovery, la suite concrète",
+  abandon_last_chance: "Ton scan est encore sauvegardé",
+  cold_base: "Ton Discovery, et maintenant ?",
+};
+
+function recoveryNoCodeIntro(cohort: RecoveryCtaCohort, safePercent: number | null): string {
+  switch (cohort) {
+    case "clicked_no_conversion":
+      return "Tu avais cliqué sur le coaching sans aller au bout. Je te remets les liens proprement : les formules coaching si tu veux un plan suivi, ou l'Anabolic Bioscan si tu préfères approfondir d'abord.";
+    case "clicked_help":
+      return "Tu as cliqué sur le coaching mais tu n'es pas allé au bout. Si c'est le choix de la formule, le budget ou le timing qui bloque, réponds à ce mail avec ton objectif et je te dis exactement quoi prendre.";
+    case "abandon_high":
+      return `Tu étais à ${safePercent ?? "plus de 75"}% du questionnaire. Ton scan est sauvegardé, reprends-le d'abord : ton rapport te montre où tu bloques, et derrière tu choisis comment avancer.`;
+    case "abandon_medium":
+      return `Tu avais commencé ton Discovery${safePercent !== null ? ` et tu étais à ${safePercent}%` : ""}. Finis-le, récupère ton rapport, puis décide si tu veux que je transforme le diagnostic en plan concret.`;
+    case "opened_no_click":
+      return "Tu as ouvert une relance mais tu n'as pas cliqué. Je te remets la suite simplement : si tu veux que le Discovery devienne un vrai plan semaine après semaine, c'est le coaching.";
+    case "apex_buyer":
+      return "Tu as déjà fait un audit APEXLABS. Les données seules ne transforment pas un corps : le coaching sert à appliquer, ajuster et tenir le plan.";
+    case "warm_report":
+      return "Tu as ton Discovery. Maintenant la vraie question, c'est l'application : nutrition, entraînement, suivi hebdo, ajustements quand ça bloque.";
+    case "abandon_last_chance":
+      return "Ton questionnaire est encore sauvegardé. Si tu veux reprendre proprement, fais-le maintenant : ton rapport te donne la base, le coaching sert à l'appliquer.";
+    case "cold_base":
+    default:
+      return "Je reprends les dossiers Discovery cette semaine. Si tu veux passer du rapport à un plan suivi, voilà les deux façons d'avancer.";
+  }
+}
+
+async function sendRecoveryCtaEmailWithoutCode(
+  email: string,
+  opts: {
+    cohort: RecoveryCtaCohort;
+    baseUrl: string;
+    trackingId: string;
+    percentComplete?: number | null;
+    resumeUrl?: string | null;
+    offerWindow?: DiscoveryOfferWindow | null;
+  }
+): Promise<boolean> {
+  const cohort = opts.cohort;
+  const baseUrl = opts.baseUrl;
+  const trackingId = opts.trackingId;
+  const campaign = "recovery_cta_2026_06_nocode";
+  const safePercent = typeof opts.percentComplete === "number" && Number.isFinite(opts.percentComplete)
+    ? Math.max(0, Math.min(99, Math.round(opts.percentComplete)))
+    : null;
+  const resumeUrl = cohort.startsWith("abandon_") ? opts.resumeUrl || null : null;
+  const formulasLink = discoveryNoCodeUrl("https://www.achzodcoaching.com/formules-coaching", campaign, cohort);
+  const bioscanLink = discoveryNoCodeUrl(new URL("/offers/anabolic-bioscan", baseUrl).toString(), campaign, `${cohort}_bioscan`);
+  const trackedFormulasLink = withEmailClickTracking(baseUrl, trackingId, formulasLink);
+  const trackedBioscanLink = withEmailClickTracking(baseUrl, trackingId, bioscanLink);
+  const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
+  const intro = recoveryNoCodeIntro(cohort, safePercent);
+
+  const content = `
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 22px;">
+        ${escapeEmailHtml(intro)}
+      </p>
+
+      ${resumeUrl ? getCoachingAppleButton("Reprendre mon Discovery", resumeUrl) : ""}
+
+      <div style="padding:22px;background:#f5f5f7;border-radius:14px;margin-bottom:16px;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">Passer au suivi</p>
+        <h3 style="color:${APPLE_COLORS.ink};font-size:20px;font-weight:700;margin:0 0 10px;letter-spacing:-0.3px;">Coaching avec moi</h3>
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;margin:0 0 6px;line-height:1.6;">
+          Je construis ton plan sur mesure. Chaque semaine tu m'envoies ton bilan écrit, je lis tes retours et j'ajuste avant que tu décroches. Tout se passe par écrit, je réponds personnellement.
+        </p>
+        ${getCoachingAppleButton("Voir les formules coaching", trackedFormulasLink, resumeUrl ? "secondary" : "primary")}
+      </div>
+
+      <div style="padding:22px;background:#f5f5f7;border-radius:14px;margin-bottom:20px;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">Approfondir d'abord</p>
+        <h3 style="color:${APPLE_COLORS.ink};font-size:20px;font-weight:700;margin:0 0 10px;letter-spacing:-0.3px;">Anabolic Bioscan (59 €)</h3>
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;margin:0 0 6px;line-height:1.6;">
+          16 domaines analysés en profondeur, tes priorités classées et expliquées, et un plan d'action semaine par semaine si tu veux avancer seul avec une base plus complète.
+        </p>
+        ${getCoachingAppleButton("Découvrir l'Anabolic Bioscan", trackedBioscanLink, "secondary")}
+      </div>
+
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.65;margin:26px 0 0;">
+        Si tu bloques sur le choix de la formule, réponds simplement à ce mail avec ton objectif et je te dis quoi prendre.
+      </p>
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+  const emailContent = getCoachingAppleWrapper(
+    content,
+    cohort.startsWith("abandon_") ? "Ton Discovery est sauvegardé" : "La suite après ton Discovery",
+    "Approfondir ou passer au suivi"
+  );
+
+  const plainText = [
+    intro,
+    "",
+    resumeUrl ? `Reprendre mon Discovery : ${resumeUrl}` : "",
+    `Coaching avec moi, plan sur mesure et bilan écrit chaque semaine : ${trackedFormulasLink}`,
+    `Approfondir d'abord avec l'Anabolic Bioscan (59 €) : ${trackedBioscanLink}`,
+    "",
+    "Si tu bloques sur le choix de la formule, réponds simplement à ce mail avec ton objectif.",
+    "",
+    "Achzod",
+  ].filter((line, index, lines) => !(line === "" && lines[index - 1] === "")).join("\n");
+
+  const result = await sendEmailWithTracking(
+    {
+      subject: RECOVERY_NO_CODE_SUBJECT[cohort],
+      from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+      to: [{ email }],
+      html: encodeBase64(emailContent),
+      text: plainText,
+    },
+    {
+      emailType: "sendRecoveryCtaEmail",
+      recipientEmail: email,
+      metadata: {
+        trackingId,
+        cohort,
+        promoCode: null,
+        offerVariant: "no_code",
+        offerUntil: opts.offerWindow?.untilIso ?? null,
+        formulasLink,
+        trackedFormulasLink,
+        bioscanLink,
+        trackedBioscanLink,
+        resumeUrl,
+        campaign,
+      },
+    }
+  );
+  return result.result === true;
 }
 
 export async function sendWhatsAppLeadFollowupEmail(
@@ -4257,37 +4419,44 @@ export async function sendWhatsAppLeadAdminAlert(lead: WhatsAppLeadAdminAlertLea
   }
 }
 
+// Formula-choice lead follow-up.
+// Owner rule (2026-11-18): DISCOVERY20 is valid 7 days after the lead's
+// Discovery report was delivered. The caller hands the lead's window
+// (loadDiscoveryOfferWindowForEmail on the lead's email).
+// - Inside the window: code + exact deadline + /go/coaching?until=<same date>.
+// - No window or window over: recommended formula at the normal price, or the
+//   Anabolic Bioscan (59 €), without code or discount.
 export async function sendCoachingFormulaChoiceLeadEmail(
   email: string,
   lead: CoachingFormulaLeadInput,
   opts: {
     baseUrl: string;
     trackingId: string;
-    expiresText?: string;
+    offerWindow?: DiscoveryOfferWindow | null;
   }
 ): Promise<boolean> {
   try {
+    const offer = activeDiscoveryOffer(opts.offerWindow);
+    if (!offer) {
+      return await sendCoachingFormulaChoiceLeadEmailWithoutCode(email, lead, opts);
+    }
     const tier = normalizeCoachingFormulaTier(lead.tier);
     const campaign = "coaching_formula_choice_2026_07";
-    const expiresText = opts.expiresText || "5 jours";
-    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, tier.content, tier.urlTier);
+    const deadlineDate = offer.label;
+    const countdown = discoveryOfferCountdown(offer);
+    const coachingUrl = discoveryCoachingBridgeUrl(opts.baseUrl, campaign, tier.content, tier.urlTier, offer.untilIso);
     const trackedCoachingUrl = withEmailClickTracking(opts.baseUrl, opts.trackingId, coachingUrl);
     const trackingPixel = `${opts.baseUrl}/api/track/email/${opts.trackingId}/open.gif`;
-    const deadlineDate = formatDeadlineFR(5);
 
     const objective = compactEmailLine(lead.objectif, 260);
     const profile = compactEmailLine(lead.profil, 180);
     const sleep = compactEmailLine(lead.sommeil, 180);
     const reason = compactEmailLine(lead.pourquoi_ce_choix, 520);
 
-    const contextRows = [
-      objective ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Objectif :</strong> ${escapeEmailHtml(objective)}</p>` : "",
-      profile ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Profil :</strong> ${escapeEmailHtml(profile)}</p>` : "",
-      sleep ? `<p style="margin:0;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Sommeil/énergie :</strong> ${escapeEmailHtml(sleep)}</p>` : "",
-    ].filter(Boolean).join("");
+    const contextRows = coachingFormulaContextRows(objective, profile, sleep);
 
     const content = `
-      ${getDiscoveryPromoBanner(formatDeadlineFR(5))}
+      ${getDiscoveryPromoBanner(deadlineDate)}
 
       <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 18px;">
         Tu as rempli le questionnaire pour choisir ta formule de coaching. Je te relance parce que ton profil est déjà qualifié, il ne manque plus que la décision.
@@ -4313,7 +4482,7 @@ export async function sendCoachingFormulaChoiceLeadEmail(
         Si tu veux que je transforme ça en plan concret semaine après semaine, prends ta place maintenant.
       </p>
       <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.65;margin:0 0 20px;">
-        Le code <strong style="color:${APPLE_COLORS.ink};">DISCOVERY20</strong> retire 20% sur les formules coaching 8 et 12 semaines. Il reste ${escapeEmailHtml(expiresText)}.
+        Le code <strong style="color:${APPLE_COLORS.ink};">DISCOVERY20</strong> retire 20% sur les formules coaching 8 et 12 semaines. ${escapeEmailHtml(countdown)} : il est valable jusqu'au ${escapeEmailHtml(deadlineDate)} (7 jours après ton rapport Discovery).
       </p>
 
       ${getCoachingAppleButton(tier.ctaLabel, trackedCoachingUrl)}
@@ -4338,7 +4507,7 @@ export async function sendCoachingFormulaChoiceLeadEmail(
     const emailContent = getCoachingAppleWrapper(
       content,
       `${tier.label} avec DISCOVERY20`,
-      `Tu as rempli le choix de formule, il reste ${expiresText}`
+      `Code valable jusqu'au ${deadlineDate}`
     );
 
     const plainParts = [
@@ -4347,7 +4516,7 @@ export async function sendCoachingFormulaChoiceLeadEmail(
       objective ? `Objectif : ${objective}` : "",
       reason ? `Pourquoi : ${reason}` : "",
       "",
-      `Code DISCOVERY20 : -20% sur les formules coaching 8 et 12 semaines, valable ${expiresText}.`,
+      `Code DISCOVERY20 : -20% sur les formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (7 jours après ton rapport Discovery).`,
       `Choisir ma formule : ${trackedCoachingUrl}`,
       "",
       `Au checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?".`,
@@ -4370,6 +4539,9 @@ export async function sendCoachingFormulaChoiceLeadEmail(
         metadata: {
           trackingId: opts.trackingId,
           promoCode: "DISCOVERY20",
+          offerVariant: "code",
+          offerUntil: offer.untilIso,
+          countdown,
           campaign,
           recommendedTier: tier.label,
           rawTier: lead.tier || null,
@@ -4385,6 +4557,150 @@ export async function sendCoachingFormulaChoiceLeadEmail(
     console.error("[SendPulse] Error sending coaching formula choice lead email:", error);
     return false;
   }
+}
+
+function coachingFormulaContextRows(objective: string, profile: string, sleep: string): string {
+  return [
+    objective ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Objectif :</strong> ${escapeEmailHtml(objective)}</p>` : "",
+    profile ? `<p style="margin:0 0 8px;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Profil :</strong> ${escapeEmailHtml(profile)}</p>` : "",
+    sleep ? `<p style="margin:0;color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.55;"><strong style="color:${APPLE_COLORS.ink};">Sommeil/énergie :</strong> ${escapeEmailHtml(sleep)}</p>` : "",
+  ].filter(Boolean).join("");
+}
+
+// Formula-choice lead WITHOUT code (no Discovery window, or window over).
+// Recommended formula page at the normal price, or the Anabolic Bioscan
+// (59 €). Every link is click-tracked. Content rules: tutoiement, no video
+// call / phone call / appointment, no other coach named, no dosage, no study.
+async function sendCoachingFormulaChoiceLeadEmailWithoutCode(
+  email: string,
+  lead: CoachingFormulaLeadInput,
+  opts: { baseUrl: string; trackingId: string; offerWindow?: DiscoveryOfferWindow | null }
+): Promise<boolean> {
+  const baseUrl = opts.baseUrl;
+  const trackingId = opts.trackingId;
+  const tier = normalizeCoachingFormulaTier(lead.tier);
+  const tierPage = tier.urlTier ? DISCOVERY_NO_CODE_TIER[tier.urlTier] : null;
+  const campaign = "coaching_formula_choice_2026_07_nocode";
+  const formulasLink = discoveryNoCodeUrl("https://www.achzodcoaching.com/formules-coaching", campaign, "formules");
+  const tierLink = tierPage ? discoveryNoCodeUrl(tierPage.href, campaign, tier.content) : null;
+  const bioscanLink = discoveryNoCodeUrl(new URL("/offers/anabolic-bioscan", baseUrl).toString(), campaign, "bioscan");
+  const trackedFormulasLink = withEmailClickTracking(baseUrl, trackingId, formulasLink);
+  const trackedTierLink = tierLink ? withEmailClickTracking(baseUrl, trackingId, tierLink) : null;
+  const trackedBioscanLink = withEmailClickTracking(baseUrl, trackingId, bioscanLink);
+  const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
+  const coachingCtaLink = trackedTierLink || trackedFormulasLink;
+  const coachingCtaLabel = tierPage ? `Voir la formule ${tierPage.label}` : "Comparer les formules";
+
+  const objective = compactEmailLine(lead.objectif, 260);
+  const profile = compactEmailLine(lead.profil, 180);
+  const sleep = compactEmailLine(lead.sommeil, 180);
+  const reason = compactEmailLine(lead.pourquoi_ce_choix, 520);
+  const contextRows = coachingFormulaContextRows(objective, profile, sleep);
+
+  const content = `
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 18px;">
+        Tu as rempli le questionnaire pour choisir ta formule de coaching. Je te relance parce que ton profil est déjà qualifié, il ne manque plus que la décision.
+      </p>
+
+      <div style="padding:20px 22px;background:#e8f4ff;border-radius:12px;border-left:3px solid ${APPLE_COLORS.accent};margin:0 0 24px;">
+        <p style="color:${APPLE_COLORS.accent};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 6px;font-weight:700;">
+          Formule recommandée
+        </p>
+        <p style="color:${APPLE_COLORS.ink};font-size:24px;font-weight:800;margin:0 0 10px;letter-spacing:-0.3px;">
+          ${escapeEmailHtml(tier.label)}
+        </p>
+        ${reason ? `<p style="color:${APPLE_COLORS.inkSoft};font-size:14px;line-height:1.65;margin:0;">${escapeEmailHtml(reason)}</p>` : ""}
+      </div>
+
+      ${contextRows ? `
+      <div style="padding:16px 18px;background:#f5f5f7;border-radius:12px;margin:0 0 24px;">
+        ${contextRows}
+      </div>
+      ` : ""}
+
+      <p style="color:${APPLE_COLORS.ink};font-size:16px;line-height:1.65;margin:0 0 10px;font-weight:600;">
+        Si tu veux que je transforme ça en plan concret semaine après semaine, prends ta place maintenant.
+      </p>
+
+      ${getCoachingAppleButton(coachingCtaLabel, coachingCtaLink)}
+      ${tierPage ? `
+      <div style="text-align:center;margin:0 0 18px;">
+        <a href="${trackedFormulasLink}" style="color:${APPLE_COLORS.accent};font-size:14px;text-decoration:none;font-weight:500;">Comparer les 3 formules →</a>
+      </div>` : ""}
+
+      <div style="padding:22px;background:#f5f5f7;border-radius:14px;margin:8px 0 20px;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">Approfondir d'abord</p>
+        <h3 style="color:${APPLE_COLORS.ink};font-size:20px;font-weight:700;margin:0 0 10px;letter-spacing:-0.3px;">Anabolic Bioscan (59 €)</h3>
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;margin:0 0 6px;line-height:1.6;">
+          Si tu préfères avancer seul avec une base plus complète : 16 domaines analysés, tes priorités classées et un plan d'action semaine par semaine.
+        </p>
+        ${getCoachingAppleButton("Découvrir l'Anabolic Bioscan", trackedBioscanLink, "secondary")}
+      </div>
+
+      <div style="padding:14px 18px;background:#f5f5f7;border-radius:10px;text-align:center;margin:24px 0 14px;">
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:13px;margin:0;line-height:1.6;">
+          Si tu hésites encore, réponds simplement à ce mail avec ton blocage : budget, timing, formule, blessure, ou autre. Je te réponds directement.
+        </p>
+      </div>
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+  const emailContent = getCoachingAppleWrapper(
+    content,
+    `Ta formule : ${tier.label}`,
+    "Il ne manque plus que la décision"
+  );
+
+  const plainParts = [
+    `Tu as rempli le questionnaire pour choisir ta formule de coaching.`,
+    `Formule recommandée : ${tier.label}.`,
+    objective ? `Objectif : ${objective}` : "",
+    reason ? `Pourquoi : ${reason}` : "",
+    "",
+    `${coachingCtaLabel} : ${coachingCtaLink}`,
+    tierPage ? `Comparer les 3 formules : ${trackedFormulasLink}` : "",
+    `Approfondir d'abord avec l'Anabolic Bioscan (59 €) : ${trackedBioscanLink}`,
+    "",
+    `Si tu hésites encore, réponds à ce mail avec ton blocage : budget, timing, formule, blessure, ou autre.`,
+    "",
+    "Achzod",
+  ].filter((part) => part !== "");
+
+  const result = await sendEmailWithTracking(
+    {
+      subject: `${tier.label} : ta formule coaching recommandée`,
+      from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+      to: [{ email }],
+      html: encodeBase64(emailContent),
+      text: plainParts.join("\n"),
+    },
+    {
+      emailType: "sendCoachingFormulaChoiceLeadEmail",
+      recipientEmail: email,
+      metadata: {
+        trackingId,
+        promoCode: null,
+        offerVariant: "no_code",
+        offerUntil: opts.offerWindow?.untilIso ?? null,
+        campaign,
+        recommendedTier: tier.label,
+        rawTier: lead.tier || null,
+        formulasLink,
+        trackedFormulasLink,
+        tierLink,
+        trackedTierLink,
+        bioscanLink,
+        trackedBioscanLink,
+        formulaLeadDate: lead.date || null,
+      },
+    }
+  );
+  return result.result === true;
 }
 
 // Reactivation campaign for warm-but-blocked Discovery leads.
@@ -5862,14 +6178,37 @@ const PROMO_EMAIL_CONFIG: Record<string, {
   },
 };
 
+// Review reward email. For DISCOVERY20 (Discovery review), the owner rule
+// (2026-11-18) applies: the code is valid 7 days after the report delivery.
+// - Inside the window: code + exact deadline + /go/coaching?until=<same date>.
+// - Window missing or over: thank-you WITHOUT code or discount
+//   (sendDiscoveryReviewThanksWithoutCode); the caller must then not mark the
+//   promo code as sent.
 export async function sendPromoCodeEmail(
   email: string,
   prenom: string,
   auditType: string,
-  promoCode: string
+  promoCode: string,
+  discovery?: { offerWindow: DiscoveryOfferWindow | null; baseUrl: string; trackingId?: string | null } | null
 ): Promise<boolean> {
   try {
+    const isDiscoveryCode = promoCode === "DISCOVERY20";
+    const offer = isDiscoveryCode ? activeDiscoveryOffer(discovery?.offerWindow) : null;
+    if (isDiscoveryCode && !offer) {
+      return await sendDiscoveryReviewThanksWithoutCode(email, prenom, discovery ?? null);
+    }
     const config = PROMO_EMAIL_CONFIG[auditType] || PROMO_EMAIL_CONFIG.GRATUIT;
+    const discoveryBaseUrl = discovery?.baseUrl || DISCOVERY_DEFAULT_BASE_URL;
+    const discoveryBridge = offer
+      ? discoveryCoachingBridgeUrl(discoveryBaseUrl, "discovery_review_promo", "review", undefined, offer.untilIso)
+      : null;
+    const ctaHref = discoveryBridge
+      ? (discovery?.trackingId ? withEmailClickTracking(discoveryBaseUrl, discovery.trackingId, discoveryBridge) : discoveryBridge)
+      : "https://www.achzodcoaching.com/formules-coaching";
+    const validityHtml = offer
+      ? `<p style="color: ${COLORS.text}; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">Valable jusqu'au <strong>${escapeEmailHtml(offer.label)}</strong> (7 jours après ton rapport Discovery).</p>`
+      : "";
+    const validityText = offer ? ` Valable jusqu'au ${offer.label} (7 jours après ton rapport Discovery).` : "";
 
     const content = `
       <p style="color: ${COLORS.text}; font-size: 18px; line-height: 1.6; margin: 0 0 24px;">
@@ -5893,6 +6232,7 @@ export async function sendPromoCodeEmail(
         </tr>
       </table>
 
+      ${validityHtml}
       <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.6; margin: 0 0 32px;">
         Copie ce code et utilise-le lors de ta commande sur achzodcoaching.com
       </p>
@@ -5901,7 +6241,7 @@ export async function sendPromoCodeEmail(
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
         <tr>
           <td align="center">
-            <a href="https://www.achzodcoaching.com/formules-coaching"
+            <a href="${ctaHref}"
                style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.background}; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
               Voir les formules coaching
             </a>
@@ -5919,8 +6259,8 @@ export async function sendPromoCodeEmail(
     const result = await sendEmailWithTracking(
       {
         html: encodeBase64(htmlContent),
-        text: `${prenom}, voici ton code promo : ${promoCode}. ${config.discount}. Utilise-le sur achzodcoaching.com/formules-coaching`,
-        subject: `${config.title} - ${promoCode}`,
+        text: `${prenom}, voici ton code promo : ${promoCode}. ${config.discount}.${validityText} Utilise-le ici : ${ctaHref}`,
+        subject: offer ? `${config.title} - ${promoCode} (jusqu'au ${offer.label})` : `${config.title} - ${promoCode}`,
         from: { name: "Achzod Coaching", email: SENDER_EMAIL },
         to: [{ email }],
       },
@@ -5929,7 +6269,11 @@ export async function sendPromoCodeEmail(
         recipientEmail: email,
         recipientName: prenom,
         auditType,
-        metadata: { promoCode, discount: config.discount },
+        metadata: {
+          promoCode,
+          discount: config.discount,
+          ...(isDiscoveryCode ? { offerVariant: "code", offerUntil: offer?.untilIso ?? null, trackingId: discovery?.trackingId ?? null, ctaHref } : {}),
+        },
       }
     );
 
@@ -5939,6 +6283,95 @@ export async function sendPromoCodeEmail(
     console.error("[SendPulse] Error sending promo code email:", error);
     return false;
   }
+}
+
+const DISCOVERY_DEFAULT_BASE_URL = "https://apexlabs.achzodcoaching.com";
+
+// Discovery review thank-you WITHOUT code: the 7-day Discovery window is over
+// (or unknown). Coaching at the normal price or the Anabolic Bioscan (59 €),
+// links click-tracked when a tracking id is given. Content rules: tutoiement,
+// no video call / phone call / appointment, no other coach, no dosage, no study.
+async function sendDiscoveryReviewThanksWithoutCode(
+  email: string,
+  prenom: string,
+  discovery: { offerWindow: DiscoveryOfferWindow | null; baseUrl: string; trackingId?: string | null } | null
+): Promise<boolean> {
+  const baseUrl = discovery?.baseUrl || DISCOVERY_DEFAULT_BASE_URL;
+  const trackingId = discovery?.trackingId || null;
+  const campaign = "discovery_review_thanks_nocode";
+  const formulasLink = discoveryNoCodeUrl("https://www.achzodcoaching.com/formules-coaching", campaign, "formules");
+  const bioscanLink = discoveryNoCodeUrl(new URL("/offers/anabolic-bioscan", baseUrl).toString(), campaign, "bioscan");
+  const trackedFormulasLink = trackingId ? withEmailClickTracking(baseUrl, trackingId, formulasLink) : formulasLink;
+  const trackedBioscanLink = trackingId ? withEmailClickTracking(baseUrl, trackingId, bioscanLink) : bioscanLink;
+  const name = escapeEmailHtml(prenom);
+
+  const content = `
+      <p style="color:${APPLE_COLORS.ink};font-size:18px;line-height:1.6;margin:0 0 18px;">${name},</p>
+      <p style="color:${APPLE_COLORS.inkSoft};font-size:16px;line-height:1.65;margin:0 0 22px;">
+        Merci pour ton avis sur le Discovery Scan, il aide d'autres personnes à se lancer. Si tu veux passer à la suite, voilà les deux façons d'avancer.
+      </p>
+
+      <div style="padding:22px;background:#f5f5f7;border-radius:14px;margin-bottom:16px;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">Passer au suivi</p>
+        <h3 style="color:${APPLE_COLORS.ink};font-size:20px;font-weight:700;margin:0 0 10px;letter-spacing:-0.3px;">Coaching avec moi</h3>
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;margin:0 0 6px;line-height:1.6;">
+          Je construis ton plan à partir de ton Discovery. Chaque semaine tu m'envoies ton bilan écrit et j'ajuste. Tout se passe par écrit, je réponds personnellement.
+        </p>
+        ${getCoachingAppleButton("Voir les formules coaching", trackedFormulasLink)}
+      </div>
+
+      <div style="padding:22px;background:#f5f5f7;border-radius:14px;margin-bottom:20px;">
+        <p style="color:${APPLE_COLORS.muted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;font-weight:700;">Approfondir d'abord</p>
+        <h3 style="color:${APPLE_COLORS.ink};font-size:20px;font-weight:700;margin:0 0 10px;letter-spacing:-0.3px;">Anabolic Bioscan (59 €)</h3>
+        <p style="color:${APPLE_COLORS.inkSoft};font-size:14px;margin:0 0 6px;line-height:1.6;">
+          16 domaines analysés en profondeur, tes priorités classées et un plan d'action semaine par semaine.
+        </p>
+        ${getCoachingAppleButton("Découvrir l'Anabolic Bioscan", trackedBioscanLink, "secondary")}
+      </div>
+
+      <p style="color:${APPLE_COLORS.muted};font-size:12px;margin:24px 0 0;">
+        Achzod
+      </p>
+      ${trackingId ? `<img src="${baseUrl}/api/track/email/${trackingId}/open.gif" width="1" height="1" style="display:none;" alt="" />` : ""}
+    `;
+
+  const emailContent = getCoachingAppleWrapper(content, "Merci pour ton avis", "La suite après ton Discovery");
+  const text = [
+    `${prenom},`,
+    "",
+    "Merci pour ton avis sur le Discovery Scan. Si tu veux passer à la suite :",
+    `Coaching avec moi, plan sur mesure et bilan écrit chaque semaine : ${trackedFormulasLink}`,
+    `Approfondir d'abord avec l'Anabolic Bioscan (59 €) : ${trackedBioscanLink}`,
+    "",
+    "Achzod",
+  ].join("\n");
+
+  const result = await sendEmailWithTracking(
+    {
+      html: encodeBase64(emailContent),
+      text,
+      subject: "Merci pour ton avis sur ton Discovery",
+      from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+      to: [{ email }],
+    },
+    {
+      emailType: "sendPromoCodeEmail",
+      recipientEmail: email,
+      recipientName: prenom,
+      auditType: "DISCOVERY",
+      metadata: {
+        promoCode: null,
+        offerVariant: "no_code",
+        offerUntil: discovery?.offerWindow?.untilIso ?? null,
+        trackingId,
+        formulasLink,
+        trackedFormulasLink,
+        bioscanLink,
+        trackedBioscanLink,
+      },
+    }
+  );
+  return result.result === true;
 }
 
 // Admin notification when a new review is submitted

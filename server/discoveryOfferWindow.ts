@@ -118,3 +118,40 @@ export async function loadDiscoveryOfferWindow(
   }
   return resolveDiscoveryOfferWindow({ reportSentAt: audit.reportSentAt, reportUntilIso, now });
 }
+
+/** Audit types whose delivered report opens the Discovery -20 % window. */
+export const DISCOVERY_OFFER_AUDIT_TYPES = ["GRATUIT", "DISCOVERY"] as const;
+
+/**
+ * Window for a recipient known only by email (recovery CTA, formula-choice
+ * lead): the latest delivered Discovery report of that email decides.
+ * No delivered Discovery report means no window, so the email goes out
+ * without code. `findLatestDiscovery` and `getAudit` are injected so this stays
+ * testable without a database; a lookup failure also means no window.
+ */
+export async function loadDiscoveryOfferWindowForEmail(
+  email: string,
+  findLatestDiscovery: (email: string) => Promise<{ id: string; reportSentAt: Date | string | null } | null | undefined>,
+  getAudit: (id: string) => Promise<any>,
+  now: Date = new Date(),
+): Promise<DiscoveryOfferWindow | null> {
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!normalized) return null;
+  let latest: { id: string; reportSentAt: Date | string | null } | null | undefined;
+  try {
+    latest = await findLatestDiscovery(normalized);
+  } catch {
+    return null;
+  }
+  if (!latest?.id || !latest.reportSentAt) return null;
+  return loadDiscoveryOfferWindow(latest, getAudit, now);
+}
+
+/** SQL used by the routes to find the latest delivered Discovery report of an email. */
+export const LATEST_DISCOVERY_REPORT_SQL = `SELECT id, report_sent_at
+   FROM audits
+  WHERE LOWER(email) = $1
+    AND type = ANY($2::text[])
+    AND report_sent_at IS NOT NULL
+  ORDER BY report_sent_at DESC
+  LIMIT 1`;
