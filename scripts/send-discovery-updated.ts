@@ -1,5 +1,5 @@
 /**
- * Discovery v3 : mail "ton rapport a été mis à jour" (sendDiscoveryUpdatedEmail).
+ * Discovery v3 : mail "j'ai repris ton rapport Discovery" (sendDiscoveryUpdatedEmail).
  *
  *   npx tsx scripts/send-discovery-updated.ts --ids <fichier.txt>             # DRY-RUN (défaut) : liste, exclusions, hash
  *   npx tsx scripts/send-discovery-updated.ts --ids <fichier.txt> --preview   # DRY-RUN + aperçu HTML réel du 1er destinataire (gzip+base64)
@@ -36,7 +36,13 @@ import {
   resolveCanonicalDiscoveryArtifacts,
 } from "../server/discoveryDeliveryGate";
 import { isBlockedDiscoveryTestEmail } from "../server/discoveryBatchControl";
-import { DISCOVERY_UPDATED_EMAIL_TYPE, prepareDiscoveryUpdatedEmail, sendDiscoveryUpdatedEmail } from "../server/emailService";
+import {
+  DISCOVERY_UPDATED_EMAIL_TYPE,
+  DISCOVERY_UPDATED_FORBIDDEN_WORDS,
+  discoveryUpdatedVisibleText,
+  prepareDiscoveryUpdatedEmail,
+  sendDiscoveryUpdatedEmail,
+} from "../server/emailService";
 import { extractReportOfferUntil, parisDateIso } from "../server/discoveryOfferWindow";
 import { gzipSync } from "node:zlib";
 
@@ -158,6 +164,14 @@ async function main() {
   console.log(JSON.stringify({ mode: SEND ? "SEND" : "DRY_RUN", eligible: eligible.length, excluded: excluded.length, byReason, listHash }, null, 2));
   for (const e of eligible) console.log(`ELIGIBLE ${e.id} ${e.email} ${e.firstName || "(sans prénom)"} until=${e.until}`);
   for (const e of excluded) console.log(`EXCLU ${e.id} ${e.email} ${e.reason}`);
+  // Aucun mail ne part si un seul contient un mot qui sonne "outil" (moteur, IA, mis à jour...).
+  const forbiddenHits = eligible.flatMap((e) => {
+    const built = prepareDiscoveryUpdatedEmail({ email: e.email, firstName: e.firstName, auditId: e.id, baseUrl: BASE_URL, trackingId: "check", until: e.until });
+    const hit = discoveryUpdatedVisibleText(built).match(DISCOVERY_UPDATED_FORBIDDEN_WORDS);
+    return hit ? [`${e.id}:${hit[0]}`] : [];
+  });
+  if (forbiddenHits.length) throw new Error(`Mot interdit dans le mail : ${forbiddenHits.slice(0, 5).join(", ")} (aucun envoi)`);
+  console.log(`FORBIDDEN_WORDS_OK ${eligible.length}`);
   if (PREVIEW && eligible[0]) {
     const e = eligible[0];
     const preview = prepareDiscoveryUpdatedEmail({

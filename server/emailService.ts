@@ -955,7 +955,7 @@ function getEmailWrapper(
             <td align="center" style="background:${headerGradient};padding:44px 24px 40px 24px;text-align:center;">
               <p style="margin:0 0 14px 0;color:#000000;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">APEXLABS BY ACHZOD</p>
               <h1 style="margin:0;color:#000000;font-size:32px;line-height:1.15;font-weight:800;letter-spacing:-0.5px;">${headerTitle}</h1>
-              <p style="margin:10px 0 0 0;color:rgba(0,0,0,0.72);font-size:14px;font-weight:500;">${headerSubtitle}</p>
+              ${headerSubtitle ? `<p style="margin:10px 0 0 0;color:rgba(0,0,0,0.72);font-size:14px;font-weight:500;">${headerSubtitle}</p>` : ""}
             </td>
           </tr>
           <!-- Content -->
@@ -1413,12 +1413,27 @@ export async function sendReportReadyEmail(
   }
 }
 
-// ==================== DISCOVERY V3 : RAPPORT MIS A JOUR ====================
-// Mail unique envoye aux clients dont le Discovery a ete regenere en v3.
+// ==================== DISCOVERY V3 : RAPPORT REPRIS PAR ACH ====================
+// Mail unique envoye aux clients dont Ach a repris le rapport Discovery.
 // Un seul destinataire, pas de BCC admin, journalise sous un email_type dedie.
 // Pas de visio, pas de rendez-vous, aucun dosage, aucune etude.
+// Texte valide mot pour mot par Ach : rien ne doit sonner "outil" (voir
+// DISCOVERY_UPDATED_FORBIDDEN_WORDS, verifie par le test et par le script d'envoi).
 export const DISCOVERY_UPDATED_EMAIL_TYPE = "sendDiscoveryUpdatedEmail";
-export const DISCOVERY_UPDATED_SUBJECT = "{{PRENOM}}, ton rapport Discovery a été mis à jour";
+export const DISCOVERY_UPDATED_SUBJECT = "{{PRENOM}}, j'ai repris ton rapport Discovery";
+/** Mots interdits dans le mail (sujet, HTML visible, texte brut), hors URL. */
+export const DISCOVERY_UPDATED_FORBIDDEN_WORDS =
+  /moteur|r[ée]g[ée]n[ée]r|g[ée]n[ée]r[ée]|nouvelle version|\bIA\b|intelligence artificielle|algorithm|automati|personnalis|mis(?:e|es)? [àa] jour|met [àa] jour/i;
+
+/** Texte visible d'un mail : sujet + texte brut + HTML sans balises, URL retirees. */
+export function discoveryUpdatedVisibleText(built: { subject: string; html: string; text: string }): string {
+  const noUrls = (v: string) => v.replace(/https?:\/\/\S+/g, " ").replace(/\{\{UNSUB_LINK\}\}/g, " ");
+  const html = built.html
+    .replace(/<(style|title)[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&[a-z#0-9]+;/gi, " ");
+  return noUrls(`${built.subject}\n${built.text}\n${html}`);
+}
 
 export function buildDiscoveryUpdatedEmailContent(input: {
   firstName: string;
@@ -1432,37 +1447,40 @@ export function buildDiscoveryUpdatedEmailContent(input: {
   const firstName = String(input.firstName || "").trim();
   const hello = firstName ? `Salut ${safe(firstName)},` : "Salut,";
   const subject = firstName
-    ? `${firstName}, ton rapport Discovery a été mis à jour`
-    : "Ton rapport Discovery a été mis à jour";
+    ? `${firstName}, j'ai repris ton rapport Discovery`
+    : "J'ai repris ton rapport Discovery";
   const p = (t: string) => `<p style="color:${COLORS.textMuted};font-size:16px;line-height:1.65;margin:0 0 14px 0;">${t}</p>`;
+  const intro = "J'ai repris ton rapport Discovery. Je l'ai relu et réécrit à partir de tes réponses et de ce que tu m'as écrit, pour aller droit à ce qui te freine vraiment.";
+  const contents = "Tu y trouves une lecture claire de ton profil, tes vrais freins, les actions à lancer en premier et ce que tu peux attendre si tu t'y tiens.";
+  const together = "Si tu veux qu'on le fasse ensemble :";
+  const offer = `-20 % sur les formules coaching 8 et 12 semaines, valable jusqu'au ${input.untilLabel}.`;
   const content = `
-      <h2 style="color:${COLORS.text};margin:0 0 18px 0;font-size:26px;line-height:1.25;font-weight:700;">Ton rapport a été refait, en mieux</h2>
       ${p(hello)}
-      ${p("J'ai refait le moteur des rapports Discovery. Le tien vient d'être régénéré avec la nouvelle version, et il est beaucoup plus personnalisé : il part de tes réponses, de ce que tu m'as écrit avec tes mots, et il va droit à ce qui te freine vraiment.")}
-      ${p("Tu y trouves une lecture claire de ton profil, tes vrais freins, les actions à lancer en premier et ce que tu peux attendre si tu t'y tiens.")}
-      ${getPrimaryButton("Voir mon rapport mis à jour", input.trackedReportLink, COLORS.discovery)}
+      ${p(safe(intro))}
+      ${p(safe(contents))}
+      ${getPrimaryButton("Voir mon rapport", input.trackedReportLink, COLORS.discovery)}
       <div style="margin:28px 0 0 0;padding:24px;border-radius:12px;border:1px solid ${COLORS.discovery}40;background:${COLORS.discovery}10;">
-        <h3 style="color:${COLORS.text};font-size:20px;margin:0 0 10px 0;">Si tu veux qu'on le fasse ensemble</h3>
-        ${p("Le rapport te donne la direction. Le coaching, c'est moi qui construis ton plan, qui le suis avec toi et qui l'ajuste semaine après semaine.")}
-        <p style="color:${COLORS.textMuted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:6px 0;text-align:center;">Ton code</p>
-        <p style="color:${COLORS.discovery};font-size:28px;font-weight:700;letter-spacing:3px;margin:0;text-align:center;">DISCOVERY20</p>
-        <p style="color:${COLORS.text};font-size:14px;margin:8px 0 0 0;text-align:center;">-20 % sur les formules coaching 8 et 12 semaines, valable jusqu'au ${safe(input.untilLabel)}.</p>
+        <p style="color:${COLORS.text};font-size:16px;line-height:1.65;margin:0 0 10px 0;">${safe(together)}</p>
+        <p style="color:${COLORS.text};font-size:16px;line-height:1.65;margin:0 0 6px 0;">Ton code <strong style="color:${COLORS.discovery};letter-spacing:2px;">DISCOVERY20</strong> : ${safe(offer)}</p>
         ${getPrimaryButton("Voir les formules coaching", input.trackedCoachingLink, COLORS.discovery)}
       </div>
       ${p("<br/>On avance,<br/>Ach")}
       <p style="color:${COLORS.textMuted};font-size:12px;margin:24px 0 0 0;">Si le bouton ne marche pas, copie ce lien : <a href="${input.trackedReportLink}" style="color:${COLORS.discovery};word-break:break-all;">${safe(input.reportLink)}</a></p>
       <img src="${input.trackingPixel}" width="1" height="1" alt="" style="display:block;border:0;outline:none;" />`;
-  const html = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.discovery} 0%, ${COLORS.discovery}dd 100%)`, "Discovery Scan", "Rapport mis à jour");
+  const html = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.discovery} 0%, ${COLORS.discovery}dd 100%)`, "Discovery Scan", "");
   const text = [
     hello.replace(/&[a-z#0-9]+;/g, ""),
     "",
-    "J'ai refait le moteur des rapports Discovery. Le tien vient d'être régénéré avec la nouvelle version, et il est beaucoup plus personnalisé : il part de tes réponses, de ce que tu m'as écrit avec tes mots, et il va droit à ce qui te freine vraiment.",
+    intro,
     "",
-    `Ton rapport mis à jour : ${input.trackedReportLink}`,
+    contents,
     "",
-    "Si tu veux qu'on le fasse ensemble : le coaching, c'est moi qui construis ton plan, qui le suis avec toi et qui l'ajuste semaine après semaine.",
-    `Code DISCOVERY20 : -20 % sur les formules coaching 8 et 12 semaines, valable jusqu'au ${input.untilLabel}.`,
-    `Les formules : ${input.trackedCoachingLink}`,
+    `Voir mon rapport : ${input.trackedReportLink}`,
+    "",
+    together,
+    `Ton code DISCOVERY20 : ${offer}`,
+    "",
+    `Voir les formules coaching : ${input.trackedCoachingLink}`,
     "",
     "On avance,",
     "Ach",
