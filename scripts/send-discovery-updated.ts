@@ -145,7 +145,8 @@ async function claim(auditId: string, email: string, until: string): Promise<str
     const id = randomUUID();
     await client.query(
       `INSERT INTO email_tracking (id, email_type, recipient_email, audit_id, audit_type, subject, sendpulse_status, metadata, created_at, sent_at)
-       VALUES ($1, $2, $3, $4, 'GRATUIT', 'claim', 'pending', $5::jsonb, NOW(), NULL)`,
+       VALUES ($1, $2, $3, $4, 'GRATUIT', 'claim', 'pending', $5::jsonb, NOW(), NOW())`,
+      // sent_at est NOT NULL en prod : la réservation porte NOW(), logEmail le réécrit à l'envoi réel.
       [id, DISCOVERY_UPDATED_EMAIL_TYPE, email, auditId, JSON.stringify({ trackingId: id, claim: true, until })],
     );
     await client.query("COMMIT");
