@@ -3074,11 +3074,10 @@ export async function registerRoutes(
               return;
             }
             const baseUrl = getBaseUrl();
-            const { sent: emailSent } = await safeSendReportReadyEmail(audit.id, audit.email, audit.type, baseUrl, { logPrefix: "[Discovery Scan]" });
-            if (emailSent) {
-              const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
-              await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
-            }
+            // Admin was already notified at audit creation above; a second
+            // "Nouveau Discovery" mail after delivery looked like a duplicate
+            // generation (Meissa 2026-11-18). One admin mail per Discovery.
+            await safeSendReportReadyEmail(audit.id, audit.email, audit.type, baseUrl, { logPrefix: "[Discovery Scan]" });
           } catch (error: any) {
             console.error(`[Discovery Scan] Generation FAILED for audit ${audit.id}:`, error?.message || error);
           }
