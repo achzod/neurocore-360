@@ -19,6 +19,8 @@ import {
   type MarkerAnalysis,
 } from "./index";
 import { OPENAI_REPORT_MODEL } from "../openaiResponses";
+import { findImplausibleMarkers } from "./plausibility";
+import { sendAdminBloodQaHoldNotification } from "../emailService";
 import {
   generateComprehensiveRiskProfile,
   calculatePrediabetesRisk,
@@ -225,6 +227,8 @@ const isDeliverableAiReport = (reportText: string): boolean => {
   return BLOOD_REQUIRED_SECTION_PATTERNS.every((pattern) => pattern.test(text));
 };
 
+const qaHoldNotified = new Set<string>();
+
 export const sendBloodClientDeliveryEmail = async (
   recipientEmail: string,
   reportId: string,
@@ -241,6 +245,21 @@ export const sendBloodClientDeliveryEmail = async (
       `[BloodAnalysis] Blocking email delivery for ${reportId}: report is empty/fallback/incomplete.`
     );
     return false;
+  }
+
+  // Plausibility gate: absurd values mean extraction/unit error. Hold and
+  // alert the admin instead of mailing a frightening, wrong report. Admin
+  // force-send (bypassReportDedup) keeps the override after manual review.
+  if (!deliveryMeta?.bypassReportDedup) {
+    const implausible = findImplausibleMarkers(markerSnapshots);
+    if (implausible.length > 0) {
+      console.warn(`[BloodAnalysis] Blocking ${reportId}: implausible values: ${implausible.join(" | ")}`);
+      if (!qaHoldNotified.has(reportId)) {
+        qaHoldNotified.add(reportId);
+        void sendAdminBloodQaHoldNotification(reportId, recipientEmail, implausible).catch(() => {});
+      }
+      return false;
+    }
   }
 
   // Hard dedup: never resend for the same report (audit_id). Defends against
