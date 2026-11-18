@@ -435,7 +435,12 @@ export async function reserveAICostBudget(
     label: rawContext.label ? String(rawContext.label).trim().slice(0, 160) : undefined,
     costCategory: requestedProduct === "peptides"
       ? normalizeAICostCategory(rawContext.costCategory)
-      : "legacy",
+      : requestedProduct === "discovery" && rawContext.discoveryInPlaceItemToken
+        // In-place regeneration is an operator repair: its spend is kept out
+        // of the customer Discovery hour/day budget so it can never starve
+        // new customer reports, and is bounded by its own run ceiling below.
+        ? "manual_repair"
+        : "legacy",
     authorizationId: rawContext.authorizationId
       ? String(rawContext.authorizationId).trim().slice(0, 160)
       : undefined,
@@ -544,6 +549,10 @@ export async function reserveAICostBudget(
           perCallUsd: reservedUsd,
         });
         if (refusal) throw new Error(refusal);
+        // Hour/day ceilings of the repair category: the durable run ceiling
+        // (<= 15 USD), never more. Per-audit ceiling (0.75 USD) unchanged.
+        const runCeiling = Math.min(Number(item.max_total_usd), DISCOVERY_INPLACE_MAX_RUN_USD);
+        limits = { ...limits, perHourUsd: runCeiling, perDayUsd: runCeiling };
       } else if (hasBatchOwnership) {
         const batchOwnership = await client.query(
           `SELECT b.stage,i.retry_of_candidate_id

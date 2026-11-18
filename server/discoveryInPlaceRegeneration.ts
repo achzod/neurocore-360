@@ -376,6 +376,9 @@ export async function regenerateDiscoveryReportInPlace(input: {
           product: "discovery",
           orderId: input.auditId,
           estimatedCostUsd: DISCOVERY_COACH_MAX_COST_PER_CALL_USD,
+          // Must match the category the controller assigns, so the usage
+          // event and the reservation land in the same (repair) ledger.
+          costCategory: "manual_repair",
           discoveryInPlaceRunId: input.runId,
           discoveryInPlaceItemToken: claim.token,
           discoveryValidationRetry: request.attempt > 1,
