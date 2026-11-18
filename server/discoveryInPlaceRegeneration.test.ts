@@ -162,6 +162,13 @@ test("no extra key is added to the v3 report (deterministic reconstruction gate)
   assert.ok(validateInPlaceV3Report(leaked, { txt: "", html: "" }, narrative).includes("v3:internal_note"));
 });
 
+test("in-place spend is isolated from the customer Discovery budget and capped by the run", () => {
+  assert.match(controller, /rawContext\.discoveryInPlaceItemToken\s*\n?[\s\S]{0,400}"manual_repair"/);
+  assert.match(controller, /perHourUsd: runCeiling, perDayUsd: runCeiling/);
+  assert.match(controller, /Math\.min\(Number\(item\.max_total_usd\), DISCOVERY_INPLACE_MAX_RUN_USD\)/);
+  assert.match(source, /costCategory: "manual_repair"/);
+});
+
 test("script is read-only by default and bounded", () => {
   assert.match(script, /if \(!has\("--execute"\)\) return;/);
   assert.match(script, /MAX_ITEMS_PER_INVOCATION = 25/);
