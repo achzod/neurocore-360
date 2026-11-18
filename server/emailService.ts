@@ -1413,6 +1413,124 @@ export async function sendReportReadyEmail(
   }
 }
 
+// ==================== DISCOVERY V3 : RAPPORT MIS A JOUR ====================
+// Mail unique envoye aux clients dont le Discovery a ete regenere en v3.
+// Un seul destinataire, pas de BCC admin, journalise sous un email_type dedie.
+// Pas de visio, pas de rendez-vous, aucun dosage, aucune etude.
+export const DISCOVERY_UPDATED_EMAIL_TYPE = "sendDiscoveryUpdatedEmail";
+export const DISCOVERY_UPDATED_SUBJECT = "{{PRENOM}}, ton rapport Discovery a été mis à jour";
+
+export function buildDiscoveryUpdatedEmailContent(input: {
+  firstName: string;
+  trackedReportLink: string;
+  reportLink: string;
+  trackedCoachingLink: string;
+  untilLabel: string;
+  trackingPixel: string;
+}): { subject: string; html: string; text: string } {
+  const safe = (v: string) => String(v || "").replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c] as string));
+  const firstName = String(input.firstName || "").trim();
+  const hello = firstName ? `Salut ${safe(firstName)},` : "Salut,";
+  const subject = firstName
+    ? `${firstName}, ton rapport Discovery a été mis à jour`
+    : "Ton rapport Discovery a été mis à jour";
+  const p = (t: string) => `<p style="color:${COLORS.textMuted};font-size:16px;line-height:1.65;margin:0 0 14px 0;">${t}</p>`;
+  const content = `
+      <h2 style="color:${COLORS.text};margin:0 0 18px 0;font-size:26px;line-height:1.25;font-weight:700;">Ton rapport a été refait, en mieux</h2>
+      ${p(hello)}
+      ${p("J'ai refait le moteur des rapports Discovery. Le tien vient d'être régénéré avec la nouvelle version, et il est beaucoup plus personnalisé : il part de tes réponses, de ce que tu m'as écrit avec tes mots, et il va droit à ce qui te freine vraiment.")}
+      ${p("Tu y trouves une lecture claire de ton profil, tes vrais freins, les actions à lancer en premier et ce que tu peux attendre si tu t'y tiens.")}
+      ${getPrimaryButton("Voir mon rapport mis à jour", input.trackedReportLink, COLORS.discovery)}
+      <div style="margin:28px 0 0 0;padding:24px;border-radius:12px;border:1px solid ${COLORS.discovery}40;background:${COLORS.discovery}10;">
+        <h3 style="color:${COLORS.text};font-size:20px;margin:0 0 10px 0;">Si tu veux qu'on le fasse ensemble</h3>
+        ${p("Le rapport te donne la direction. Le coaching, c'est moi qui construis ton plan, qui le suis avec toi et qui l'ajuste semaine après semaine.")}
+        <p style="color:${COLORS.textMuted};font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:6px 0;text-align:center;">Ton code</p>
+        <p style="color:${COLORS.discovery};font-size:28px;font-weight:700;letter-spacing:3px;margin:0;text-align:center;">DISCOVERY20</p>
+        <p style="color:${COLORS.text};font-size:14px;margin:8px 0 0 0;text-align:center;">-20 % sur les formules coaching 8 et 12 semaines, valable jusqu'au ${safe(input.untilLabel)}.</p>
+        ${getPrimaryButton("Voir les formules coaching", input.trackedCoachingLink, COLORS.discovery)}
+      </div>
+      ${p("<br/>On avance,<br/>Ach")}
+      <p style="color:${COLORS.textMuted};font-size:12px;margin:24px 0 0 0;">Si le bouton ne marche pas, copie ce lien : <a href="${input.trackedReportLink}" style="color:${COLORS.discovery};word-break:break-all;">${safe(input.reportLink)}</a></p>
+      <img src="${input.trackingPixel}" width="1" height="1" alt="" style="display:block;border:0;outline:none;" />`;
+  const html = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.discovery} 0%, ${COLORS.discovery}dd 100%)`, "Discovery Scan", "Rapport mis à jour");
+  const text = [
+    hello.replace(/&[a-z#0-9]+;/g, ""),
+    "",
+    "J'ai refait le moteur des rapports Discovery. Le tien vient d'être régénéré avec la nouvelle version, et il est beaucoup plus personnalisé : il part de tes réponses, de ce que tu m'as écrit avec tes mots, et il va droit à ce qui te freine vraiment.",
+    "",
+    `Ton rapport mis à jour : ${input.trackedReportLink}`,
+    "",
+    "Si tu veux qu'on le fasse ensemble : le coaching, c'est moi qui construis ton plan, qui le suis avec toi et qui l'ajuste semaine après semaine.",
+    `Code DISCOVERY20 : -20 % sur les formules coaching 8 et 12 semaines, valable jusqu'au ${input.untilLabel}.`,
+    `Les formules : ${input.trackedCoachingLink}`,
+    "",
+    "On avance,",
+    "Ach",
+    "",
+    "Se désabonner : {{UNSUB_LINK}}",
+  ].join("\n");
+  return { subject, html, text };
+}
+
+export interface DiscoveryUpdatedEmailInput {
+  email: string;
+  firstName: string;
+  auditId: string;
+  baseUrl: string;
+  trackingId: string;
+  until: string; // YYYY-MM-DD : min(envoi + 7 jours, date imprimée dans le rapport v3), Europe/Paris
+}
+
+/** Construit le mail exact (sujet, HTML, texte, liens) sans rien envoyer.
+ * Utilisé par l'envoi et par l'aperçu du mode test. */
+export function prepareDiscoveryUpdatedEmail(input: DiscoveryUpdatedEmailInput): {
+  subject: string; html: string; text: string; reportLink: string; coachingUrl: string;
+} {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.until)) throw new Error("until must be YYYY-MM-DD");
+  const reportLink = buildReportAccessUrl(input.baseUrl, `/scan/${input.auditId}`, "audit", input.auditId, input.email);
+  const coachingUrl = new URL("/go/coaching", input.baseUrl);
+  coachingUrl.searchParams.set("code", "DISCOVERY20");
+  coachingUrl.searchParams.set("until", input.until);
+  coachingUrl.searchParams.set("utm_source", "apexlabs");
+  coachingUrl.searchParams.set("utm_medium", "email");
+  coachingUrl.searchParams.set("utm_campaign", "discovery_v3_updated");
+  const untilLabel = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })
+    .format(new Date(`${input.until}T12:00:00Z`));
+  const built = buildDiscoveryUpdatedEmailContent({
+    firstName: input.firstName,
+    reportLink,
+    trackedReportLink: withEmailClickTracking(input.baseUrl, input.trackingId, reportLink),
+    trackedCoachingLink: withEmailClickTracking(input.baseUrl, input.trackingId, coachingUrl.toString()),
+    untilLabel,
+    trackingPixel: `${input.baseUrl}/api/track/email/${input.trackingId}/open.gif`,
+  });
+  return { ...built, reportLink, coachingUrl: coachingUrl.toString() };
+}
+
+/** Envoie UN mail "rapport mis a jour" a UN destinataire. Le trackingId doit
+ * etre celui de la ligne email_tracking deja reservee par le script (claim). */
+export async function sendDiscoveryUpdatedEmail(input: DiscoveryUpdatedEmailInput): Promise<SendPulseSendResult> {
+  const built = prepareDiscoveryUpdatedEmail(input);
+  return sendEmailWithTracking(
+    {
+      html: encodeBase64(built.html), // le wrapper contient deja le lien {{UNSUB_LINK}}
+      text: built.text,
+      subject: built.subject,
+      from: { name: "Achzod", email: SENDER_EMAIL },
+      to: [{ email: input.email }],
+    },
+    {
+      emailType: DISCOVERY_UPDATED_EMAIL_TYPE,
+      recipientEmail: input.email,
+      recipientName: input.firstName || undefined,
+      auditId: input.auditId,
+      auditType: "GRATUIT",
+      bccAdmin: false,
+      metadata: { trackingId: input.trackingId, reportLink: built.reportLink, coachingUrl: built.coachingUrl, until: input.until, campaign: "discovery_v3_updated" },
+    },
+  );
+}
+
 const stripBloodForbiddenFormatting = (value: string): string =>
   String(value || "")
     .replace(/[\u2013\u2014]/g, "-")
