@@ -144,6 +144,21 @@ test("v3 structural gate: 7 sections, no placeholder, first name in intro", () =
   assert.ok(errors.some((error) => error.startsWith("v3:words")));
 });
 
+test("no extra key is added to the v3 report (deterministic reconstruction gate)", () => {
+  assert.doesNotMatch(source, /assembled\.remediation|inPlaceRegeneration:/);
+  const report = {
+    generationQuality: { version: 3 }, clientName: "Lea",
+    sections: ["intro", "lecture", "freins", "actions", "projection", "domaines", "offre"]
+      .map((id) => ({ id, content: id === "intro" ? "<p>Lea, voici ton bilan.</p>" : "<p>texte</p>" })),
+  };
+  const narrative = { intro: "mot ".repeat(900), lecture: "", freins: [], actions: [], si_rien_ne_change: "", dans_6_mois: "", domaines: {}, offre: "" };
+  // QUALITY_* lines in report_txt are metadata, not an internal note.
+  assert.deepEqual(validateInPlaceV3Report(report, { txt: "QUALITY_SCORE: 9\nLea", html: "" }, narrative), []);
+  const leaked = structuredClone(report);
+  leaked.sections[1].content = "<p>consigne interne</p>";
+  assert.ok(validateInPlaceV3Report(leaked, { txt: "", html: "" }, narrative).includes("v3:internal_note"));
+});
+
 test("script is read-only by default and bounded", () => {
   assert.match(script, /if \(!has\("--execute"\)\) return;/);
   assert.match(script, /MAX_ITEMS_PER_INVOCATION = 25/);
