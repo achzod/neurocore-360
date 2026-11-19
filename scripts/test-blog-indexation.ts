@@ -12,6 +12,13 @@ const BASE = "https://apexlabs.achzodcoaching.com";
 const generatedArticles = JSON.parse(
   fs.readFileSync("client/public/blog-articles.json", "utf8"),
 ) as Array<{ slug: string; title: string; category: string }>;
+// SARMs/PED articles stay online but are intentionally kept out of the sitemap
+// (see script/build.ts). The sitemap only advertises the indexable subset.
+const SITEMAP_EXCLUDED_CATEGORIES = new Set(["sarms"]);
+const indexableArticles = generatedArticles.filter(
+  (article) => !SITEMAP_EXCLUDED_CATEGORIES.has(article.category),
+);
+const indexableSlugs = new Set(indexableArticles.map((article) => article.slug));
 const sitemap = fs.readFileSync("client/public/sitemap.xml", "utf8");
 const serverSource = fs.readFileSync("server/static.ts", "utf8");
 const blogSource = fs.readFileSync("client/src/pages/Blog.tsx", "utf8");
@@ -57,29 +64,27 @@ for (const url of sitemapUrls) {
       pathname.startsWith("/offers/") ||
       pathname.startsWith("/blog/pilier/") ||
       pathname.startsWith("/blog/categorie/") ||
-      (pathname.startsWith("/blog/") && generatedSlugs.has(decodeURIComponent(pathname.slice(6)))),
+      (pathname.startsWith("/blog/") && indexableSlugs.has(decodeURIComponent(pathname.slice(6)))),
     `sitemap path is not a known indexable route: ${pathname}`,
   );
 }
 
 for (const article of generatedArticles) {
-  // SARMs/PED pages are served with noindex and deliberately left out of the
-  // sitemap by script/build.ts.
-  if (article.category === "sarms") {
-    assert.ok(
-      !sitemapUrls.some((url) => url.endsWith(`/blog/${encodeURIComponent(article.slug)}`)),
-      `noindex SARMs article leaked into sitemap: ${article.slug}`,
-    );
-    continue;
-  }
   const encodedUrl = `${BASE}/blog/${article.slug
     .split("/")
     .map(encodeURIComponent)
     .join("/")}`;
+  if (SITEMAP_EXCLUDED_CATEGORIES.has(article.category)) {
+    assert.ok(!sitemapUrls.includes(encodedUrl), `excluded article leaked into sitemap: ${article.slug}`);
+    continue;
+  }
   assert.ok(sitemapUrls.includes(encodedUrl), `canonical article missing from sitemap: ${article.slug}`);
 }
 for (const slug of BLOG_CATEGORY_SLUGS) {
-  if (slug === "sarms") continue; // noindex category, excluded by script/build.ts
+  if (SITEMAP_EXCLUDED_CATEGORIES.has(slug)) {
+    assert.ok(!sitemapUrls.includes(`${BASE}/blog/categorie/${slug}`), `excluded category leaked into sitemap: ${slug}`);
+    continue;
+  }
   if (!generatedArticles.some((article) => article.category === slug)) continue;
   assert.ok(sitemapUrls.includes(`${BASE}/blog/categorie/${slug}`), `category missing from sitemap: ${slug}`);
 }
@@ -92,5 +97,5 @@ assert.ok(blogSource.includes("BLOG_INDEXATION_PRIORITY_SLUGS"), "client blog hu
 assert.ok(serverSource.includes("res.redirect(301"), "server misses permanent blog redirects");
 
 console.log(
-  `blog indexation: ${generatedArticles.length} canonical articles, ${BLOG_REDIRECT_SLUGS.size} aliases, ${sitemapUrls.length} sitemap URLs`,
+  `blog indexation: ${generatedArticles.length} canonical articles (${indexableArticles.length} indexable), ${BLOG_REDIRECT_SLUGS.size} aliases, ${sitemapUrls.length} sitemap URLs`,
 );
