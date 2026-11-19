@@ -15,11 +15,24 @@ import {
 import { motion } from "framer-motion";
 import { BLOG_CATEGORIES, type BlogArticle } from "@/data/blogTypes";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useEffect, useMemo, useState } from "react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { trackBlogCtaClick, trackWhatsAppClick } from "@/lib/analytics";
 
 const SITE_ORIGIN = "https://apexlabs.achzodcoaching.com";
+
+// Affiliate links (iHerb referral) must be flagged as sponsored for search
+// engines; other external links open in a new tab without passing referrer.
+function getMarkdownLinkProps(href: string): { rel?: string; target?: string } {
+  if (/^https?:\/\/([a-z0-9-]+\.)*iherb\.com\//i.test(href)) {
+    return { rel: "sponsored nofollow noopener noreferrer", target: "_blank" };
+  }
+  if (/^https?:\/\//i.test(href) && !href.startsWith(SITE_ORIGIN)) {
+    return { rel: "noopener noreferrer", target: "_blank" };
+  }
+  return {};
+}
 const COACHING_URL = "https://www.achzodcoaching.com/formules-coaching";
 
 type BlogConversion = {
@@ -341,7 +354,8 @@ export default function BlogArticlePage() {
       if (canonical) canonical.href = canonicalUrl;
 
       const ogImage = document.querySelector('meta[property="og:image"]');
-      const image = article.image || article.imageUrl || "https://placehold.co/1200x600/0a0a0a/ffffff?text=APEXLABS";
+      const rawImage = article.image || article.imageUrl || "https://placehold.co/1200x600/0a0a0a/ffffff?text=APEXLABS";
+      const image = rawImage.startsWith("/") ? `${SITE_ORIGIN}${rawImage}` : rawImage;
       if (image) {
         if (ogImage) {
           ogImage.setAttribute('content', image);
@@ -609,6 +623,7 @@ export default function BlogArticlePage() {
               {/* Content */}
               <div className="prose prose-lg dark:prose-invert max-w-none">
                 <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
                   components={{
                     h2: ({ children }) => (
                       <h2 className="text-2xl font-bold mt-10 mb-4 text-white">
@@ -643,14 +658,44 @@ export default function BlogArticlePage() {
                         {children}
                       </strong>
                     ),
+                    img: ({ src = "", alt = "" }) => (
+                      <img
+                        src={typeof src === "string" ? src : ""}
+                        alt={alt}
+                        loading="lazy"
+                        decoding="async"
+                        className="my-8 w-full rounded-sm border border-white/10"
+                      />
+                    ),
+                    table: ({ children }) => (
+                      <div className="not-prose my-8 overflow-x-auto rounded-sm border border-white/10">
+                        <table className="w-full border-collapse text-left text-sm">
+                          {children}
+                        </table>
+                      </div>
+                    ),
+                    thead: ({ children }) => (
+                      <thead className="bg-[#FCDD00]/10 text-white">{children}</thead>
+                    ),
+                    th: ({ children }) => (
+                      <th className="border-b border-white/10 px-4 py-3 font-semibold text-white">
+                        {children}
+                      </th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="border-b border-white/5 px-4 py-3 align-top text-white/60">
+                        {children}
+                      </td>
+                    ),
                     blockquote: ({ children }) => (
-                      <blockquote className="border-l-4 border-[#FCDD00] pl-4 italic text-white/50 my-6">
+                      <blockquote className="not-prose my-8 rounded-sm border-l-4 border-[#FCDD00] bg-[#FCDD00]/[0.04] px-5 py-4 text-white/70">
                         {children}
                       </blockquote>
                     ),
                     a: ({ href = "", children }) => (
                       <a
                         href={href}
+                        {...getMarkdownLinkProps(href)}
                         className="font-medium text-yellow-400 underline decoration-yellow-400/35 underline-offset-4 hover:text-yellow-300"
                         onClick={() => trackBlogCtaClick(conversion.intent, "content", "primary", href)}
                       >
