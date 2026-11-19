@@ -1,5 +1,6 @@
 import type { Express, Request } from "express";
 import { extractSendPulseEvents } from "./sendpulseWebhookEvents";
+import { applySendPulseSuppressions, normalizeSendPulseEventKind, recipientOfSendPulseEvent, smtpCodeOfSendPulseEvent } from "./sendpulseSuppression";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
 import { clampAdminLimit, clampAdminOffset, clampInt, ADMIN_MAX_PAGE_SIZE } from "./adminQueryLimits";
@@ -16078,9 +16079,21 @@ export async function registerRoutes(
           let processed = 0;
           let errors = 0;
 
+          // Désinscription, plainte spam et hard bounce SendPulse → notre liste
+          // de suppression (celle de /api/email/unsubscribe). Une ligne par
+          // adresse, jamais modifiée si elle existe déjà : rejouable sans effet.
+          // Les hard bounces suivent EMAIL_SUPPRESSION_ENABLED.
+          await applySendPulseSuppressions(queuedEvents, {
+            addToSuppressionList: (address, reason) => storage.addEmailToSuppressionList(address, reason),
+            log: (message) => console.log(message),
+          }).catch((suppressionError: unknown) =>
+            console.error("[SendPulseWebhook] suppression list update failed:", suppressionError),
+          );
+
           for (const eventData of queuedEvents) {
             try {
-              const { event, email, task_id, link_url, timestamp } = eventData;
+              const { event, task_id, link_url, timestamp } = eventData;
+              const email = recipientOfSendPulseEvent(eventData);
               const providerTaskId = String(
                 task_id || eventData.taskId || eventData.id || eventData.email_id || eventData.message_id || ""
               ).trim();
@@ -16122,16 +16135,17 @@ export async function registerRoutes(
               const emailTrackingId = emailResult.rows[0]?.id || null;
 
               // Determine event type (SendPulse format)
-              let eventType = event.toLowerCase().replace(/\s+/g, '_');
-
-              // Normalize event names
-              // SendPulse sends "redirect" for clicks (action name from webhook registration)
-              if (eventType.includes('open')) eventType = 'open';
-              else if (eventType.includes('click') || eventType.includes('redirect') || eventType === 'link') eventType = 'click';
-              else if (eventType.includes('unsub')) eventType = 'unsubscribe';
-              else if (eventType.includes('bounce')) eventType = 'bounce';
-              else if (eventType.includes('deliver')) eventType = 'delivered';
-              else if (eventType.includes('spam')) eventType = 'spam';
+              // SendPulse sends "redirect" for clicks (action name from webhook registration).
+              // "bounce" = hard bounce (lu comme tel par emailSuppression.ts),
+              // "soft_fail" = échec temporaire. "undelivered" n'est plus confondu
+              // avec "delivered".
+              const smtpAnswerCode = smtpCodeOfSendPulseEvent(eventData);
+              const eventKind = normalizeSendPulseEventKind(event);
+              let eventType = String(event).toLowerCase().replace(/\s+/g, '_');
+              if (eventKind === 'hard_bounce' || eventKind === 'bounce') eventType = 'bounce';
+              else if (eventKind === 'soft_bounce') eventType = 'soft_fail';
+              else if (eventKind === 'undelivered') eventType = smtpAnswerCode !== null && smtpAnswerCode >= 500 ? 'bounce' : 'soft_fail';
+              else if (eventKind !== 'other') eventType = eventKind;
 
               // Insert into cta_tracking
               await pool.query(
@@ -16162,7 +16176,7 @@ export async function registerRoutes(
                     `UPDATE email_tracking SET sendpulse_status = 'success' WHERE id = $1`,
                     [emailTrackingId]
                   );
-                } else if (eventType === 'bounce' || eventType === 'spam' || eventType === 'unsubscribe') {
+                } else if (eventType === 'bounce' || eventType === 'soft_fail' || eventType === 'spam' || eventType === 'unsubscribe') {
                   await pool.query(
                     `UPDATE email_tracking
                         SET sendpulse_status = 'failed',
@@ -16173,22 +16187,13 @@ export async function registerRoutes(
                       JSON.stringify({
                         eventType,
                         providerTaskId: providerTaskId || null,
+                        smtpAnswerCode,
                         timestamp: timestamp || null,
                         reason: eventData.reason || eventData.description || eventData.smtp_answer_data || null,
                       }),
                     ]
                   );
                 }
-              }
-
-              // Une désinscription ou une plainte spam côté SendPulse doit aussi
-              // couper les envois marketing chez nous. Avant, elles restaient
-              // uniquement dans email_tracking et les séquences continuaient.
-              if ((eventType === 'spam' || eventType === 'unsubscribe') && normalizedEmail) {
-                await storage.unsubscribeEmail(
-                  normalizedEmail,
-                  eventType === 'spam' ? 'sendpulse_spam_complaint' : 'sendpulse_unsubscribe',
-                ).catch((unsubError: unknown) => console.error("[SendPulseWebhook] unsubscribe persist failed:", unsubError));
               }
 
               console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail || providerTaskId}`);
