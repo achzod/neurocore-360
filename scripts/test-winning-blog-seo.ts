@@ -55,9 +55,17 @@ const nonTargetArticle = articles.find((article) => !TARGET_SLUGS.includes(artic
 assert.ok(nonTargetArticle, "Un article hors cible doit exister pour vérifier le fallback global");
 assert.equal(
   getBlogDocumentTitle(nonTargetArticle),
-  nonTargetArticle.title,
-  "Le titre hydraté des articles hors cible doit éviter le suffixe qui rallonge les SERP",
+  nonTargetArticle.seoTitle || nonTargetArticle.title,
+  "Le titre hydraté des articles hors cible doit reprendre le title SEO, sans suffixe ajouté",
 );
+for (const article of articles.filter((entry) => entry.category !== "sarms")) {
+  assert.ok(
+    getBlogDocumentTitle(article).length <= 60,
+    `${article.slug}: title SEO trop long`,
+  );
+  const meta = getBlogMetaDescription(article);
+  assert.ok(meta.length >= 140 && meta.length <= 155, `${article.slug}: meta hors 140-155 caractères`);
+}
 const nonTargetMeta = getBlogMetaDescription(nonTargetArticle);
 assert.ok(nonTargetMeta.length <= 155, "La meta fallback doit rester sous 155 caractères");
 assert.ok(

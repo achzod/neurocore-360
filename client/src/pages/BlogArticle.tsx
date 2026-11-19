@@ -205,6 +205,20 @@ export function getBlogMetaDescription(article: BlogArticle): string {
 }
 
 export function getBlogIntentConversion(article: BlogArticle): BlogConversion {
+  if (article.slug === "retatrutide-ce-quon-sait-vraiment-2026") {
+    return {
+      ...CATEGORY_CONVERSION.sarms,
+      intent: "peptides-retatrutide",
+      eyebrow: "Peptides et perte de poids",
+      title: "Avant de penser rétatrutide, fais le point sur ton contexte.",
+      body: "Le Pré-Peptides Engine gratuit cadre ton objectif, ton contexte et les points de vigilance à aborder avec ton médecin, sans dosage ni promesse.",
+      href: "/peptides-preview",
+      cta: "Lancer mon Pré-Peptides gratuit",
+      offerHref: "/offers/peptides-engine",
+      offerCta: "Découvrir Peptides Engine",
+    };
+  }
+
   if (article.slug === "meilleurs-peptides-performance-sportive") {
     return {
       ...CATEGORY_CONVERSION.sarms,
@@ -407,8 +421,33 @@ export default function BlogArticlePage() {
       });
       document.head.appendChild(schema);
 
+      document.getElementById("blog-breadcrumb-schema")?.remove();
+      const categoryLabel =
+        BLOG_CATEGORIES.find((category) => category.id === article.category)?.label ||
+        article.category;
+      const breadcrumbSchema = document.createElement("script");
+      breadcrumbSchema.id = "blog-breadcrumb-schema";
+      breadcrumbSchema.type = "application/ld+json";
+      breadcrumbSchema.text = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Accueil", item: `${SITE_ORIGIN}/` },
+          { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_ORIGIN}/blog` },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: categoryLabel,
+            item: `${SITE_ORIGIN}/blog/categorie/${article.category}`,
+          },
+          { "@type": "ListItem", position: 4, name: article.title, item: canonicalUrl },
+        ],
+      });
+      document.head.appendChild(breadcrumbSchema);
+
       return () => {
         document.getElementById("blog-article-schema")?.remove();
+        document.getElementById("blog-breadcrumb-schema")?.remove();
       };
     }
   }, [article]);

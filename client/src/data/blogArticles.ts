@@ -2,6 +2,11 @@
 import { SARMS_ARTICLES } from "./sarmsArticles";
 import { ACHZOD_ARTICLES as MUSCLEPHD_ARTICLES } from "./musclephdArticles";
 import { ACHZODArticles as YAMAMOTO_ARTICLES } from "./yamamotoArticles";
+import {
+  BLOG_RELATED_LINKS,
+  BLOG_SEO_META,
+  type BlogRelatedLinks,
+} from "./blogSeoEnhancements";
 
 export interface BlogArticle {
   id: string;
@@ -38166,6 +38171,234 @@ Ma position : **noix et fruits rouges pour tout le monde**, l'entraînement comm
 
 *Cet article est informatif et ne remplace pas un avis médical. Les doses mentionnées sont celles utilisées dans les études citées.*`,
   },
+  {  id: "159",
+    slug: "retatrutide-ce-quon-sait-vraiment-2026",
+    title: "Rétatrutide : ce qu'on sait vraiment en 2026",
+    seoTitle: "Rétatrutide : efficacité, risques et statut en 2026",
+    excerpt: "Triple agoniste GIP, GLP-1 et glucagon : ce que montrent vraiment les essais TRIUMPH, les effets indésirables, l'impact sur le muscle et pourquoi il n'est autorisé nulle part en 2026.",
+    metaDescription: "Rétatrutide en 2026 : essais TRIUMPH (jusqu'à 25 % de poids perdu), effets indésirables, muscle et statut en France selon l'ANSM. Sans dosage ni promesse.",
+    category: "metabolisme",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "14 min",
+    image: "/images/blog/retatrutide/retatrutide-hero.webp",
+    content: `# Rétatrutide : ce qu'on sait vraiment en 2026
+
+![Personne en débardeur blanc tenant un mètre ruban jaune autour de la taille, sur fond sombre](/images/blog/retatrutide/retatrutide-hero.webp)
+
+## Introduction : la molécule dont tout le monde parle
+
+Depuis la publication des premiers essais de phase 3, le rétatrutide est partout. Sur Instagram, sur TikTok, dans les vestiaires. On le surnomme « GLP-3 », on parle de « 30 % du poids en moins », et des flacons circulent déjà sous ce nom, vendus comme des produits de recherche.
+
+Je reçois beaucoup de questions à son sujet, souvent de personnes qui veulent sécher plus vite ou qui ont plafonné sous un autre traitement. Alors j'ai fait le tri. Dans cet article, je reprends les essais cliniques publiés, je sépare les chiffres des communiqués de ceux des revues médicales, et je fais le point sur son statut réglementaire en France, à jour de novembre 2026.
+
+Ce que vous ne trouverez pas ici : ni dosage à appliquer, ni prix, ni endroit où s'en procurer. Le rétatrutide n'est autorisé nulle part dans le monde, et je ne vais pas faire semblant du contraire.
+
+> **L'essentiel en 30 secondes**
+>
+> - Le rétatrutide est un **triple agoniste** : une seule molécule qui active les récepteurs du GIP, du GLP-1 et du glucagon. Il est développé par Lilly et s'injecte une fois par semaine dans les essais.
+> - Dans **TRIUMPH-1** (2 339 adultes sans diabète, 80 semaines, *NEJM* 2026), la perte de poids moyenne a atteint **25,0 %** à la dose la plus forte, contre **3,9 %** sous placebo, en analyse en intention de traiter.
+> - Chez les personnes **diabétiques** (TRIUMPH-2), l'effet est plus faible : **18,8 %** contre 5,1 % sous placebo.
+> - Les effets indésirables sont surtout **digestifs** (nausées, diarrhées, vomissements), avec des **dysesthésies** (sensations anormales au toucher) plus fréquentes que sous placebo.
+> - **Aucune autorisation de mise sur le marché**, ni en France, ni dans l'Union européenne, ni aux États-Unis. Lilly prévoit de déposer son dossier auprès de la FDA au premier trimestre 2027.
+> - L'**ANSM** demande de ne pas acheter ni utiliser le rétatrutide vendu en ligne et signale des hospitalisations après son utilisation.
+
+---
+
+## Le rétatrutide, c'est quoi exactement ?
+
+### Un seul peptide, trois récepteurs
+
+Le sémaglutide (Wegovy, Ozempic) active un seul récepteur, celui du GLP-1. Le tirzépatide (Mounjaro) en active deux, GLP-1 et GIP. Le rétatrutide va un cran plus loin : il agit sur les récepteurs du **GIP**, du **GLP-1** et du **glucagon**.
+
+Les deux premiers sont des hormones intestinales qui renforcent la sécrétion d'insuline après les repas et freinent l'appétit. Le troisième, le glucagon, joue plutôt le rôle inverse sur la glycémie, mais il augmente aussi la dépense d'énergie et l'utilisation des graisses par le foie. L'idée de Lilly est simple sur le papier : additionner la baisse de l'appétit apportée par le GLP-1 et le GIP et l'effet du glucagon sur la dépense.
+
+Le surnom « GLP-3 » n'a aucune valeur scientifique. Lilly le dit d'ailleurs elle-même dans sa page de questions-réponses : le terme correct est « triple agoniste ».
+
+### Comment il est utilisé dans les essais
+
+Dans tous les essais publiés, le rétatrutide est injecté sous la peau une fois par semaine, avec une montée de dose progressive toutes les quatre semaines jusqu'à la dose cible fixée par le protocole (4, 9 ou 12 mg selon les bras). Je donne ces chiffres uniquement pour que vous puissiez lire les résultats : ce sont des bras d'essais cliniques encadrés par des médecins, pas des repères à suivre.
+
+---
+
+## Les essais cliniques : les chiffres, essai par essai
+
+### Phase 2 (2023) : le signal de départ
+
+Le premier essai d'envergure a été publié dans le *New England Journal of Medicine* en 2023. **338 adultes** en obésité ou en surpoids avec une maladie associée ont reçu du rétatrutide ou un placebo pendant **48 semaines**. À la dose de 12 mg, la perte de poids moyenne a atteint **24,2 %**, contre **2,1 %** sous placebo. Les auteurs notaient déjà des effets digestifs dépendants de la dose et une **hausse de la fréquence cardiaque**, maximale vers 24 semaines puis en baisse.
+
+### TRIUMPH-1 : l'essai pivot dans l'obésité
+
+C'est l'essai qui compte le plus. **2 339 adultes** en obésité ou en surpoids avec au moins une maladie liée au poids, sans diabète, ont été suivis **80 semaines** (*NEJM*, novembre 2026).
+
+Résultats en intention de traiter, c'est-à-dire en comptant tout le monde, y compris ceux qui ont arrêté le traitement :
+
+- 4 mg : **-17,6 %**
+- 9 mg : **-23,7 %**
+- 12 mg : **-25,0 %**
+- placebo : **-3,9 %**
+
+L'essai comprenait aussi deux sous-groupes. Chez les participants souffrant d'**arthrose du genou**, la douleur a baissé davantage que sous placebo. Chez ceux qui avaient une **apnée du sommeil**, le nombre d'apnées et d'hypopnées par heure a nettement diminué.
+
+### TRIUMPH-2 : chez les personnes diabétiques
+
+**1 152 adultes** en surpoids ou en obésité avec un **diabète de type 2**, suivis 80 semaines (*The Lancet*, octobre 2026). Perte de poids en intention de traiter : **-11,9 %** à 4 mg, **-16,8 %** à 9 mg, **-18,8 %** à 12 mg, contre **-5,1 %** sous placebo. L'HbA1c a aussi baissé.
+
+Comme avec les autres traitements de cette famille, la perte de poids est plus modeste chez les personnes diabétiques.
+
+### TRIUMPH-3 et TRIUMPH-4 : résultats annoncés, pas encore tous publiés
+
+- **TRIUMPH-4** (445 adultes avec arthrose du genou, 68 semaines) : en intention de traiter, **-20,0 %** à 9 mg et **-23,7 %** à 12 mg, contre **-4,6 %** sous placebo, avec une baisse nette de la douleur du genou. Ces résultats viennent d'un communiqué de Lilly de décembre 2025.
+- **TRIUMPH-3** (1 949 adultes en obésité sévère avec une maladie cardiovasculaire établie, 80 semaines) : jusqu'à **22,6 %** de perte de poids moyenne selon le communiqué de Lilly de juillet 2026. Le nombre d'événements cardiovasculaires a été plus faible que prévu dans les deux groupes, ce qui ne permet aucune conclusion sur le cœur.
+
+Un communiqué n'est pas un article relu par des pairs. Je considère ces chiffres comme provisoires tant que les publications complètes ne sont pas sorties.
+
+| Essai | Population | Durée | Dose la plus forte | Placebo |
+|---|---|---|---|---|
+| Phase 2 (*NEJM* 2023) | 338 adultes, obésité | 48 sem. | -24,2 % | -2,1 % |
+| TRIUMPH-1 (*NEJM* 2026) | 2 339 adultes, sans diabète | 80 sem. | -25,0 % | -3,9 % |
+| TRIUMPH-2 (*Lancet* 2026) | 1 152 adultes, diabète de type 2 | 80 sem. | -18,8 % | -5,1 % |
+| TRIUMPH-4 (communiqué) | 445 adultes, arthrose du genou | 68 sem. | -23,7 % | -4,6 % |
+
+*Pour TRIUMPH-1, TRIUMPH-2 et TRIUMPH-4, chiffres en intention de traiter.*
+
+### 25 % ou 28 % ? Deux façons de compter
+
+Vous lirez souvent « 28,3 % » pour TRIUMPH-1. Ce chiffre vient du communiqué de Lilly et correspond à l'**estimand d'efficacité** : il ne compte que les personnes restées sous traitement, sans autre traitement amaigrissant. Le **25,0 %** publié dans le *NEJM* compte tout le monde, y compris ceux qui ont arrêté. Les deux sont exacts, ils ne répondent pas à la même question. Pour savoir ce qu'un traitement donne dans la vraie vie, je retiens le second.
+
+Même logique pour le **30,3 %** à 104 semaines souvent cité : il concerne une extension de TRIUMPH-1 limitée à 532 participants avec un IMC d'au moins 35, qui avaient terminé les 80 premières semaines et bien toléré leur dose. C'est un sous-groupe sélectionné, pas la moyenne de l'essai.
+
+---
+
+## Effets indésirables : ce que montrent les essais
+
+Les effets les plus fréquents sont **digestifs**, et ils augmentent avec la dose. Dans TRIUMPH-1, selon le communiqué de Lilly :
+
+- nausées : **28,6 %** à 4 mg, **38,4 %** à 9 mg, **42,4 %** à 12 mg, contre **14,8 %** sous placebo
+- vomissements : **10,6 %**, **22,8 %** et **25,3 %**, contre **4,8 %**
+- **dysesthésies** (sensations anormales au toucher, picotements, sensibilité de la peau) : **5,1 %**, **12,3 %** et **12,5 %**, contre **0,9 %**
+- arrêts du traitement pour effets indésirables : **4,1 %**, **6,9 %** et **11,3 %**, contre **4,9 %**
+
+Dans TRIUMPH-4, les dysesthésies ont touché jusqu'à **20,9 %** des participants à 12 mg, et une partie des arrêts était liée à une **perte de poids jugée excessive**. Dans TRIUMPH-2, l'**hypotension** était plus fréquente sous rétatrutide (jusqu'à 6 % contre moins de 1 % sous placebo).
+
+Ce qui reste à documenter : les effets au-delà de deux ans, l'effet réel sur les événements cardiovasculaires et la sécurité hors du cadre très surveillé d'un essai. Un essai de grande taille sur le cœur et les reins est en cours.
+
+---
+
+## Et le muscle dans tout ça ?
+
+C'est la question que je me pose en premier, en tant que coach. Une perte de 20 à 25 % du poids corporel ne se fait jamais uniquement aux dépens de la graisse.
+
+La seule analyse de composition corporelle publiée à ce jour est une sous-étude de phase 2 chez des personnes **diabétiques**, mesurée par DEXA sur **36 semaines** (Coskun, *Lancet Diabetes & Endocrinology*, 2025). La masse grasse a baissé de **26,1 %** à 8 mg et de **23,2 %** à 12 mg. Selon les auteurs, la part de masse maigre dans le poids perdu était **comparable à celle des autres traitements de l'obésité**. C'est rassurant, mais c'est un petit effectif, une durée courte, et aucune donnée publiée de ce type pour les essais de phase 3.
+
+Mon avis ne change pas d'une molécule à l'autre : plus la perte de poids est rapide et importante, plus la **musculation** et un **apport suffisant en protéines** deviennent une partie du traitement. J'ai détaillé les chiffres et le plan d'action dans mon article sur [le GLP-1 et la préservation du muscle](/blog/glp-1-semaglutide-tirzepatide-preserver-muscle).
+
+---
+
+## Statut réglementaire en 2026 : où en est-on en France ?
+
+### Aucune autorisation, nulle part
+
+En novembre 2026, le rétatrutide reste une **molécule expérimentale**. Lilly l'écrit noir sur blanc dans sa page d'information d'octobre 2026 : il n'a été examiné ni autorisé par la FDA ni par **aucune autorité de santé dans le monde**, et personne ne peut légalement le vendre pour un usage humain. Lilly a annoncé en septembre 2026 son intention de déposer un dossier auprès de la FDA au **premier trimestre 2027**. Aucune date d'autorisation n'existe, en Europe comme aux États-Unis.
+
+En France, il n'a donc **pas d'autorisation de mise sur le marché**. Le seul moyen légal d'en recevoir est de participer à un essai clinique.
+
+### Ce que dit l'ANSM
+
+Le 2 juillet 2026, l'ANSM a publié une alerte intitulée « Peptides vendus en ligne : ne les utilisez pas, ils peuvent être dangereux », mise à jour le 31 août 2026. Le rétatrutide y est cité en premier parmi les produits proposés sans autorisation, avec le BPC-157, le TB-500, le GHK-Cu ou le NAD+. L'agence indique avoir reçu **plusieurs signalements après l'utilisation de peptides frauduleux, notamment le rétatrutide**, dont certains ont conduit à des **hospitalisations**. Parmi les effets rapportés : vomissements, déshydratation, malaises, atteintes du foie visibles dans les analyses de sang, sensibilité anormale au toucher, infections au point d'injection et réactions allergiques sévères.
+
+L'ANSM a aussi pris plusieurs **décisions de police sanitaire** en 2026 contre des sites qui vendaient des stylos présentés comme contenant du rétatrutide (décisions du 9 juillet, du 16 juillet et du 14 août 2026), en ordonnant leur retrait.
+
+Ses consignes sont claires : ne pas acheter de peptides sur internet, sur les réseaux sociaux ou par des connaissances, ne pas s'injecter un produit non prescrit, se méfier des mentions « réservé à la recherche », et consulter rapidement un professionnel de santé en cas d'effet indésirable.
+
+### Le produit vendu en ligne n'est pas celui des essais
+
+Tous les chiffres de cet article viennent d'une molécule fabriquée par Lilly, contrôlée lot par lot, injectée à des doses connues, chez des personnes sélectionnées et suivies de près. Un flacon acheté en ligne n'offre aucune de ces garanties : Lilly rappelle que ces produits peuvent contenir trop ou trop peu de principe actif, un autre principe actif, ou des impuretés. Les résultats des essais ne s'appliquent tout simplement pas à ces produits.
+
+---
+
+## Ce que je conseille si la perte de poids est votre objectif
+
+1. **Parlez-en à un médecin.** Si votre poids pèse sur votre santé, des traitements autorisés existent et se prescrivent. C'est le seul cadre où l'on peut suivre les effets indésirables et ajuster.
+2. **Faites un bilan sanguin de départ.** Glycémie, HbA1c, lipides, foie, reins : c'est la base pour mesurer un progrès et repérer un problème. Mon article sur [les marqueurs à suivre avec les peptides](/blog/peptides-bilan-sanguin-marqueurs-a-suivre) détaille lesquels.
+3. **Protégez votre muscle.** Musculation deux à trois fois par semaine et protéines en quantité suffisante, quel que soit le traitement.
+4. **Méfiez-vous des promesses.** Un chiffre comme « 30 % » sort d'un sous-groupe précis d'un essai, pas d'une moyenne valable pour tous.
+
+> **Faire le point sur les peptides avant toute décision**
+>
+> Le Pré-Peptides Engine est gratuit. Il cadre votre objectif, votre contexte et les points de vigilance à aborder avec votre médecin, sans dosage ni promesse.
+>
+> [Lancer mon Pré-Peptides gratuit](/peptides-preview)
+
+---
+
+## FAQ : rétatrutide
+
+### Le rétatrutide est-il autorisé en France ?
+
+Non. En novembre 2026, il n'a d'autorisation de mise sur le marché ni en France, ni dans l'Union européenne, ni aux États-Unis. Il n'est disponible légalement que dans le cadre d'essais cliniques, et l'ANSM demande de ne pas utiliser le rétatrutide vendu en ligne.
+
+### Combien de poids fait perdre le rétatrutide ?
+
+Dans TRIUMPH-1, la perte moyenne a été de 25,0 % du poids à la dose la plus forte après 80 semaines, contre 3,9 % sous placebo, en comptant tous les participants. Chez les personnes diabétiques (TRIUMPH-2), elle a été de 18,8 %, contre 5,1 % sous placebo.
+
+### Le rétatrutide est-il plus efficace que le tirzépatide ?
+
+Les essais publiés montrent des pertes de poids plus importantes que celles observées avec le tirzépatide dans ses propres essais, mais ces études n'ont pas été menées sur les mêmes populations. Un essai qui compare directement les deux molécules, TRIUMPH-5, est en cours et n'a pas encore livré ses résultats.
+
+### Quels sont les effets secondaires du rétatrutide ?
+
+Surtout des nausées, des diarrhées, de la constipation et des vomissements, d'autant plus fréquents que la dose est élevée. Les essais rapportent aussi des dysesthésies, une hausse de la fréquence cardiaque dans l'essai de phase 2 et, chez les diabétiques, davantage d'hypotension que sous placebo.
+
+### Pourquoi parle-t-on de GLP-3 ?
+
+C'est un surnom apparu dans les médias parce que la molécule agit sur trois récepteurs. Il n'existe pas d'hormone appelée GLP-3. Le terme correct est triple agoniste des récepteurs du GIP, du GLP-1 et du glucagon.
+
+### Fait-il perdre du muscle ?
+
+Toute perte de poids importante fait perdre de la masse maigre. La seule sous-étude publiée, chez des personnes diabétiques sur 36 semaines, a trouvé une part de masse maigre comparable à celle des autres traitements de l'obésité. La musculation et les protéines restent les meilleurs moyens de la limiter.
+
+---
+
+## Le verdict : une molécule sérieuse, pas un raccourci
+
+Le rétatrutide est probablement la molécule anti-obésité la plus puissante testée à ce jour, et les essais sont solides : grands effectifs, double aveugle, publications dans les meilleures revues. Mais c'est un **médicament expérimental**, avec des effets indésirables fréquents, un recul limité à deux ans et aucune autorisation. Le produit vendu en ligne n'a rien à voir avec celui des essais, et l'ANSM a déjà relevé des hospitalisations.
+
+Ma position : suivez les publications, parlez-en à votre médecin si votre santé le justifie, et pendant ce temps, construisez ce qu'aucune molécule ne fera à votre place, à savoir du muscle, une alimentation tenable et des habitudes de sommeil solides.
+
+> **Travailler avec moi**
+>
+> Je construis votre programme d'entraînement et votre plan alimentaire selon votre situation, votre objectif et votre suivi médical, avec des ajustements réguliers.
+>
+> [Voir les formules de coaching](https://www.achzodcoaching.com/formules-coaching)
+
+## À lire aussi
+
+- [Peptides : guide complet, statut légal et risques](/blog/peptides-guide-complet)
+- [GLP-1 : préserver le muscle sous sémaglutide](/blog/glp-1-semaglutide-tirzepatide-preserver-muscle)
+- [Peptides et bilan sanguin : les marqueurs à suivre](/blog/peptides-bilan-sanguin-marqueurs-a-suivre)
+- [Même peptide, résultats différents : pourquoi](/blog/meme-peptide-resultats-differents)
+
+---
+
+## Références
+
+1. Jastreboff AM, et al. Triple-hormone-receptor agonist retatrutide for obesity: a phase 2 trial. *N Engl J Med.* 2023;389(6):514-526. [doi:10.1056/NEJMoa2301972](https://doi.org/10.1056/NEJMoa2301972)
+2. Jastreboff AM, et al. Retatrutide, a triple hormone receptor agonist, for treatment of obesity (TRIUMPH-1). *N Engl J Med.* 2026;395(18):1781-1793. [doi:10.1056/NEJMoa2604169](https://doi.org/10.1056/NEJMoa2604169)
+3. Bellido V, et al. Retatrutide in adults with obesity and type 2 diabetes (TRIUMPH-2): a double-blind, parallel-group, randomised, placebo-controlled, phase 3 trial. *Lancet.* 2026;408(10563):1455-1472. [doi:10.1016/S0140-6736(26)01861-1](https://doi.org/10.1016/S0140-6736(26)01861-1)
+4. Coskun T, et al. Effects of retatrutide on body composition in people with type 2 diabetes: a substudy of a phase 2, double-blind, parallel-group, placebo-controlled, randomised trial. *Lancet Diabetes Endocrinol.* 2025;13(8):674-684. [doi:10.1016/S2213-8587(25)00092-0](https://doi.org/10.1016/S2213-8587(25)00092-0)
+5. Eli Lilly. Lilly's triple agonist, retatrutide, delivered powerful weight loss in pivotal Phase 3 obesity trial (TRIUMPH-1), communiqué du 21 mai 2026. [investor.lilly.com](https://investor.lilly.com/news-releases/news-release-details/lillys-triple-agonist-retatrutide-delivered-powerful-weight-loss)
+6. Eli Lilly. Résultats de TRIUMPH-4 (arthrose du genou), communiqué du 11 décembre 2025. [investor.lilly.com](https://investor.lilly.com/news-releases/news-release-details/lillys-triple-agonist-retatrutide-delivered-weight-loss-average)
+7. Eli Lilly. Résultats de TRIUMPH-2 et TRIUMPH-3, communiqué du 23 juillet 2026. [investor.lilly.com](https://investor.lilly.com/news-releases/news-release-details/lillys-triple-agonist-retatrutide-successful-two-additional)
+8. Eli Lilly. Dépôt prévu auprès de la FDA au premier trimestre 2027, communiqué du 29 septembre 2026. [investor.lilly.com](https://investor.lilly.com/news-releases/news-release-details/lillys-triple-agonist-retatrutide-delivered-substantial-weight)
+9. Eli Lilly. What to know about retatrutide, mise à jour d'octobre 2026. [lilly.com](https://www.lilly.com/news/stories/what-to-know-about-retatrutide)
+10. ANSM. « Peptides » vendus en ligne : ne les utilisez pas, ils peuvent être dangereux, publié le 02/07/2026, mis à jour le 31/08/2026. [ansm.sante.fr](https://ansm.sante.fr/actualites/peptides-vendus-en-ligne-ne-les-utilisez-pas-ils-peuvent-etre-dangereux)
+11. ANSM. Décision de police sanitaire du 14/08/2026, retrait du produit « FastPen 40mg » présenté comme contenant un agoniste du GLP-1. [ansm.sante.fr](https://ansm.sante.fr/actualites/decision-de-police-sanitaire-du-14-08-2026-retrait-du-produit-fastpen-40mg-presente-comme-contenant-un-agoniste-du-glp-1-societe-azrl-ltd)
+12. ClinicalTrials.gov. TRIUMPH-5, rétatrutide comparé au tirzépatide chez l'adulte en obésité, NCT06662383. [clinicaltrials.gov](https://clinicaltrials.gov/study/NCT06662383)
+
+*Cet article est informatif et ne remplace pas un avis médical. Le rétatrutide est un médicament expérimental sans autorisation de mise sur le marché : il ne doit être utilisé que dans le cadre d'un essai clinique.*
+`,
+  },
 ];
 
 // Combine all articles (base + SARMS + Ultrahuman)
@@ -38257,7 +38490,42 @@ const BLOG_CATEGORY_OVERRIDES: Record<string, string> = {
 
 const PEDS_INTENT_RE = /peptide|peptides|sarm|sarms|hgh|igf|anabolic code|anabolique|stéroïde|steroide|testostérone|testosterone/i;
 
+const RELATED_SECTION_ANCHOR_RE =
+  /^(?:#{2,3}\s*(?:R[ée]f[ée]rences|Bibliographie|Sources(?:\s+scientifiques)?)\s*:?\s*$|\*\*(?:R[ée]f[ée]rences|Sources)\s*:?\*\*\s*$|\*Cet article est informatif)/im;
+
+// Internal links are placed just before the references or the closing
+// disclaimer so the reader meets them at the end of the actual text.
+export function appendRelatedLinks(content: string, related: BlogRelatedLinks): string {
+  const section = `## ${related.heading}\n\n${related.links
+    .map((link) => `- [${link.label}](/blog/${link.slug})`)
+    .join("\n")}\n`;
+  const match = RELATED_SECTION_ANCHOR_RE.exec(content);
+  if (match && match.index > 0) {
+    const before = content.slice(0, match.index).replace(/\s+$/, "");
+    const rule = /\n-{3,}$/.exec(before);
+    if (rule) {
+      return `${before.slice(0, rule.index).replace(/\s+$/, "")}\n\n${section}\n---\n\n${content.slice(match.index)}`;
+    }
+    return `${before}\n\n${section}\n${content.slice(match.index)}`;
+  }
+  return `${content.replace(/\s+$/, "")}\n\n${section}`;
+}
+
 function normalizeArticleForTraffic(article: BlogArticle): BlogArticle {
+  const normalized = normalizeArticleContentAndCategory(article);
+  // SARMs pages stay exactly as written: no SEO overrides, no added links.
+  if (normalized.category === "sarms") return normalized;
+  const seo = BLOG_SEO_META[normalized.slug];
+  const related = BLOG_RELATED_LINKS[normalized.slug];
+  if (!seo && !related) return normalized;
+  return {
+    ...normalized,
+    ...(seo ? { seoTitle: seo.seoTitle, metaDescription: seo.metaDescription } : {}),
+    ...(related ? { content: appendRelatedLinks(normalized.content, related) } : {}),
+  };
+}
+
+function normalizeArticleContentAndCategory(article: BlogArticle): BlogArticle {
   const category = BLOG_CATEGORY_OVERRIDES[article.slug] || article.category;
   const haystack = `${article.slug} ${article.title} ${article.excerpt} ${category}`;
   const shouldKeepAnabolicPromo = PEDS_INTENT_RE.test(haystack);

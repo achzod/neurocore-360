@@ -63,6 +63,15 @@ for (const url of sitemapUrls) {
 }
 
 for (const article of generatedArticles) {
+  // SARMs/PED pages are served with noindex and deliberately left out of the
+  // sitemap by script/build.ts.
+  if (article.category === "sarms") {
+    assert.ok(
+      !sitemapUrls.some((url) => url.endsWith(`/blog/${encodeURIComponent(article.slug)}`)),
+      `noindex SARMs article leaked into sitemap: ${article.slug}`,
+    );
+    continue;
+  }
   const encodedUrl = `${BASE}/blog/${article.slug
     .split("/")
     .map(encodeURIComponent)
@@ -70,6 +79,7 @@ for (const article of generatedArticles) {
   assert.ok(sitemapUrls.includes(encodedUrl), `canonical article missing from sitemap: ${article.slug}`);
 }
 for (const slug of BLOG_CATEGORY_SLUGS) {
+  if (slug === "sarms") continue; // noindex category, excluded by script/build.ts
   if (!generatedArticles.some((article) => article.category === slug)) continue;
   assert.ok(sitemapUrls.includes(`${BASE}/blog/categorie/${slug}`), `category missing from sitemap: ${slug}`);
 }
