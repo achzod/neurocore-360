@@ -178,8 +178,9 @@ export async function checkNewConversions(storage: IStorage): Promise<{
   count: number;
   emails: string[];
 }> {
-  // Récupérer les audits complétés dans les dernières 24h
-  const allAudits = await storage.getAllAudits();
+  // Récupérer les audits complétés dans les dernières 24h (variante légère :
+  // seuls email et completedAt sont lus, inutile de charger les JSONB).
+  const allAudits = await storage.getAllAuditsLight();
   const now = new Date();
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 

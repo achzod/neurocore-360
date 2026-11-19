@@ -88,9 +88,9 @@ const OFFERS: Offer[] = [
   {
     id: 'peptides-engine',
     title: "PEPTIDES ENGINE",
-    subtitle: "La source secrete que personne ne partage",
-    description: "35 questions. Un protocole peptides sur mesure avec dosages exacts ajustes a ton poids, guide de reconstitution calcule par molecule (BAC water, ml, unites seringue), calendrier hebdomadaire AM/PM, et acces direct a ma source labo ou BPC-157 coute $9.65 au lieu de 80€, Retatrutide $13.65 au lieu de 300€, Semaglutide $5.64 au lieu de 200€. Tu economises 920€ des le 1er cycle. Jusqu'a 2 Blood Analyses incluses. 74 molecules disponibles. 15 protocoles/mois max.",
-    features: ["74 molécules au catalogue", "Économie 60-90% vs revendeurs", "Jusqu’à 2 Blood Analyses incluses", "Guide de reconstitution calculé"],
+    subtitle: "Ton protocole peptides, calculé et suivi",
+    description: "Tu réponds à 35 questions sur ton profil et ton objectif. Je construis ton protocole avec des dosages ajustés à ton poids. Tu reçois un guide de reconstitution calculé pour chaque molécule et un calendrier hebdomadaire matin et soir. Jusqu'à 2 Blood Analyses sont incluses pour suivre tes marqueurs. Si tu passes en coaching avec moi, le montant est déduit.",
+    features: ["35 questions", "Dosages ajustés à ton poids", "Guide de reconstitution et calendrier hebdo", "Jusqu’à 2 Blood Analyses incluses", "Montant déduit du coaching"],
     price: "299€",
     imageUrl: "",
     reverse: true,
@@ -339,12 +339,13 @@ function FormCheckVisual() {
 // PEPTIDES ENGINE VISUAL (for homepage card)
 // ============================================================================
 function PeptidesEngineVisual() {
-  const MOLECULES = [
-    { name: "BPC-157", price: "$9.65", savings: "-88%", y: 15 },
-    { name: "TB-500", price: "$10.37", savings: "-89%", y: 30 },
-    { name: "GHK-Cu", price: "$7.64", savings: "-94%", y: 45 },
-    { name: "SEMA", price: "$5.64", savings: "-97%", y: 60 },
-    { name: "RETA", price: "$13.65", savings: "-96%", y: 75 },
+  // Protocol and follow-up only: no molecule prices, no supplier claims.
+  const STEPS = [
+    { label: "35 QUESTIONS", detail: "Profil et objectif" },
+    { label: "DOSAGES", detail: "Ajustés à ton poids" },
+    { label: "RECONSTITUTION", detail: "Guide calculé" },
+    { label: "CALENDRIER", detail: "Hebdo matin et soir" },
+    { label: "BLOOD ANALYSIS", detail: "Jusqu'à 2 incluses" },
   ];
 
   return (
@@ -364,27 +365,24 @@ function PeptidesEngineVisual() {
       {/* Top labels */}
       <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5">
         <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-        <span className="font-mono text-[9px] text-amber-500 uppercase tracking-widest">74 Molecules</span>
+        <span className="font-mono text-[9px] text-amber-500 uppercase tracking-widest">Protocole</span>
       </div>
       <div className="absolute top-3 right-3 z-20 text-right">
-        <div className="font-mono text-[10px] text-amber-400">SOURCE SECRETE</div>
-        <div className="font-mono text-[8px] text-gray-500">REVELEE APRES ACHAT</div>
+        <div className="font-mono text-[10px] text-amber-400">SUR MESURE</div>
+        <div className="font-mono text-[8px] text-gray-500">SUIVI PAR ACHZOD</div>
       </div>
 
-      {/* Molecule price ticker */}
+      {/* Protocol steps */}
       <div className="absolute inset-0 flex flex-col justify-center px-4 z-10 gap-1">
-        {MOLECULES.map((mol, i) => (
-          <motion.div key={mol.name}
+        {STEPS.map((step, i) => (
+          <motion.div key={step.label}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: [0.4, 1, 0.4], x: 0 }}
             transition={{ duration: 3, repeat: Infinity, delay: i * 0.6, ease: "easeInOut" }}
             className="flex items-center justify-between bg-black/60 backdrop-blur border border-amber-500/20 rounded px-3 py-1.5"
           >
-            <span className="font-mono text-[10px] text-white font-bold">{mol.name}</span>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] text-amber-400 font-bold">{mol.price}</span>
-              <span className="font-mono text-[9px] text-emerald-400 font-bold">{mol.savings}</span>
-            </div>
+            <span className="font-mono text-[10px] text-white font-bold">{step.label}</span>
+            <span className="font-mono text-[9px] text-amber-400 font-bold">{step.detail}</span>
           </motion.div>
         ))}
       </div>
@@ -392,8 +390,8 @@ function PeptidesEngineVisual() {
       {/* Bottom */}
       <div className="absolute bottom-3 left-3 right-3 z-20 flex justify-between items-end">
         <div>
-          <div className="font-mono text-[8px] text-gray-500">ECONOMIE 1er CYCLE</div>
-          <div className="font-mono text-sm text-amber-400 font-bold">920€</div>
+          <div className="font-mono text-[8px] text-gray-500">COACHING</div>
+          <div className="font-mono text-sm text-amber-400 font-bold">Montant déduit</div>
         </div>
         <div className="text-right">
           <div className="font-mono text-[8px] text-gray-500">PROTOCOLE</div>

@@ -368,21 +368,21 @@ function CheckoutCard({
   const tierFeatures: Record<PeptidesTier, { label: string; value: string }[]> = {
     solo: [
       { label: "Protocole personnalisé sur-mesure", value: "Inclus" },
-      { label: "Accès source directe (-60 à -90%)", value: "Inclus" },
+      { label: "Guide de reconstitution et calendrier hebdo", value: "Inclus" },
       { label: "Crédit déduction coaching 199€", value: "Inclus" },
       { label: "Bilan sanguin", value: "Non" },
       { label: "Support écrit post-livraison", value: "Non" },
     ],
     coached: [
       { label: "Protocole personnalisé sur-mesure", value: "Inclus" },
-      { label: "Accès source directe (-60 à -90%)", value: "Inclus" },
+      { label: "Guide de reconstitution et calendrier hebdo", value: "Inclus" },
       { label: "Crédit déduction coaching 299€", value: "Inclus" },
       { label: "1 Bilan sanguin (au choix)", value: "Inclus" },
       { label: "Support écrit 30 jours", value: "Inclus" },
     ],
     tracked: [
       { label: "Protocole personnalisé sur-mesure", value: "Inclus" },
-      { label: "Accès source directe (-60 à -90%)", value: "Inclus" },
+      { label: "Guide de reconstitution et calendrier hebdo", value: "Inclus" },
       { label: "Crédit déduction coaching 399€", value: "Inclus" },
       { label: "2 Bilans sanguins (baseline + mi-cycle)", value: "Inclus" },
       { label: "Support écrit 90 jours", value: "Inclus" },

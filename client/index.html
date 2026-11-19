@@ -58,7 +58,7 @@
       }
     }
     </script>
-    <!-- Consent Mode v2 defaults are set before any Google tag can load. -->
+    <!-- Consent Mode v2 (advanced) defaults are set before any Google tag can load. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
@@ -69,6 +69,10 @@
         ad_personalization: 'denied',
         wait_for_update: 500
       });
+      // Advanced Consent Mode: gtag.js loads for everyone (see client/src/lib/googleTag.ts),
+      // without cookies and with ad data redacted until the visitor accepts.
+      window.gtag('set', 'ads_data_redaction', true);
+      window.__apexConsentDefaultSet = true;
     </script>
 
     <!-- Google Fonts: Inter (Primary) + JetBrains Mono (Data/Tech) -->

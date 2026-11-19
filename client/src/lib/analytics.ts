@@ -20,12 +20,19 @@ function hasTrackingConsent(): boolean {
   }
 }
 
+// Google tag runs in Consent Mode v2 (advanced, see lib/googleTag.ts): events
+// are always handed to gtag, and Google itself drops cookies/identifiers while
+// consent is denied. Never put personal data (email, answers) in these events.
 function gtag(...args: any[]) {
-  if (hasTrackingConsent() && window.gtag) {
-    window.gtag(...args);
+  if (typeof window === 'undefined') return;
+  try {
+    window.gtag?.(...args);
+  } catch {
+    // Analytics must never break the page.
   }
 }
 
+// Meta Pixel stays strictly behind explicit consent ("Tout accepter").
 function fbq(...args: any[]) {
   if (hasTrackingConsent() && window.fbq) {
     window.fbq(...args);
@@ -95,6 +102,8 @@ export function trackBlogCtaClick(
 // Keep funnel events separate from Lead/Purchase conversions. No email or
 // questionnaire answers are sent to analytics.
 export type DiscoveryFunnelStep =
+  | 'discovery_start'
+  | 'discovery_complete'
   | 'discovery_landing_viewed'
   | 'discovery_cta_click'
   | 'discovery_email_submitted'
@@ -112,16 +121,31 @@ export function isDiscoveryQuestionnaireHref(href: string, origin: string): bool
 }
 
 export function trackDiscoveryFunnelStep(step: DiscoveryFunnelStep) {
-  // Compare only visitors who accepted analytics; never send questionnaire PII.
+  // Sent for every visitor (Consent Mode v2 handles cookies); never send
+  // questionnaire PII.
   if (typeof window === 'undefined') return;
   try {
-    if (window.localStorage.getItem('apexlabs_cookie_consent') !== 'all') return;
     gtag('event', step, {
       funnel_name: 'discovery_scan',
       page_path: window.location.pathname,
     });
   } catch {
     // Analytics/storage errors must never interrupt questionnaire navigation.
+  }
+}
+
+// discovery_start: first view of the free questionnaire, once per browser
+// session so a reload or a back/forward does not inflate the funnel.
+export function trackDiscoveryStartOnce(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const key = 'discovery_start_tracked';
+    if (window.sessionStorage?.getItem(key)) return false;
+    trackDiscoveryFunnelStep('discovery_start');
+    window.sessionStorage?.setItem(key, '1');
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -391,12 +415,14 @@ export type VerifiedStripePurchase = {
 };
 
 // A Stripe return can be revisited or retried. Count each verified session once
-// per browser session, and never emit marketing events without analytics consent.
+// per browser session. Meta Pixel events still require analytics consent.
 export function trackVerifiedStripePurchase(purchase: VerifiedStripePurchase | null | undefined): boolean {
   if (typeof window === 'undefined' || !purchase) return false;
   try {
-    if (window.localStorage.getItem('apexlabs_cookie_consent') !== 'all' ||
-        !purchase.transactionId.startsWith('cs_') ||
+    // GA4/Ads purchase goes out for every buyer (Consent Mode v2 strips
+    // identifiers without consent); the Meta Pixel part of trackPurchase stays
+    // consent-gated inside fbq().
+    if (!purchase.transactionId.startsWith('cs_') ||
         !purchase.itemId || !purchase.itemName ||
         !Number.isFinite(purchase.value) || purchase.value <= 0 ||
         !/^[A-Z]{3}$/.test(purchase.currency)) return false;
