@@ -192,3 +192,9 @@ test("admin review notification never labels a suspended result as a priced lead
   assert.match(content.text, /traitement déclaré sera intégré directement/);
   assert.match(content.text, /peptides-engine\?tier=solo.*utm_source=peptides_preview_email/);
 });
+
+test("résultat Pré-Peptides (classé marketing) : lien de désinscription visible en pied, texte copiable sans placeholder", () => {
+  const content = buildPeptidesPreviewResultEmailContent(input, eligible, "/peptides-engine?tier=solo", "https://apexlabs.test");
+  assert.match(content.html, /<a href="\{\{UNSUB_LINK\}\}"[^>]*>Se désabonner<\/a><\/p><\/div><\/body><\/html>$/);
+  assert.doesNotMatch(content.text, /UNSUB_LINK/);
+});

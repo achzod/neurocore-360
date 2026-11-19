@@ -2305,6 +2305,25 @@ export class PgStorage implements IStorage {
     console.log(`[Unsubscribe] ${email} unsubscribed${reason ? ` (reason: ${reason})` : ""}`);
   }
 
+  /**
+   * Ajoute une adresse à la liste de suppression sans toucher une ligne
+   * existante (raison et date d'origine conservées). Idempotent : rejouer
+   * le même événement fournisseur ne change rien. Renvoie true si ajoutée.
+   */
+  async addEmailToSuppressionList(email: string, reason: string): Promise<boolean> {
+    await this.ensureUnsubscribesTable();
+    const normalized = email.trim().toLowerCase();
+    const result = await pool.query(
+      `INSERT INTO email_unsubscribes (email, reason) VALUES ($1, $2)
+       ON CONFLICT (email) DO NOTHING
+       RETURNING email`,
+      [normalized, reason]
+    );
+    const added = (result.rowCount ?? result.rows.length) > 0;
+    if (added) console.log(`[Unsubscribe] ${normalized} added to suppression list (reason: ${reason})`);
+    return added;
+  }
+
   async resubscribeEmail(email: string): Promise<void> {
     await this.ensureUnsubscribesTable();
     await pool.query(

@@ -6787,8 +6787,8 @@ export async function sendAdminReviewNotification(
 }
 
 // ApexLabs Welcome Email - sent when someone joins the waitlist
-export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> {
-  try {
+/** Contenu du mail de bienvenue ApexLabs (liste d'attente). Marketing : pied avec {{UNSUB_LINK}}. */
+export function buildApexLabsWelcomeEmailContent(): { subject: string; html: string; text: string } {
     // ApexLabs Design System - Black/Yellow
     const APEX_COLORS = {
       primary: '#FCDD00', // Yellow
@@ -6874,6 +6874,10 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
               <p style="color: #525252; font-size: 11px; margin: 0; letter-spacing: 1px; text-transform: uppercase;">
                 ApexLabs by Achzod • Optimisation Humaine
               </p>
+              <p style="color: #525252; font-size: 11px; line-height: 1.6; margin: 12px 0 0;">
+                Tu reçois cet email car tu as rejoint la liste d'attente ApexLabs.<br>
+                <a href="{{UNSUB_LINK}}" style="color: #737373; text-decoration: underline;">Se désabonner</a>
+              </p>
             </td>
           </tr>
         </table>
@@ -6883,11 +6887,21 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
 </body>
 </html>`;
 
+    return {
+      subject: "Bienvenue dans l'élite ApexLabs",
+      html: htmlContent,
+      text: "Bienvenue dans l'élite ApexLabs ! Tu fais partie des premiers à avoir accès à la nouvelle génération d'optimisation humaine. Je te contacterai dès que les portes s'ouvriront. - Achzod\n\nSe désabonner : {{UNSUB_LINK}}",
+    };
+}
+
+export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> {
+  try {
+    const welcome = buildApexLabsWelcomeEmailContent();
     const result = await sendEmailWithTracking(
       {
-        html: encodeBase64(htmlContent),
-        text: "Bienvenue dans l'élite ApexLabs ! Tu fais partie des premiers à avoir accès à la nouvelle génération d'optimisation humaine. Je te contacterai dès que les portes s'ouvriront. - Achzod",
-        subject: "Bienvenue dans l'élite ApexLabs",
+        html: encodeBase64(welcome.html),
+        text: welcome.text,
+        subject: welcome.subject,
         from: {
           name: "Achzod | ApexLabs",
           email: SENDER_EMAIL,
