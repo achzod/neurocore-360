@@ -36,19 +36,19 @@ export default function DiscoveryScanAds() {
     // Description - NO medical/hormonal terms
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', 'Questionnaire gratuit en 5 minutes. Découvre ton profil performance et reçois un rapport personnalisé. Par APEXLABS.');
+      metaDescription.setAttribute('content', 'Questionnaire gratuit en 5 minutes. Découvre ton profil performance et reçois un rapport détaillé. Par APEXLABS.');
     }
 
     // Keywords - NO medical/hormonal terms
     const metaKeywords = document.querySelector('meta[name="keywords"]');
     if (metaKeywords) {
-      metaKeywords.setAttribute('content', 'questionnaire gratuit, profil performance, rapport personnalisé, coaching, optimisation, apexlabs');
+      metaKeywords.setAttribute('content', 'questionnaire gratuit, profil performance, rapport détaillé, coaching, optimisation, apexlabs');
     }
 
     // Open Graph description - NO medical/hormonal terms
     const ogDescription = document.querySelector('meta[property="og:description"]');
     if (ogDescription) {
-      ogDescription.setAttribute('content', 'Questionnaire gratuit. Découvre ton profil performance et reçois un rapport personnalisé en 24h.');
+      ogDescription.setAttribute('content', 'Questionnaire gratuit. Découvre ton profil performance et reçois un rapport détaillé en 24h.');
     }
 
     // Add noindex meta tag
@@ -157,7 +157,7 @@ export default function DiscoveryScanAds() {
             {/* Subtitle */}
             <p className="text-xl text-white/70 mb-10 leading-relaxed max-w-3xl mx-auto">
               Réponds à 66 questions sur 10 domaines : sommeil, énergie, récupération, entraînement, nutrition, mode de vie.
-              Reçois un rapport personnalisé avec tes points forts et tes axes d'amélioration.
+              Reçois un rapport détaillé avec tes points forts et tes axes d'amélioration.
             </p>
 
             {/* CTA */}
@@ -205,7 +205,7 @@ export default function DiscoveryScanAds() {
               </div>
               <h3 className="text-2xl font-bold text-white mb-4">Reçois ton rapport</h3>
               <p className="text-white/70 leading-relaxed">
-                Un rapport personnalisé de 5-7 pages avec ton score global sur 100 et une analyse détaillée par domaine.
+                Un rapport détaillé de 5-7 pages avec ton score global sur 100 et une analyse détaillée par domaine.
               </p>
             </div>
 
@@ -307,7 +307,7 @@ export default function DiscoveryScanAds() {
               Envie d'aller plus loin ?
             </h2>
             <p className="text-xl text-white/60 max-w-3xl mx-auto">
-              Le questionnaire gratuit te donne ton profil. Mes offres premium te donnent un plan d'action complet et personnalisé.
+              Le questionnaire gratuit te donne ton profil. Mes offres premium te donnent un plan d'action complet, adapté à ton profil.
             </p>
           </div>
 
@@ -327,7 +327,7 @@ export default function DiscoveryScanAds() {
                   "Questionnaire 66 questions",
                   "10 domaines analysés",
                   "Score global sur 100",
-                  "Rapport personnalisé 5-7 pages",
+                  "Rapport détaillé 5-7 pages",
                   "Axes d'amélioration identifiés",
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-white/80">
@@ -353,13 +353,13 @@ export default function DiscoveryScanAds() {
               </div>
               <h3 className="text-3xl font-black text-white mb-2">Rapport Avancé</h3>
               <p className="text-4xl font-black text-white mb-2">59€</p>
-              <p className="text-sm text-white/60 mb-6">💯 100% déduit si tu prends un accompagnement</p>
+              <p className="text-sm text-white/60 mb-6">100 % déduit si tu prends un accompagnement</p>
 
               <ul className="space-y-3 mb-8">
                 {[
                   "Tout le Discovery Scan inclus",
                   "137 questions sur 16 domaines",
-                  "Protocoles d'action personnalisés",
+                  "Protocoles d'action adaptés à ton profil",
                   "Plan d'action 30-60-90 jours",
                   "Rapport de 20+ pages",
                 ].map((item, idx) => (
@@ -386,7 +386,7 @@ export default function DiscoveryScanAds() {
               </div>
               <h3 className="text-3xl font-black text-white mb-2">Rapport Complet</h3>
               <p className="text-4xl font-black text-white mb-2">79€</p>
-              <p className="text-sm text-white/60 mb-6">💯 100% déduit si tu prends un accompagnement</p>
+              <p className="text-sm text-white/60 mb-6">100 % déduit si tu prends un accompagnement</p>
 
               <ul className="space-y-3 mb-8">
                 {[
@@ -418,14 +418,14 @@ export default function DiscoveryScanAds() {
               </div>
               <h3 className="text-3xl font-black text-white mb-2">Analyse Données</h3>
               <p className="text-4xl font-black text-white mb-2">99€</p>
-              <p className="text-sm text-white/60 mb-6">💯 100% déduit si tu prends un accompagnement</p>
+              <p className="text-sm text-white/60 mb-6">100 % déduit si tu prends un accompagnement</p>
 
               <ul className="space-y-3 mb-8">
                 {[
                   "Importe tes données existantes",
                   "50+ indicateurs analysés sur 6 catégories",
                   "Comparaison avec les plages optimales",
-                  "Protocoles de correction personnalisés",
+                  "Protocoles de correction adaptés à ton profil",
                   "Rapport complet avec visuels radar",
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-white/80">
@@ -544,11 +544,11 @@ export default function DiscoveryScanAds() {
               },
               {
                 q: "Que contient le rapport ?",
-                a: "Un score global sur 100, une analyse de tes 10 domaines avec tes points forts et axes d'amélioration, et des recommandations personnalisées.",
+                a: "Un score global sur 100, une analyse de tes 10 domaines avec tes points forts et axes d'amélioration, et des recommandations concrètes.",
               },
               {
                 q: "Qui analyse mes réponses ?",
-                a: "Ton rapport est généré par notre système et vérifié par Achzod, expert certifié avec 12 certifications internationales (NASM, ISSA, Precision Nutrition, etc.).",
+                a: "Ton rapport est vérifié par Achzod, coach avec 12 certifications internationales.",
               },
             ].map((faq, idx) => (
               <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-6">

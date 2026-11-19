@@ -262,11 +262,19 @@ export async function registerRoutes(
     console.error("[Boot] Error ensuring indexes:", err);
   });
 
-  // Redirect root to /apexlabs for prelaunch subdomain
+  // Retired prelaunch page (/apexlabs: old waitlist with a spots counter and
+  // outdated prices). Pages on the prelaunch subdomain go to the main site;
+  // /apexlabs goes to the home page. API routes are left untouched.
   app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api/')) return next();
     const host = req.get('host') || '';
-    if (host.includes('apexlabsprelaunch') && req.path === '/') {
-      return res.redirect(301, '/apexlabs');
+    if (host.includes('apexlabsprelaunch')) {
+      const target = req.path === '/apexlabs' || req.path === '/apexlabs/' ? '/' : req.originalUrl;
+      return res.redirect(301, `https://apexlabs.achzodcoaching.com${target}`);
+    }
+    if (req.path === '/apexlabs' || req.path === '/apexlabs/') {
+      const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+      return res.redirect(301, `/${qs}`);
     }
     next();
   });
