@@ -54,6 +54,7 @@ export async function sendAutomaticReport(): Promise<boolean> {
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
+      signal: AbortSignal.timeout(30_000),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,

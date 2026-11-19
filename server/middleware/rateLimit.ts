@@ -11,11 +11,27 @@ type RateLimitEntry = {
   resetAt: number;
 };
 
+/**
+ * IP client derrière le proxy Render/Cloudflare. "trust proxy" n'est pas activé,
+ * donc req.ip vaut l'IP du proxy et tous les clients partageaient le même compteur.
+ * cf-connecting-ip est posé par Cloudflare (non falsifiable par le client) ;
+ * à défaut, première IP de X-Forwarded-For, puis req.ip.
+ */
+export function clientIpKey(req: Request): string {
+  const cf = req.headers["cf-connecting-ip"];
+  const cfIp = (Array.isArray(cf) ? cf[0] : cf || "").trim();
+  if (cfIp) return cfIp;
+  const xff = req.headers["x-forwarded-for"];
+  const first = (Array.isArray(xff) ? xff[0] : xff || "").split(",")[0]?.trim();
+  if (first) return first;
+  return req.ip || "unknown";
+}
+
 export function createRateLimiter(options: RateLimitOptions) {
   const hits = new Map<string, RateLimitEntry>();
   const windowMs = options.windowMs;
   const max = options.max;
-  const keyGenerator = options.keyGenerator ?? ((req) => req.ip || "unknown");
+  const keyGenerator = options.keyGenerator ?? clientIpKey;
 
   // Proactive cleanup every 5 minutes to prevent memory leaks
   const cleanupInterval = setInterval(() => {
