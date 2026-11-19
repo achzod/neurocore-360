@@ -50,7 +50,7 @@ import {
 } from "./emailService";
 import { loadDiscoveryOfferWindow } from "./discoveryOfferWindow";
 import { discoveryOfferWindowForRecipient } from "./discoveryOfferRecipient";
-import { isEmailSequenceAttempted } from "./emailSequencePolicy";
+import { collectAttemptedSequenceTypes } from "./emailSequencePolicy";
 import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } from "./peptidesPreviewDeliveryQueue";
 import { processPeptidesPreviewFollowups, setPeptidesPreviewFollowupEnabled, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
 import {
@@ -164,6 +164,21 @@ import {
   validateDeliveredReportRepairOverride,
 } from "./peptidesDeliveredReportImmutability";
 import { createRateLimiter } from "./middleware/rateLimit";
+import {
+  buildRecoveryCheckoutPlan,
+  hasPaidSameProduct,
+  isRecoveryLinkValid,
+  readCheckoutRecoveryConfig,
+  runCheckoutRecoveryCycle,
+} from "./checkoutRecovery";
+import {
+  createPgCheckoutRecoveryDeps,
+  getRecoverySequenceByToken,
+  markRecoveryCheckoutCreated,
+  markRecoveryClicked,
+  rowToRecoveryOrder,
+} from "./checkoutRecoveryStore";
+import { sendCheckoutRecoveryEmail } from "./emailService";
 import {
   scrapeArticleFromUrl,
   translateArticleToFrench,
@@ -5873,6 +5888,97 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Stripe checkout error:", error);
       res.status(500).json({ error: "Erreur création session" });
+    }
+  });
+
+  // ==================== RELANCE PAIEMENT ABANDONNE : LIEN DE REPRISE ====================
+  // Lien envoye dans les relances (etape 1 ~1h, etape 2 ~24h). Recree un
+  // checkout du meme produit au meme montant final que la commande abandonnee,
+  // sans nouvelle remise. Si la personne a deja paye, renvoi au tableau de bord.
+  const CHECKOUT_RECOVERY_PROCESS_STARTED_AT = new Date();
+  app.get("/api/checkout/recover/:token", checkoutLimiter, async (req, res) => {
+    const baseUrl = getBaseUrl();
+    const fallback = `${baseUrl}/`;
+    try {
+      const config = readCheckoutRecoveryConfig(process.env, CHECKOUT_RECOVERY_PROCESS_STARTED_AT);
+      const sequence = await getRecoverySequenceByToken(pool, String(req.params.token || ""));
+      if (!sequence) {
+        res.redirect(302, fallback);
+        return;
+      }
+      await markRecoveryClicked(pool, sequence.id).catch((e) => console.error("[CheckoutRecovery] click tracking:", e));
+      const originalRow = (await pool.query(`SELECT * FROM orders WHERE id = $1 LIMIT 1`, [sequence.orderId])).rows[0];
+      if (!originalRow) {
+        res.redirect(302, fallback);
+        return;
+      }
+      const original = rowToRecoveryOrder(originalRow);
+      const history = (await pool.query(
+        `SELECT * FROM orders WHERE LOWER(email) = $1 ORDER BY created_at DESC LIMIT 100`,
+        [sequence.email],
+      )).rows.map(rowToRecoveryOrder);
+      if (hasPaidSameProduct(history, sequence.email, original.productType, sequence.abandonedAt)) {
+        res.redirect(302, `${baseUrl}/dashboard`);
+        return;
+      }
+      const plan = buildRecoveryCheckoutPlan(original, sequence, new Date());
+      if (!isRecoveryLinkValid(sequence, config, new Date())
+        || (original.productType === "PEPTIDES_ENGINE" && PEPTIDES_ENGINE_CHECKOUT_PAUSED)) {
+        res.redirect(302, `${baseUrl}${plan.cancelPath.replace(/\?cancelled=true$/, "")}`);
+        return;
+      }
+
+      const stripe = plan.paymentRail === "klarna" ? getStripeKlarnaClient() : await getUncachableStripeClient();
+      const session = await createCheckoutSessionWithPaymentMethodFallback(
+        stripe,
+        {
+          line_items: [plan.lineItem],
+          mode: "payment",
+          success_url: `${baseUrl}${plan.successPath}`,
+          cancel_url: `${baseUrl}${plan.cancelPath}`,
+          customer_email: plan.orderInput.email,
+          metadata: plan.sessionMetadata,
+        } as any,
+        `CHECKOUT_RECOVERY:${original.productType}:${plan.orderInput.email}`,
+        plan.paymentRail,
+      );
+
+      let newOrderId: string;
+      try {
+        const newOrder = await storage.createOrder({
+          email: plan.orderInput.email,
+          productType: plan.orderInput.productType as ProductTypeEnum,
+          amountCents: plan.orderInput.amountCents,
+          discountCents: plan.orderInput.discountCents,
+          finalAmountCents: plan.orderInput.finalAmountCents,
+          promoCode: plan.orderInput.promoCode,
+          promoCodeId: plan.orderInput.promoCodeId,
+          stripeCheckoutSessionId: session.id,
+          ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+          userAgent: req.headers["user-agent"] || null,
+          metadata: plan.orderInput.metadata,
+        });
+        newOrderId = newOrder.id;
+      } catch (orderErr) {
+        console.error("[CheckoutRecovery] order persist failed, expiring session:", orderErr);
+        await stripe.checkout.sessions.expire(session.id).catch(() => undefined);
+        res.redirect(302, `${baseUrl}${plan.cancelPath}`);
+        return;
+      }
+      await markRecoveryCheckoutCreated(pool, sequence.id, newOrderId).catch(() => undefined);
+
+      // L'ancienne session encore ouverte est fermee pour eviter un double paiement.
+      if (original.status === "pending" && original.stripeCheckoutSessionId) {
+        const originalStripe = (original.metadata as any)?.paymentRail === "klarna"
+          ? getStripeKlarnaClient()
+          : await getUncachableStripeClient();
+        await originalStripe.checkout.sessions.expire(original.stripeCheckoutSessionId).catch(() => undefined);
+      }
+
+      res.redirect(303, String(session.url || fallback));
+    } catch (error) {
+      console.error("[CheckoutRecovery] recover link error:", error);
+      res.redirect(302, fallback);
     }
   });
 
@@ -11698,9 +11804,7 @@ export async function registerRoutes(
           const { eq } = await import("drizzle-orm");
 
           const emailTracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.auditId, audit.id));
-          const trackingTypes = emailTracking
-            .filter(isEmailSequenceAttempted)
-            .map(t => t.emailType);
+          const trackingTypes = Array.from(collectAttemptedSequenceTypes(emailTracking));
 
           // GRATUIT audits: Send upsell email after 2 days
           if (audit.type === "GRATUIT" && daysSinceSent >= 2 && daysSinceSent < 30) {
@@ -16128,6 +16232,16 @@ export async function registerRoutes(
                 }
               }
 
+              // Une désinscription ou une plainte spam côté SendPulse doit aussi
+              // couper les envois marketing chez nous. Avant, elles restaient
+              // uniquement dans email_tracking et les séquences continuaient.
+              if ((eventType === 'spam' || eventType === 'unsubscribe') && normalizedEmail) {
+                await storage.unsubscribeEmail(
+                  normalizedEmail,
+                  eventType === 'spam' ? 'sendpulse_spam_complaint' : 'sendpulse_unsubscribe',
+                ).catch((unsubError: unknown) => console.error("[SendPulseWebhook] unsubscribe persist failed:", unsubError));
+              }
+
               console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail || providerTaskId}`);
               processed++;
             } catch (err) {
@@ -18026,6 +18140,9 @@ export async function registerRoutes(
       const allAudits = await storage.getAllAuditsLight();
       const now = new Date();
       let sent = 0;
+      // Coupe-circuit : avant, seuls les succes etaient plafonnes, un quota
+      // epuise faisait echouer toute la base a chaque cycle de 30 minutes.
+      let failedThisCycle = 0;
 
       for (const audit of allAudits) {
         if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching") || audit.email.includes("achkou")) continue;
@@ -18037,9 +18154,7 @@ export async function registerRoutes(
         const daysSinceSent = (now.getTime() - sentAt.getTime()) / (24 * 60 * 60 * 1000);
 
         const trackingHistory = await storage.getEmailTrackingForAudit(audit.id) || [];
-        const trackingTypes = trackingHistory
-          .filter(isEmailSequenceAttempted)
-          .map((t: any) => t.emailType);
+        const trackingTypes = Array.from(collectAttemptedSequenceTypes(trackingHistory as any[]));
 
         // GRATUIT sequences
         if (audit.type === "GRATUIT") {
@@ -18048,7 +18163,7 @@ export async function registerRoutes(
             // DISCOVERY20 window: 7 days from report_sent_at (same date as the report).
             const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
             const emailSent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
-            if (emailSent) { sent++; if (sent >= 5) break; }
+            if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
           }
           if (daysSinceSent >= 5 && daysSinceSent < 10 && !trackingTypes.includes("sendGratuitJ5Email")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
@@ -18056,7 +18171,7 @@ export async function registerRoutes(
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ5Email", audit.email);
               const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
               const emailSent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
-              if (emailSent) { sent++; if (sent >= 5) break; }
+              if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
             }
           }
           if (daysSinceSent >= 7 && daysSinceSent < 14 && !trackingTypes.includes("sendGratuitJ7Email")) {
@@ -18065,7 +18180,7 @@ export async function registerRoutes(
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ7Email", audit.email);
               const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
               const emailSent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
-              if (emailSent) { sent++; if (sent >= 5) break; }
+              if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
             }
           }
           if (daysSinceSent >= 14 && daysSinceSent < 30 && !trackingTypes.includes("sendDiscoveryJ14CoachingEmail")) {
@@ -18081,7 +18196,7 @@ export async function registerRoutes(
               });
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendDiscoveryJ14CoachingEmail", audit.email);
               const emailSent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, trackingRecord.id, recommendation);
-              if (emailSent) { sent++; if (sent >= 5) break; }
+              if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
             }
           }
           // J+30 nurture , profile-matched coaching formule at the normal price
@@ -18097,7 +18212,7 @@ export async function registerRoutes(
                   scores: (audit.scores as any) ?? null,
                 });
                 const emailSent = await sendDiscoveryJ30NurtureEmail(audit.email, audit.id, baseUrl, trackingRecord.id, recommendation);
-                if (emailSent) { sent++; if (sent >= 5) break; }
+                if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
               } catch (e) {
                 console.error(`[AutoSequence] J30 nurture failed for ${audit.email}:`, e);
               }
@@ -18110,6 +18225,38 @@ export async function registerRoutes(
       console.error("[AutoSequence] Error:", err);
     }
   }, 30 * 60 * 1000).unref(); // Every 30 minutes
+
+  // Relance des paiements abandonnes (etape 1 ~1h, etape 2 ~24h).
+  // Coupee par defaut : CHECKOUT_RECOVERY_ENABLED=1 pour l'activer.
+  // CHECKOUT_RECOVERY_START_AT (ISO) fixe la date a partir de laquelle les
+  // checkouts sont eligibles ; sans elle, c'est le demarrage du process.
+  // Jamais plus de 7 jours en arriere : le stock historique n'est pas touche.
+  let checkoutRecoveryRunning = false;
+  setInterval(async () => {
+    const config = readCheckoutRecoveryConfig(process.env, CHECKOUT_RECOVERY_PROCESS_STARTED_AT);
+    if (!config.enabled || checkoutRecoveryRunning) return;
+    checkoutRecoveryRunning = true;
+    try {
+      if (config.startAtSource === "process_start") {
+        console.warn("[CheckoutRecovery] CHECKOUT_RECOVERY_START_AT absent, seuil = demarrage du process");
+      }
+      const deps = createPgCheckoutRecoveryDeps({
+        pool,
+        baseUrl: getBaseUrl(),
+        isUnsubscribed: (email) => storage.isEmailUnsubscribed(email),
+        createEmailTracking: (auditId, emailType, email) => storage.createEmailTracking(auditId, emailType, email),
+        sendEmail: (input) => sendCheckoutRecoveryEmail(input),
+      });
+      const result = await runCheckoutRecoveryCycle(deps, config, new Date());
+      if (result.sent || result.failed || result.stoppedPaid) {
+        console.log("[CheckoutRecovery] cycle:", result);
+      }
+    } catch (err) {
+      console.error("[CheckoutRecovery] cycle error:", err);
+    } finally {
+      checkoutRecoveryRunning = false;
+    }
+  }, 15 * 60 * 1000).unref();
 
   // Peptides Engine , cycle 2 re-order email at J+60.
   // Runs every 12h, sends at most 20 emails per cycle. Per-email dedup via
