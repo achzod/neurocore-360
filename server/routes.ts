@@ -1,4 +1,5 @@
 import type { Express, Request } from "express";
+import { extractSendPulseEvents } from "./sendpulseWebhookEvents";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
 import { clampAdminLimit, clampAdminOffset, clampInt, ADMIN_MAX_PAGE_SIZE } from "./adminQueryLimits";
@@ -16144,8 +16145,9 @@ export async function registerRoutes(
     try {
       console.log("[SendPulseWebhook] Received webhook:", JSON.stringify(req.body, null, 2));
 
-      // SendPulse sends array of events
-      const events = Array.isArray(req.body) ? req.body : [req.body];
+      // SendPulse sends either a legacy array of flat events or the newer
+      // envelope { "0": {...}, event_type, data: { action, data: [...] } }.
+      const events = extractSendPulseEvents(req.body);
 
       if (events.length === 0) {
         console.log("[SendPulseWebhook] ❌ Empty events array");
