@@ -6,7 +6,7 @@
  * - Exports to Google Sheets for monitoring
  * - Provides analytics for admin dashboard
  *
- * Admin email CC: achkou@gmail.com receives copy of all emails
+ * Admin email: achkou@gmail.com (destinataire des mails admin ; plus de BCC systématique)
  */
 
 import { db } from "./db";

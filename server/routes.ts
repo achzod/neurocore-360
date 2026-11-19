@@ -2845,7 +2845,9 @@ export async function registerRoutes(
       res.json({
         success: true,
         stats,
-        message: dryRun
+        message: stats.disabled
+          ? "Relances Discovery désactivées (DISCOVERY_ABANDON_REMINDERS_ENABLED absent), aucun envoi"
+          : dryRun
           ? `[DRY RUN] ${stats.sent} relances auraient été envoyées`
           : `${stats.sent} relances envoyées avec succès`
       });

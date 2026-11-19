@@ -608,12 +608,14 @@ async function sendEmailWithTracking(
 
     const token = await getAccessToken(trackingData.requestTimeoutMs);
 
-    // Add BCC to admin email unless the admin is already a direct recipient.
-    // Duplicating the same Gmail address in To + BCC makes some SendPulse
-    // payloads fail RFC 5322 validation and would hide critical cost alerts.
-    const shouldBccAdmin = !emailPayload.to.some(
+    // Plus de copie cachée systématique vers l'admin : chaque BCC doublait les
+    // envois comptés par SendPulse et noyait la boîte admin. Les mails admin
+    // partent directement à l'admin (destinataire principal). Le BCC reste
+    // possible en opt-in explicite (bccAdmin: true), jamais par défaut.
+    // Pas de doublon To + BCC : SendPulse rejette ce cas (RFC 5322).
+    const shouldBccAdmin = trackingData.bccAdmin === true && !emailPayload.to.some(
       (recipient) => recipient.email.trim().toLowerCase() === ADMIN_EMAIL_CC.toLowerCase(),
-    ) && trackingData.bccAdmin !== false;
+    );
     const payloadWithBcc = {
       ...emailPayload,
       ...(shouldBccAdmin
@@ -622,7 +624,7 @@ async function sendEmailWithTracking(
     };
 
     console.log(
-      `[SendPulse] Sending ${trackingData.emailType} to ${trackingData.recipientEmail} (BCC: ${shouldBccAdmin ? ADMIN_EMAIL_CC : "none, already direct recipient"})`,
+      `[SendPulse] Sending ${trackingData.emailType} to ${trackingData.recipientEmail} (BCC: ${shouldBccAdmin ? ADMIN_EMAIL_CC : "none"})`,
     );
 
     const sentStartedAt = new Date();

@@ -11,6 +11,9 @@
 
 import { randomBytes } from 'crypto';
 import type { IStorage } from './storage';
+import { isDiscoveryAbandonRemindersEnabled } from './discoveryAbandonRemindersPolicy';
+
+export { isDiscoveryAbandonRemindersEnabled };
 import { sendCTAEmail, SENDER_EMAIL } from './emailService';
 
 const APP_URL = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || 'https://apexlabs.achzodcoaching.com';
@@ -42,6 +45,8 @@ export interface ReminderStats {
   segmentedToSend: ReminderSegment[];
   sent: number;
   failed: number;
+  /** true quand l'envoi est coupé par DISCOVERY_ABANDON_REMINDERS_ENABLED */
+  disabled?: boolean;
 }
 
 // SENDER_EMAIL imported from emailService is used as admin email
@@ -301,6 +306,19 @@ export async function autoSendAbandonmentReminders(
 ): Promise<ReminderStats> {
 
   const { dryRun = false, maxToSend = 50, notifyAdmin = true } = options;
+
+  if (!dryRun && !isDiscoveryAbandonRemindersEnabled()) {
+    console.log('[AbandonmentReminder] Relances Discovery désactivées (DISCOVERY_ABANDON_REMINDERS_ENABLED absent), aucun envoi');
+    return {
+      totalAbandoned: 0,
+      eligibleToSend: 0,
+      alreadyReminded: 0,
+      segmentedToSend: [],
+      sent: 0,
+      failed: 0,
+      disabled: true,
+    };
+  }
 
   console.log('\n=== DÉBUT AUTO-SEND ABANDONMENT REMINDERS ===');
   console.log(`Mode: ${dryRun ? 'DRY RUN' : 'PRODUCTION'}`);
