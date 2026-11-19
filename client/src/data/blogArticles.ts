@@ -38205,7 +38205,7 @@ const BLOG_CATEGORY_OVERRIDES: Record<string, string> = {
   "yam-how-to-deal-with-psychophysical-work-nd-emotional": "supplements",
   "yam-is-there--best-training-for-hypertrophy-volume-vs": "musculation",
   "yam-shoulder-training-the-5-best-exercises-for-deltoid": "musculation",
-  "yam-the-new-era-of-supplements-mcu-20-achzod-748": "supplements",
+  "la-microencapsulation-dans-les-complements-alimentaires": "supplements",
   "yam-triathlon-how-to-train-practical-tips-to-get-start": "performance",
   "erreurs-courantes-liees-aux-supplements": "supplements",
   "calendrier-des-nutriments": "nutrition",

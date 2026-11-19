@@ -370,7 +370,7 @@ Pour choisir un complément de probiotiques parmi tous ceux proposés en pharmac
   },
   {
     id: `yam-7`,
-    slug: `yam-the-new-era-of-supplements-mcu-20-achzod-748`,
+    slug: `la-microencapsulation-dans-les-complements-alimentaires`,
     title: "La microencapsulation dans les compléments alimentaires",
     excerpt: "La microencapsulation vise à améliorer la solubilité, la stabilité et l'absorption des actifs des compléments, comme les acides aminés ou la créatine. Origines, principe et limites.",
     content: `# La microencapsulation dans les compléments alimentaires

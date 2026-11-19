@@ -26,7 +26,9 @@ export const BLOG_ARTICLE_REDIRECTS = {
   "excentriques-et-croissance": "excentriques-croissance-musculaire",
   "entrainement-malade": "entrainement-pendant-la-maladie",
   "yam-the-new-era-of-supplements-mcu-20-ACHZOD-748":
-    "yam-the-new-era-of-supplements-mcu-20-achzod-748",
+    "la-microencapsulation-dans-les-complements-alimentaires",
+  "yam-the-new-era-of-supplements-mcu-20-achzod-748":
+    "la-microencapsulation-dans-les-complements-alimentaires",
 } as const;
 
 export const BLOG_REDIRECT_SLUGS = new Set<string>(
@@ -43,7 +45,7 @@ export const BLOG_INDEXATION_PRIORITY_SLUGS = [
   "sarms-vs-steroides-comparatif",
   "stack-sarms-seche-cutting",
   "techniques-intensification-guide",
-  "yam-the-new-era-of-supplements-mcu-20-achzod-748",
+  "la-microencapsulation-dans-les-complements-alimentaires",
 ] as const;
 
 export const BLOG_CATEGORY_SLUGS = [

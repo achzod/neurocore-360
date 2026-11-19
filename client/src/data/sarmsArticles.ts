@@ -1314,14 +1314,16 @@ La Cardarine a des effets bénéfiques documentés sur les lipides sanguins :
 
 Ces effets sont particulièrement intéressants pour les utilisateurs de SARMs ou de stéroïdes anabolisants, dont les profils lipidiques sont souvent altérés.
 
-### Protection cardiovasculaire
+### Effets cardiovasculaires : des données précliniques seulement
 
-Des études précliniques suggèrent des effets cardioprotecteurs :
+Des études précliniques, sur cellules et chez l'animal, ont observé des effets sur :
 
-- Réduction du stress oxydatif
-- Amélioration de la fonction endothéliale
-- Réduction de l'inflammation vasculaire
-- Protection contre l'athérosclérose
+- Le stress oxydatif
+- La fonction endothéliale
+- L'inflammation vasculaire
+- L'athérosclérose dans certains modèles animaux
+
+Ces résultats n'ont pas été confirmés chez l'humain. Ils ne permettent pas de dire que la Cardarine est bénéfique ou sûre pour le cœur et les vaisseaux.
 
 ---
 
@@ -1434,7 +1436,7 @@ Oui, la Cardarine est interdite par l'AMA et détectable. Elle a été ajoutée 
 Les données de sécurité à long terme sont limitées. Il est recommandé de faire des pauses entre les cycles et de ne pas dépasser 12 semaines consécutives.
 
 **La Cardarine convient-elle aux femmes ?**
-Oui, la Cardarine est bien tolérée par les femmes aux mêmes dosages que les hommes, sans risque de virilisation.
+La Cardarine n'agit pas sur les récepteurs aux androgènes, elle n'a donc pas d'effet virilisant connu. Cela ne veut pas dire qu'elle est sûre : les données de sécurité chez l'humain restent limitées, chez les femmes comme chez les hommes.
 
 **La Cardarine peut-elle être combinée avec des stéroïdes anabolisants ?**
 Oui, elle est souvent utilisée pour améliorer le profil lipidique altéré par les stéroïdes et pour améliorer l'endurance cardiovasculaire.
@@ -3126,7 +3128,7 @@ Le mécanisme moléculaire comprend :
 3. **Recrutement sélectif de corégulateurs** : le complexe S4-AR recrute des coactivateurs spécifiques selon le tissu
 4. **Transcription sélective des gènes** : activation de gènes anaboliques dans le muscle, avec une activation minimale dans la prostate
 
-Le ratio anabolique/androgénique de l'Andarine est estimé entre 3:1 et 10:1 selon les études et les sources, ce qui la place parmi les SARMs moyennement puissants mais assez sélectifs. Pour comparaison, la testostérone a un ratio de 1:1, alors que certains stéroïdes anabolisants comme la trenbolone atteignent des ratios théoriques de 500:500.
+Le ratio anabolique/androgénique de l'Andarine est estimé entre 3:1 et 10:1 selon les études et les sources, ce qui la place parmi les SARMs moyennement puissants mais assez sélectifs. Pour comparaison, la testostérone a un ratio de 1:1.
 
 ### Pharmacocinétique
 
