@@ -134,6 +134,32 @@ export function trackDiscoveryFunnelStep(step: DiscoveryFunnelStep) {
   }
 }
 
+// discovery_offer_click: click on the single offer recommended at the end of
+// a Discovery report (and its sticky bar). Only the offer id, the rule's reason
+// code and the placement are sent: no email, no answers, no score.
+export type DiscoveryOfferClickPlacement = 'report_offer' | 'report_sticky' | 'report_other_formulas';
+
+export function trackDiscoveryOfferClick(
+  offerId: string,
+  reason: string,
+  placement: DiscoveryOfferClickPlacement,
+  destination: string,
+) {
+  if (typeof window === 'undefined') return;
+  try {
+    gtag('event', placement === 'report_other_formulas' ? 'discovery_other_offers_click' : 'discovery_offer_click', {
+      funnel_name: 'discovery_scan',
+      offer_id: offerId,
+      offer_reason: reason,
+      placement,
+      link_url: destination,
+      page_path: window.location.pathname,
+    });
+  } catch {
+    // Analytics must never block the offer link.
+  }
+}
+
 // discovery_start: first view of the free questionnaire, once per browser
 // session so a reload or a back/forward does not inflate the funnel.
 export function trackDiscoveryStartOnce(): boolean {

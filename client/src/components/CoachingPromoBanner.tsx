@@ -103,6 +103,8 @@ interface CoachingPromoBannerProps {
   className?: string;
   /** If true, allow the user to dismiss the banner via local-storage flag. */
   dismissible?: boolean;
+  /** False on the Discovery report: its single recommended offer lives in the page. */
+  showFormules?: boolean;
 }
 
 // Sticky promo code banner at the top of a report page.
@@ -113,6 +115,7 @@ export function CoachingPromoBanner({
   peptidesTier,
   className = "",
   dismissible = true,
+  showFormules = true,
 }: CoachingPromoBannerProps) {
   const storageKey = `apexlabs_coaching_banner_dismissed_${auditType}`;
   const [dismissed, setDismissed] = useState<boolean>(() => {
@@ -194,7 +197,7 @@ export function CoachingPromoBanner({
               <MessageCircle className="h-3.5 w-3.5" />
               Avis WhatsApp
             </a>
-            {promo.recommendedFormules.map((f) => (
+            {showFormules && promo.recommendedFormules.map((f) => (
               <a
                 key={f.name}
                 href={f.href}

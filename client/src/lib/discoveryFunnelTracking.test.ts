@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { isDiscoveryQuestionnaireHref, trackDiscoveryFunnelStep, trackDiscoveryStartOnce } from "./analytics";
+import { isDiscoveryQuestionnaireHref, trackDiscoveryFunnelStep, trackDiscoveryOfferClick, trackDiscoveryStartOnce } from "./analytics";
 
 const origin = "https://apexlabs.achzodcoaching.com";
 
@@ -67,6 +67,43 @@ test("discovery_start and discovery_complete are sent with the funnel name", () 
     trackDiscoveryFunnelStep("discovery_complete");
     assert.deepEqual(events.map((e) => e[1]), ["discovery_start", "discovery_complete"]);
     assert.deepEqual(events[0][2], { funnel_name: "discovery_scan", page_path: "/questionnaire" });
+  } finally {
+    if (previousWindow === undefined) delete (globalThis as any).window;
+    else (globalThis as any).window = previousWindow;
+  }
+});
+
+test("discovery_offer_click carries the recommended offer, never personal data", () => {
+  const previousWindow = (globalThis as any).window;
+  const events: unknown[][] = [];
+  try {
+    (globalThis as any).window = {
+      localStorage: { getItem: () => null },
+      location: { pathname: "/scan/abc" },
+      gtag: (...args: unknown[]) => events.push(args),
+    };
+    trackDiscoveryOfferClick("elite", "plusieurs_axes", "report_offer", "/go/coaching?tier=ELITE");
+    trackDiscoveryOfferClick("elite", "plusieurs_axes", "report_other_formulas", "/go/coaching");
+    assert.deepEqual(events, [
+      ["event", "discovery_offer_click", {
+        funnel_name: "discovery_scan",
+        offer_id: "elite",
+        offer_reason: "plusieurs_axes",
+        placement: "report_offer",
+        link_url: "/go/coaching?tier=ELITE",
+        page_path: "/scan/abc",
+      }],
+      ["event", "discovery_other_offers_click", {
+        funnel_name: "discovery_scan",
+        offer_id: "elite",
+        offer_reason: "plusieurs_axes",
+        placement: "report_other_formulas",
+        link_url: "/go/coaching",
+        page_path: "/scan/abc",
+      }],
+    ]);
+    (globalThis as any).window.gtag = () => { throw new Error("gtag blocked"); };
+    assert.doesNotThrow(() => trackDiscoveryOfferClick("essential", "bases_a_structurer", "report_sticky", "/x"));
   } finally {
     if (previousWindow === undefined) delete (globalThis as any).window;
     else (globalThis as any).window = previousWindow;

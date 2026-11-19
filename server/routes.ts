@@ -15,6 +15,7 @@ import { createCheckoutSessionWithPaymentMethodFallback } from "./stripeCheckout
 import { createProductCheckoutLineItem, usesInlineCheckoutLineItem } from "./stripeCheckoutProducts";
 import { validatePeptidesEngineResponses, validatePeptidesProfileConfirmation } from "./peptidesEngineQuestionnaire";
 import { isLikelyDeliverableEmail, suggestedEmailCorrection } from "@shared/emailAddressPolicy";
+import { recommendDiscoveryOfferForReport } from "@shared/discoveryOfferRecommendation";
 import { hasValidPeptidesConsent } from "./peptidesConsent";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
@@ -809,8 +810,27 @@ export async function registerRoutes(
       }
     }
 
+    // Discovery: the email recommends the same single offer as the report page.
+    // Read-only lookup; any failure falls back to the previous coaching block.
+    let discoveryRecommendation: ReturnType<typeof recommendDiscoveryOfferForReport> | null = null;
+    if (auditType === "GRATUIT") {
+      try {
+        const offerAudit = await storage.getAudit(auditId);
+        let offerReport = offerAudit?.narrativeReport as any;
+        const offerTxt = String((offerAudit as any)?.reportTxt || "").trim();
+        if ((!offerReport || !Array.isArray(offerReport.metrics)) && offerTxt) {
+          offerReport = parseStoredDiscoveryTxt(offerTxt);
+        }
+        discoveryRecommendation = offerReport
+          ? recommendDiscoveryOfferForReport(offerReport, (offerAudit as any)?.responses as Record<string, unknown> | null)
+          : null;
+      } catch (err) {
+        console.warn(`${prefix} ⚠️ Discovery offer recommendation unavailable for audit ${auditId}:`, err);
+      }
+    }
+
     try {
-      const ok = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
+      const ok = await sendReportReadyEmail(email, auditId, auditType, baseUrl, discoveryRecommendation);
       await storage.finalizeAuditSend(auditId, ok);
       if (ok) {
         console.log(`${prefix} ✅ Email accepted by SendPulse for audit ${auditId} to ${email}`);
@@ -12505,6 +12525,12 @@ export async function registerRoutes(
         photoAnalysis: fallbackReport?.photoAnalysis || null,
         auditType: "GRATUIT",
       });
+      // One recommended offer per report, computed from the stored scores and
+      // the questionnaire answers (only the offer id and reason code leave the server).
+      const withOfferRecommendation = <T extends Record<string, any>>(payload: T) => ({
+        ...payload,
+        offerRecommendation: recommendDiscoveryOfferForReport(payload, audit.responses as Record<string, unknown> | null),
+      });
       const isGenerating = audit.reportDeliveryStatus === "GENERATING";
 
       // The audit creation time says nothing about the age of the current GPT
@@ -12557,15 +12583,15 @@ export async function registerRoutes(
       if (existingReport && !invalidReport) {
         if (storedTxt.length < 500 || storedHtml.length < 1000 || !audit.reportGeneratedAt) {
           const hydratedAssets = buildDiscoveryReportAssets(existingReport);
-          res.json({
+          res.json(withOfferRecommendation({
             ...existingReport,
             txt: hydratedAssets.txt,
             html: hydratedAssets.html,
             generatedAt: existingReport.generatedAt || audit.reportGeneratedAt || new Date().toISOString(),
-          });
+          }));
           return;
         }
-        res.json(existingReport);
+        res.json(withOfferRecommendation(existingReport));
         return;
       }
 
@@ -12574,17 +12600,17 @@ export async function registerRoutes(
           const storedDiscoveryReport = parseStoredDiscoveryTxt(storedTxt);
           if (storedDiscoveryReport && storedDiscoveryReport.sections.length >= 4) {
             const fallbackHtml = storedHtml || buildDiscoveryReportHtml(storedDiscoveryReport);
-            res.json({
+            res.json(withOfferRecommendation({
               ...storedDiscoveryReport,
               txt: storedTxt,
               html: fallbackHtml,
               auditType: "GRATUIT",
-            });
+            }));
             return;
           }
           const dashboard = formatTxtToDashboard(storedTxt);
           if (dashboard.sections.length >= 4) {
-            res.json(mapDashboardToDiscoveryReport(dashboard, existingReport));
+            res.json(withOfferRecommendation(mapDashboardToDiscoveryReport(dashboard, existingReport)));
             return;
           }
         } catch (parseError) {

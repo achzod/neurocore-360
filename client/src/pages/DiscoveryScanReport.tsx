@@ -7,16 +7,16 @@ import { MetricsRadar, ProjectionChart } from '@/components/ultrahuman/Charts';
 import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
 import { Theme, ReportData } from '@/components/ultrahuman/types';
 import { Button } from '@/components/ui/button';
+import { SocialProofBlock } from '@/components/UpgradeComponents';
 import {
-  UpgradeHero,
-  ComparisonTable,
-  SocialProofBlock,
-  UpgradeTeaser,
-  SmartRecommendation,
-  StickyCTA,
-  FinalCTA
-} from '@/components/UpgradeComponents';
-import { ExitIntentPopup } from '@/components/ExitIntentPopup';
+  DiscoveryOfferStickyBar,
+  DiscoveryRecommendedOffer,
+  buildDiscoveryOfferView,
+} from '@/components/DiscoveryRecommendedOffer';
+import {
+  parseDiscoveryOfferRecommendation,
+  recommendDiscoveryOffer,
+} from '@shared/discoveryOfferRecommendation';
 import { CoachingPromoBanner } from '@/components/CoachingPromoBanner';
 import type { ReviewModerationStatus } from '@/components/coachingPromoPolicy';
 import { DiscoveryWhatsAppLink } from '@/components/DiscoveryWhatsAppCTA';
@@ -80,6 +80,10 @@ const getScoreStatus = (value: number) => {
   return { label: 'PRIORITÉ', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
 };
 
+// Sections that used to carry several offers (v3 "offre", v1/v2 "scans" and
+// "coaching"). They are replaced by the single recommended offer block.
+const MULTI_OFFER_SECTION_IDS = new Set(['offre', 'scans', 'coaching']);
+
 const stripCitationHtml = (html: string): string => {
   if (!html) return html;
   return html
@@ -131,6 +135,20 @@ const DiscoveryScanReport: React.FC = () => {
   const displayGlobalScore = reportData
     ? Math.round(Math.max(1, Math.min(10, normalizedGlobalScore)) * 10) / 10
     : 0;
+  const reportSections = (reportData?.sections ?? []).filter(section => !MULTI_OFFER_SECTION_IDS.has(section.id));
+  // One offer only: the server picks it from the full questionnaire; without
+  // it, the same rule runs on the scores (it then never picks Peptides Engine).
+  const offerView = reportData
+    ? buildDiscoveryOfferView(
+        parseDiscoveryOfferRecommendation((reportData as any).offerRecommendation)
+          ?? recommendDiscoveryOffer({
+            globalScore: displayGlobalScore,
+            metrics: displayMetrics,
+            strictEatingSafety: (reportData as any)?.generationQuality?.safety?.strictEatingSafety === true,
+          }),
+        reportData.generatedAt,
+      )
+    : null;
 
   // Review form state
   const [reviewRating, setReviewRating] = useState<number>(0);
@@ -261,12 +279,12 @@ const DiscoveryScanReport: React.FC = () => {
       setShowStickyCTA(progress > 30);
 
       // Scroll spy
-      const headings = reportData.sections.map(s => document.getElementById(s.id));
+      const headings = reportSections.map(s => document.getElementById(s.id));
       const scrollPos = container.scrollTop + 300;
       for (let i = headings.length - 1; i >= 0; i--) {
         const heading = headings[i];
         if (heading && heading.offsetTop <= scrollPos) {
-          setActiveSection(reportData.sections[i].id);
+          setActiveSection(reportSections[i].id);
           break;
         }
       }
@@ -390,11 +408,11 @@ const DiscoveryScanReport: React.FC = () => {
 
   const navigateChapter = (direction: 'next' | 'prev') => {
     if (!reportData) return;
-    const currentIndex = reportData.sections.findIndex(s => s.id === activeSection);
+    const currentIndex = reportSections.findIndex(s => s.id === activeSection);
     let nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
     if (nextIndex < 0) nextIndex = 0;
-    if (nextIndex >= reportData.sections.length) nextIndex = reportData.sections.length - 1;
-    scrollToSection(reportData.sections[nextIndex].id);
+    if (nextIndex >= reportSections.length) nextIndex = reportSections.length - 1;
+    scrollToSection(reportSections[nextIndex].id);
   };
 
   // Loading state
@@ -506,7 +524,7 @@ const DiscoveryScanReport: React.FC = () => {
       <aside className={`fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} border-r flex flex-col`}
         style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
         <Sidebar
-          sections={reportData.sections}
+          sections={reportSections}
           activeSection={activeSection}
           onNavigate={scrollToSection}
           themes={THEMES}
@@ -590,6 +608,7 @@ const DiscoveryScanReport: React.FC = () => {
               auditType="GRATUIT"
               reviewStatus={reviewStatus}
               promoCode={reviewPromoCode}
+              showFormules={false}
               className="-mx-6 lg:-mx-12"
             />
           </div>
@@ -706,18 +725,11 @@ const DiscoveryScanReport: React.FC = () => {
             </section>
           </div>
 
-          {/* Upgrade Hero - CTA top */}
-          <UpgradeHero
-            theme={currentTheme}
-            metrics={reportData.metrics}
-            globalScore={displayGlobalScore}
-          />
-
           {/* Content Sections */}
           <div className="space-y-0 relative">
             <div className="absolute left-0 lg:left-[240px] top-0 bottom-0 w-[1px] hidden lg:block" style={{ backgroundColor: 'var(--color-border)' }}></div>
 
-            {reportData.sections.map((section, idx) => (
+            {reportSections.map((section, idx) => (
               <React.Fragment key={section.id}>
                 <section id={section.id} className="scroll-mt-32 group relative pb-24 lg:pb-32">
                   <div className="flex flex-col lg:flex-row gap-8 lg:gap-24">
@@ -774,23 +786,6 @@ const DiscoveryScanReport: React.FC = () => {
                   />
                 )}
 
-                {idx === 2 && !isCoachReport && (
-                  <UpgradeTeaser
-                    theme={currentTheme}
-                    title="Tu veux approfondir ces axes ?"
-                    description="Le Discovery donne une première lecture. Un scan avancé permet d'ajouter des données avant de choisir une stratégie détaillée."
-                    features={[
-                      'Analyse posturale 3D (upload 3 photos)',
-                      'Analyse HRV & récupération avancée',
-                      'Protocoles matin et soir sur mesure',
-                      'Stack Suppléments basé sur TES données exactes',
-                      "Plan d'action 30-60-90 jours avec milestones",
-                      'Dashboard temps réel à vie'
-                    ]}
-                    context="energy"
-                  />
-                )}
-
                 {idx === 4 && (
                   <SocialProofBlock
                     theme={currentTheme}
@@ -800,33 +795,14 @@ const DiscoveryScanReport: React.FC = () => {
                   />
                 )}
 
-                {idx === 5 && !isCoachReport && (
-                  <UpgradeTeaser
-                    theme={currentTheme}
-                    title="Ce que Discovery ne peut PAS analyser"
-                    description="Ces données avancées sont réservées à Ultimate Scan pour garantir la précision maximale."
-                    features={[
-                      'Ton HRV réel (récupération jour par jour)',
-                      'Tes cycles de sommeil profond',
-                      'Ta posture exacte (asymétries, compensations)',
-                      'Ton niveau de stress en temps réel',
-                      'Ta composition corporelle précise'
-                    ]}
-                    context="training"
-                  />
-                )}
               </React.Fragment>
             ))}
           </div>
 
-          {/* Smart Recommendation - personalized scan suggestion. v3 reports
-              already carry a personalised offer section, so it is skipped. */}
-          {!isCoachReport && (
-            <SmartRecommendation
-              theme={currentTheme}
-              metrics={reportData.metrics}
-              globalScore={displayGlobalScore}
-            />
+          {/* One recommended offer, chosen from the client's profile. The other
+              offers sit behind a discreet "Voir les autres formules" link. */}
+          {offerView && (
+            <DiscoveryRecommendedOffer theme={currentTheme} view={offerView} clientName={displayName} />
           )}
 
           {/* Review Section */}
@@ -956,11 +932,6 @@ const DiscoveryScanReport: React.FC = () => {
             </div>
           </section>
 
-          {/* Comparison Table */}
-          <ComparisonTable theme={currentTheme} />
-
-          {/* Final CTA with urgency/timer */}
-          <FinalCTA theme={currentTheme} />
 
           {/* Footer */}
           <footer className="py-24 flex flex-col md:flex-row justify-between items-start gap-8" style={{ borderTop: `1px solid var(--color-border)` }}>
@@ -979,11 +950,10 @@ const DiscoveryScanReport: React.FC = () => {
         </div>
       </main>
 
-      {/* Sticky CTA */}
-      <StickyCTA theme={currentTheme} show={showStickyCTA} clientName={displayName} />
-
-      {/* Exit Intent Popup */}
-      <ExitIntentPopup theme={currentTheme} userName={displayName} />
+      {/* Sticky CTA: same single recommended offer */}
+      {offerView && (
+        <DiscoveryOfferStickyBar theme={currentTheme} view={offerView} show={showStickyCTA} clientName={displayName} />
+      )}
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
