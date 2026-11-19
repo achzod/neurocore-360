@@ -35799,6 +35799,3095 @@ Vous préférez commencer par un état des lieux ? Le [Discovery Scan](/offers/d
 *Cet article est informatif et ne remplace pas un avis médical ou un suivi individualisé. Les repères chiffrés sont tirés des études citées et s'appliquent à des adultes en bonne santé.*
 `,
   },
+  {  id: "149",
+    slug: "biomecanique-musculation-guide-complet",
+    title: "Biomécanique en musculation : le guide complet pour comprendre ce qui fait vraiment travailler vos muscles",
+    seoTitle: "Biomécanique en musculation : le guide complet | APEXLABS",
+    excerpt: "Moment de force, courbe de résistance, position allongée, morphologie : le guide pilier pour comprendre ce qui fait vraiment travailler vos muscles et corriger votre technique.",
+    metaDescription: "Biomécanique en musculation : bras de levier, courbe de résistance, longueur musculaire, morphologie et erreurs d'exécution qui volent votre stimulus.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "19 min",
+    image: "/images/blog/biomecanique-musculation-guide-complet/biomecanique-musculation-hero.webp",
+    content: `# Biomécanique en musculation : le guide complet pour comprendre ce qui fait vraiment travailler vos muscles
+
+## Introduction : la charge ne dit pas tout, la position dit le reste
+
+Deux pratiquants font 4 séries de 10 au même curl, avec le même haltère. Le premier laisse le coude glisser vers l'avant à chaque répétition et remonte la charge avec un coup d'épaule. Le second garde le bras fixe et contrôle la descente jusqu'à l'extension. Sur le carnet, les séances sont identiques. Pour le biceps, ce ne sont pas du tout les mêmes séances.
+
+C'est tout le sujet de la biomécanique en musculation : la charge inscrite sur la barre n'est qu'une partie de l'équation. Ce que votre muscle subit dépend de la distance entre l'articulation et la charge, de l'angle auquel vous êtes le plus chargé et de la longueur du muscle à ce moment-là. Changez un de ces paramètres et vous changez le stimulus, parfois plus qu'en ajoutant 10 kg.
+
+Ce guide est l'article pilier d'une série de dix consacrée à la technique et aux erreurs d'exécution : la seule formule de mécanique à connaître, la courbe de résistance, les études récentes sur l'entraînement en position allongée, les limites de l'EMG, le poids de votre morphologie, et un tableau des erreurs les plus coûteuses avec leur correction.
+
+> **L'essentiel en 30 secondes**
+>
+> - **Moment de force = force × bras de levier.** Le bras de levier est la distance horizontale entre l'articulation et la ligne d'action de la charge. C'est lui qui décide de l'effort demandé à chaque muscle.
+> - Bloquer les genoux derrière les orteils au squat fait passer le moment à la hanche de **28 à 303 N·m** dans l'étude de Fry (2003). Un détail technique déplace la charge d'une articulation à l'autre.
+> - Chaque exercice a une **courbe de résistance** : un curl à l'haltère est dur à 90°, presque sans effort en bas et en haut.
+> - Entraîner un muscle **en position allongée** donne souvent plus d'hypertrophie : **+14 % contre +9 %** pour les ischio-jambiers (Maeo, 2021), **+19,9 % contre +13,9 %** pour le triceps (Maeo, 2023).
+> - Une activation EMG plus forte **ne prédit pas** à elle seule plus de croissance : le hip thrust active davantage les fessiers que le squat, pour une hypertrophie similaire (Plotkin, 2023).
+> - Il n'existe pas de technique universelle : la longueur de vos segments impose une partie de vos angles.
+
+---
+
+## Pourquoi la biomécanique en musculation décide du stimulus
+
+### Le muscle ne lit pas les kilos, il lit la tension
+
+L'hypertrophie repose d'abord sur la **tension mécanique** : la force que les fibres développent pendant qu'elles travaillent contre une résistance (Schoenfeld, 2010). Le stress métabolique et les dommages musculaires jouent un rôle secondaire et plus discuté. Or la tension qu'un muscle doit produire ne dépend pas seulement de la charge. Elle dépend du **moment** que cette charge crée autour de l'articulation que le muscle fait bouger.
+
+Si vous déplacez la charge plus près de l'articulation, le moment baisse et le muscle travaille moins, même avec plus de poids. Si vous l'éloignez, le moment monte. C'est pour ça qu'un squat avec un buste très incliné charge davantage les extenseurs de hanche et le dos, et qu'un squat plus droit charge davantage les quadriceps (Glassbrook, 2017).
+
+### La technique répartit la charge entre les articulations
+
+Une barre de 100 kg ne pèse pas « sur les jambes ». Elle crée un moment au genou, un autre à la hanche, un autre au bas du dos. Votre technique décide de la part de chacun. Un exemple chiffré :
+
+- dans l'étude de **Fry et al. (2003)**, 7 hommes entraînés ont fait des squats parallèles avec une charge égale à leur poids de corps, genoux libres ou bloqués par une barrière en bois devant les orteils
+- genoux libres : **150 N·m au genou, 28 N·m à la hanche** au point bas
+- genoux bloqués : **117 N·m au genou, 303 N·m à la hanche**, avec un buste et un tibia plus inclinés
+
+Vous croyez protéger vos genoux, vous multipliez la demande sur la hanche et le bas du dos. L'échantillon est minuscule, mais le résultat a été retrouvé sur 20 sujets avec une capture 3D (Lorenzetti, 2012). C'est la logique de toute cette série : chaque consigne technique a un coût quelque part.
+
+---
+
+## Moment de force et bras de levier : la seule formule à retenir
+
+![Schéma du moment de force au curl : bras tendu, avant-bras horizontal et fin de mouvement, avec le bras de levier horizontal entre le coude et l'haltère, faible, maximal puis réduit](/images/blog/biomecanique-musculation-guide-complet/biomecanique-moment-de-force-schema.webp)
+
+### La formule
+
+**Moment = force × bras de levier.** En musculation, la force est presque toujours le poids de la charge, qui agit verticalement vers le bas (la gravité). Le bras de levier est la **distance horizontale** entre l'axe de l'articulation et la verticale qui passe par la charge. Pas la longueur de l'avant-bras ou du fémur : la distance horizontale, mesurée à chaque instant.
+
+Avec un haltère de 15 kg (environ 147 N) tenu à 30 cm du coude :
+
+- avant-bras horizontal : bras de levier de 0,30 m, moment de **44 N·m**
+- avant-bras à 45° sous l'horizontale : bras de levier d'environ 0,21 m, moment de **31 N·m**
+- bras tendu le long du corps : bras de levier quasi nul, moment proche de **0**
+
+Même haltère, même muscle, trois efforts très différents. C'est ce que vous sentez quand un curl devient facile en haut : la charge n'a pas changé, le bras de levier a fondu.
+
+### Moment externe contre moment interne
+
+Face au moment externe créé par la charge, votre muscle produit un **moment interne** : sa force multipliée par son propre bras de levier, c'est-à-dire la distance entre son tendon et l'axe de l'articulation. Ce bras de levier interne est court, quelques centimètres seulement. Le muscle doit donc produire une force bien supérieure au poids soulevé. C'est aussi pour ça que deux personnes ne sont pas égales devant un exercice : l'insertion du tendon et la longueur des os changent ces deux bras de levier.
+
+### Les outils changent les moments, pas seulement le confort
+
+La barre hexagonale est un bon exemple. Dans l'étude de **Swinton et al. (2011)**, 19 powerlifters ont soulevé plus lourd avec une barre hexagonale qu'avec une barre droite (**265 kg contre 245 kg** de 1RM), avec des moments maximaux **plus faibles au niveau lombaire, à la hanche et à la cheville**, et **plus élevés au genou**. Les jambes se placent dans le cadre, la charge passe au milieu du corps, et le travail se redistribue. Ce n'est ni mieux ni moins bien en soi : c'est un autre exercice.
+
+---
+
+## Courbe de résistance : pourquoi un exercice est dur à un endroit précis
+
+![Courbe de résistance schématique de trois curls selon l'angle du coude : curl debout à l'haltère dur à 90 degrés, curl pupitre dur au début quand le biceps est allongé, curl à la poulie basse au profil plus régulier](/images/blog/biomecanique-musculation-guide-complet/biomecanique-courbe-de-resistance-schema.webp)
+
+### Définition
+
+La **courbe de résistance** décrit comment le moment imposé par l'exercice varie le long de l'amplitude. Avec des poids libres, elle suit la géométrie : la difficulté est maximale quand le segment qui porte la charge est horizontal. Avec une poulie, elle dépend de l'angle entre le câble et le segment. Avec une machine à came, le constructeur la dessine. Avec un élastique, la résistance augmente à mesure qu'il s'étire, donc en fin de mouvement.
+
+### Le problème : votre muscle a son propre profil de force
+
+Un muscle ne produit pas la même force à toutes les longueurs. C'est la **relation longueur-tension** : la force est maximale à une longueur intermédiaire, plus faible quand le muscle est très raccourci ou très étiré. À cela s'ajoute la variation de son bras de levier interne selon l'angle. Résultat : chaque articulation a un **profil de force** propre, et chaque exercice une courbe de résistance propre. Quand les deux ne collent pas, l'exercice est limité par sa portion la plus dure, et le reste de l'amplitude est sous-chargé.
+
+### Ce que ça change en pratique
+
+- Un **curl debout à l'haltère** sollicite fort le biceps à mi-parcours, peu en position allongée.
+- Un **curl pupitre** ou un **curl incliné** déplace la difficulté vers l'extension, là où le biceps est long.
+- Une **poulie** permet de choisir l'angle de traction, donc l'endroit de l'amplitude où le muscle est le plus chargé.
+- Un **élastique** surcharge la fin du mouvement, utile pour certains exercices, inutile pour d'autres.
+
+Je détaille ces choix muscle par muscle (pectoraux, biceps, fessiers, deltoïdes latéraux) dans l'article [courbe de résistance : choisir ses exercices](/blog/courbe-de-resistance-choisir-exercices).
+
+> **Vous ne savez pas où votre exécution perd le stimulus ?**
+>
+> Avec FormCheck, vous filmez votre série, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : vos erreurs, leur cause mécanique et les corrections à faire, établis selon ma grille d'analyse. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Faire analyser ma technique avec FormCheck](/offers/formcheck)
+
+---
+
+## Longueur musculaire : l'argument le plus solide des cinq dernières années
+
+![Graphique des gains musculaires en position allongée contre position raccourcie : ischio-jambiers +14 % contre +9 %, triceps +19,9 % contre +13,9 %, gastrocnémien médial +15,2 % contre +6,7 %, biceps +8,9 % contre +3,4 %](/images/blog/biomecanique-musculation-guide-complet/biomecanique-longueur-musculaire-schema.webp)
+
+### Ce que montrent les essais
+
+Une série d'essais randomisés compare le même muscle entraîné à des longueurs différentes. Le signal va presque toujours dans le même sens :
+
+- **Maeo et al. (2021)**, 20 adultes, 12 semaines, une jambe au leg curl assis (ischio-jambiers étirés par la flexion de hanche), l'autre au leg curl allongé : volume des ischio-jambiers **+14 % contre +9 %**. La différence porte sur les ischio-jambiers biarticulaires, pas sur la courte portion du biceps fémoral.
+- **Maeo et al. (2023)**, 21 adultes, 12 semaines, extensions triceps à la poulie bras au-dessus de la tête contre bras le long du corps : triceps entier **+19,9 % contre +13,9 %**, et **+28,5 % contre +19,6 %** pour le chef long, avec des charges de 34 à 39 % plus faibles en position haute.
+- **Kassiano et al. (2023)**, 42 jeunes femmes, 8 semaines de mollets : la portion d'amplitude où le gastrocnémien est étiré donne **+15,2 %** d'épaisseur du gastrocnémien médial, contre **+6,7 %** en amplitude complète et **+3,4 %** en portion haute.
+- **Pedrosa et al. (2022)**, 45 femmes non entraînées, leg extension : la portion 100°-65° de flexion du genou (quadriceps long) donne une hypertrophie régionale supérieure à l'amplitude complète sur plusieurs sites.
+- **Sato et al. (2021)**, 32 non-pratiquants, 5 semaines de curl : travailler entre 0 et 50° de flexion du coude donne **+8,9 %** d'épaisseur musculaire, contre **+3,4 %** entre 80 et 130°.
+
+### Et l'amplitude complète, alors ?
+
+Elle reste la référence. La méta-analyse de **Pallarés et al. (2021)**, 16 études, conclut que l'amplitude complète l'emporte sur l'amplitude partielle pour la force (taille d'effet 0,56) et pour l'hypertrophie des membres inférieurs (taille d'effet 0,88). La méta-analyse bayésienne de **Wolf et al. (2023)** trouve un avantage faible de l'amplitude complète, et un signal, encore incertain, en faveur des **partielles en position allongée**. Les deux messages ne se contredisent pas : ce qui coûte du muscle, c'est de supprimer la partie étirée du mouvement. Une demi-amplitude en haut, là où le muscle est raccourci, est la pire option.
+
+Je développe ce point dans l'article sur l'[amplitude de mouvement](/blog/amplitude-mouvement-croissance), et ses applications concrètes dans l'article sur la [triche, l'élan et le rebond](/blog/triche-elan-rebond-execution-musculation).
+
+### Les limites à garder en tête
+
+Ces études portent surtout sur des **débutants**, souvent sur 8 à 12 semaines, avec des échantillons de 20 à 45 personnes. L'ampleur de l'effet chez un pratiquant avancé reste inconnue. Et « position allongée » ne veut pas dire « étirement maximal à tout prix » : une amplitude que vous ne contrôlez pas, avec rebond en bas, n'apporte pas le même stimulus et charge davantage les tissus passifs.
+
+> **Coaching Elite ou Private Lab : votre technique corrigée semaine après semaine**
+>
+> Dans le suivi Elite ou Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires. J'adapte le programme et le choix des exercices à votre biomécanique : longueur de vos segments, mobilité, douleurs éventuelles. Vous avez une question entre deux séances ? Je réponds sur WhatsApp, du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Découvrir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Découvrir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## L'EMG : un outil utile, pas un juge de l'hypertrophie
+
+### Ce que mesure l'électromyographie de surface
+
+L'EMG de surface enregistre l'activité électrique d'un muscle sous des électrodes collées sur la peau. Elle est très utilisée pour classer les exercices (« le meilleur exercice pour les fessiers selon l'EMG »). Le problème, c'est ce qu'on lui fait dire. **Vigotsky et al. (2018)** rappellent que l'amplitude du signal dépend de l'épaisseur de la peau et de la graisse, du placement des électrodes, de la normalisation choisie, du bruit des muscles voisins. Comparer deux exercices sur ce seul critère, puis en déduire lequel fera grossir le muscle, est le plus souvent injustifié.
+
+### L'exemple qui règle la question
+
+L'étude de **Plotkin et al. (2023)** est parfaite pour l'illustrer. 34 jeunes non entraînés, 9 semaines, hip thrust ou squat à volume de séries égal :
+
+- à la première séance, le **hip thrust** produisait une **activité EMG plus élevée** sur tous les sites des fessiers
+- après 9 semaines, la **hausse de la section des fessiers était similaire** dans les deux groupes
+- le **squat** a fait davantage grossir les **quadriceps et les adducteurs**
+- chacun a progressé surtout sur son propre exercice, et les deux groupes ont progressé de la même façon au soulevé de terre
+
+Plus d'activation EMG ne voulait pas dire plus de muscle. Le squat charge les fessiers en position étirée, au bas du mouvement, ce que l'EMG ne capte pas. J'en parle plus en détail dans le comparatif [squat contre hip thrust pour les fessiers](/blog/squats-vs-hip-thrust-fessiers) et dans l'article sur les [ischio-jambiers au squat](/blog/ischio-jambiers-squat-activation).
+
+Retenez ceci : l'EMG dit **quel muscle participe et quand**, pas combien il grossira. Pour choisir un exercice, fiez-vous d'abord aux études qui mesurent la **taille du muscle** (IRM, échographie) après plusieurs semaines.
+
+---
+
+## Morphologie : pourquoi il n'existe pas de technique universelle
+
+### La barre doit rester au-dessus du milieu du pied
+
+Au squat comme au soulevé de terre, le centre de masse du système (vous plus la barre) doit rester au-dessus de vos pieds, sinon vous tombez. Cette contrainte fixe la position de la barre. Le reste, ce sont vos segments qui le décident. Un pratiquant aux fémurs longs et au buste court doit incliner davantage le buste pour garder la barre au-dessus du milieu du pied. Ce n'est pas une faute technique, c'est de la géométrie.
+
+La consigne « gardez le dos droit » veut donc dire **dos neutre**, pas vertical. Un même écartement de pieds ou de mains ne convient pas à toutes les morphologies, et un pratiquant aux bras longs part avec un avantage au soulevé de terre et un désavantage au développé couché.
+
+Je détaille ces adaptations (fémurs longs, bras longs, torse court) dans l'article [morphologie et bras de levier : adapter ses exercices](/blog/morphologie-bras-de-levier-adapter-exercices).
+
+---
+
+## Technique, douleurs et blessures : ce que la mécanique dit, et ce qu'elle ne dit pas
+
+La biomécanique permet de comprendre **où** une contrainte se concentre. Elle ne permet pas, à elle seule, de dire **pourquoi vous avez mal**. La douleur dépend de la charge totale, de la récupération, de l'historique, du contexte. Deux repères solides :
+
+- La flexion lombaire en soulevant n'est pas, d'après une méta-analyse de **Saraceni et al. (2020)**, un facteur de risque démontré de lombalgie. Le niveau de preuve est faible, mais il invite à se méfier des messages alarmistes.
+- Le squat profond n'augmente pas le risque pour les tissus passifs du genou sain, selon la revue de **Hartmann et al. (2013)**, à condition d'une technique apprise et d'une progression des charges. J'en parle dans l'article sur les [squats et les genoux](/blog/squats-mauvais-genoux-mythe).
+
+Une technique propre répartit mieux les contraintes et limite les interruptions. Une douleur qui persiste, qui s'aggrave, qui irradie dans un membre ou qui s'accompagne de fourmillements relève d'un professionnel de santé, pas d'un réglage technique. L'article [douleurs en musculation : épaule, genou, dos](/blog/douleurs-musculation-technique-epaule-genou-dos) détaille les signaux d'alerte.
+
+---
+
+## Les erreurs d'exécution qui coûtent le plus de stimulus
+
+### 1. Raccourcir l'amplitude là où le muscle est étiré
+
+- **Ce qu'on voit** : squats qui s'arrêtent haut, développés couchés qui ne descendent pas, curls qui ne se tendent jamais.
+- **Pourquoi** : la charge est trop lourde pour la portion la plus dure, ou la mobilité manque.
+- **Ce que ça coûte** : la partie de l'amplitude la plus favorable à l'hypertrophie disparaît.
+- **Correction** : baissez la charge de 10 à 20 %, fixez un repère de profondeur (banc, cible), travaillez la mobilité limitante.
+- **Vérification vidéo** : de profil, à hauteur de l'articulation, comparez la première et la dernière répétition.
+
+### 2. Utiliser l'élan pour passer la partie dure
+
+- **Ce qu'on voit** : buste qui bascule au curl, rebond en bas du développé, hanches qui donnent un coup au rowing.
+- **Pourquoi** : la courbe de résistance a un pic que vous n'arrivez plus à franchir.
+- **Ce que ça coûte** : le muscle ciblé ne subit plus la tension au moment où elle compte, d'autres segments font le travail.
+- **Correction** : marquez une pause d'une seconde au point le plus difficile, ou changez d'outil (poulie, machine) pour lisser la courbe.
+- **Vérification vidéo** : de profil, observez si un segment qui devrait rester fixe bouge (coude, buste, hanches).
+
+### 3. Laisser dériver la charge loin de l'articulation
+
+- **Ce qu'on voit** : barre qui part devant les tibias au soulevé, coudes qui avancent au curl.
+- **Pourquoi** : position de départ mal réglée, fatigue, manque de gainage.
+- **Ce que ça coûte** : le bras de levier grandit là où vous ne le voulez pas, souvent sur le bas du dos ou l'épaule.
+- **Correction** : réglez la position de départ, réduisez la charge, utilisez des indices (« barre collée aux jambes »).
+- **Vérification vidéo** : suivez l'extrémité de la barre image par image, de profil.
+
+### Tableau récapitulatif : erreur → correction
+
+| Erreur | Ce que ça coûte | Correction prioritaire | Repère vidéo |
+|---|---|---|---|
+| Amplitude raccourcie côté étiré | Perte du stimulus en position allongée | Charge -10 à 20 %, repère de profondeur | Profil, articulation au centre de l'image |
+| Élan pour passer le point dur | Tension transférée à d'autres segments | Pause d'1 s au point dur, autre outil | Profil, segment qui devrait rester fixe |
+| Charge qui s'éloigne de l'articulation | Moment accru sur le dos ou l'épaule | Réglage de départ, indice « collé » | Trajectoire de barre image par image |
+| Technique copiée sur une autre morphologie | Compensations, muscle cible sous-chargé | Ajuster écartement, barre, talons, variante | Barre au-dessus du milieu du pied |
+| Juger un exercice à l'EMG ou à la sensation | Mauvais choix d'exercices | Se fier aux études qui mesurent la taille du muscle | Sans objet |
+| Corriger sans filmer | Corrections au hasard | Filmer la série la plus lourde de la séance | Même angle à chaque séance |
+
+---
+
+## Comment vérifier votre technique sur vidéo
+
+La sensation ment souvent : ce que vous croyez faire ne correspond pas toujours à ce que montre la caméra. Filmez de profil pour la profondeur, la trajectoire et l'angle du buste, de face pour les genoux et la symétrie, caméra à hauteur de l'articulation principale, et gardez le même angle d'une séance à l'autre. Tous les détails (distance, lumière, nombre de répétitions, erreurs de lecture) sont dans l'article [filmer sa séance pour analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique).
+
+---
+
+## La série complète : par où commencer
+
+Chaque article applique les principes de ce guide à un mouvement ou à une question précise :
+
+1. [Squat : les erreurs d'exécution et leurs corrections](/blog/squat-erreurs-execution-corrections).
+2. [Soulevé de terre : les erreurs d'exécution](/blog/souleve-de-terre-erreurs-execution).
+3. [Développé couché : les erreurs qui font mal aux épaules](/blog/developpe-couche-erreurs-epaules).
+4. [Tirage et rowing : les erreurs d'exécution pour le dos](/blog/tirage-rowing-dos-erreurs-execution).
+5. [Courbe de résistance : choisir ses exercices](/blog/courbe-de-resistance-choisir-exercices).
+6. [Morphologie et bras de levier : adapter ses exercices](/blog/morphologie-bras-de-levier-adapter-exercices).
+7. [Triche, élan, rebond : ce qui vole le stimulus](/blog/triche-elan-rebond-execution-musculation).
+8. [Douleurs en musculation : épaule, genou, dos et technique](/blog/douleurs-musculation-technique-epaule-genou-dos).
+9. [Filmer sa séance pour analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique).
+
+Si vous progressez déjà moins vite qu'avant, la technique n'est qu'une des causes possibles : lisez aussi [pourquoi vous stagnez en musculation](/blog/stagnation-musculation-pourquoi-vous-stagnez) et le guide de la [surcharge progressive](/blog/surcharge-progressive-guide).
+
+---
+
+## FAQ : biomécanique en musculation
+
+### Qu'est-ce que la biomécanique en musculation ?
+
+C'est l'application de la mécanique au mouvement humain : forces, moments, bras de levier, angles articulaires, vitesses. En musculation, elle sert à comprendre quel muscle est chargé, à quel moment de l'amplitude et avec quelle intensité, pour choisir et exécuter les exercices de façon à obtenir le stimulus voulu.
+
+### Qu'est-ce qu'un bras de levier en musculation ?
+
+C'est la distance horizontale entre l'axe d'une articulation et la ligne d'action de la charge. Plus elle est grande, plus le moment de force est élevé et plus le muscle qui fait bouger l'articulation doit produire de force. Elle change à chaque instant du mouvement.
+
+### Faut-il toujours travailler en amplitude complète ?
+
+L'amplitude complète reste la meilleure option par défaut pour la force et l'hypertrophie, d'après la méta-analyse de Pallarés (2021). Les études récentes montrent que la partie la plus utile est souvent celle où le muscle est étiré. Supprimer cette partie est l'erreur qui coûte le plus. Des partielles en position allongée peuvent compléter, pas remplacer.
+
+### L'EMG permet-elle de choisir les meilleurs exercices ?
+
+Non, pas à elle seule. Elle indique quel muscle participe et quand, mais une activation plus élevée ne prédit pas forcément plus d'hypertrophie. Le hip thrust active plus les fessiers que le squat en EMG, pour une croissance similaire après 9 semaines (Plotkin, 2023).
+
+### Une mauvaise technique cause-t-elle forcément des blessures ?
+
+Pas forcément, et c'est plus nuancé que ce qu'on lit souvent. La technique change la répartition des contraintes, mais la douleur dépend aussi de la charge totale, de la récupération et de votre historique. Une douleur persistante doit être évaluée par un professionnel de santé.
+
+### Comment savoir si ma technique est bonne ?
+
+Filmez votre série la plus lourde, de profil et à hauteur de hanche, et comparez la première et la dernière répétition. Les repères à observer sont décrits pour chaque exercice dans cette série. Pour un regard extérieur structuré, une analyse FormCheck vous donne vos erreurs et les corrections sous 3 heures.
+
+---
+
+## Conclusion : la technique n'est pas une question de style
+
+La biomécanique ramène tout à une question simple : à quel moment, et à quelle longueur, votre muscle est-il vraiment chargé ? Le bras de levier répond à la première partie, la courbe de résistance et la longueur musculaire à la seconde. Le reste, c'est de l'exécution : garder la charge là où elle doit être, ne pas sacrifier la portion étirée du mouvement, et adapter les consignes à vos leviers au lieu de copier ceux d'un autre.
+
+Ma position : choisissez vos exercices pour leur courbe de résistance, exécutez-les sur une amplitude que vous contrôlez, et vérifiez sur vidéo plutôt qu'à la sensation. Ajouter des kilos sur une mauvaise exécution, c'est surtout ajouter de la contrainte au mauvais endroit.
+
+> **Faites analyser votre technique par FormCheck**
+>
+> Vous filmez votre série, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique avec vos erreurs et les corrections à faire, selon ma méthode. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+> **Un programme construit pour vos leviers, pas pour ceux d'un autre**
+>
+> En Elite ou en Private Lab, je suis votre technique à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des exercices à votre biomécanique : segments, mobilité, douleurs. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Vous ne savez pas encore par où commencer ? Le [Discovery Scan](/offers/discovery-scan), gratuit, fait un premier point sur votre entraînement, votre récupération et vos priorités.
+
+---
+
+## Références
+
+1. Schoenfeld BJ. The mechanisms of muscle hypertrophy and their application to resistance training. *J Strength Cond Res.* 2010;24(10):2857-2872. [doi:10.1519/JSC.0b013e3181e840f3](https://doi.org/10.1519/JSC.0b013e3181e840f3)
+2. Fry AC, Smith JC, Schilling BK. Effect of knee position on hip and knee torques during the barbell squat. *J Strength Cond Res.* 2003;17(4):629-633. PMID: [14636100](https://pubmed.ncbi.nlm.nih.gov/14636100/)
+3. Lorenzetti S, et al. Comparison of the angles and corresponding moments in the knee and hip during restricted and unrestricted squats. *J Strength Cond Res.* 2012;26(10):2829-2836. [doi:10.1519/JSC.0b013e318267918b](https://doi.org/10.1519/JSC.0b013e318267918b)
+4. Glassbrook DJ, et al. A review of the biomechanical differences between the high-bar and low-bar back-squat. *J Strength Cond Res.* 2017;31(9):2618-2634. [doi:10.1519/JSC.0000000000002007](https://doi.org/10.1519/JSC.0000000000002007)
+5. Swinton PA, et al. A biomechanical analysis of straight and hexagonal barbell deadlifts using submaximal loads. *J Strength Cond Res.* 2011;25(7):2000-2009. [doi:10.1519/JSC.0b013e3181e73f87](https://doi.org/10.1519/JSC.0b013e3181e73f87)
+6. Maeo S, et al. Greater hamstrings muscle hypertrophy but similar damage protection after training at long versus short muscle lengths. *Med Sci Sports Exerc.* 2021;53(4):825-837. [doi:10.1249/MSS.0000000000002523](https://doi.org/10.1249/MSS.0000000000002523)
+7. Maeo S, et al. Triceps brachii hypertrophy is substantially greater after elbow extension training performed in the overhead versus neutral arm position. *Eur J Sport Sci.* 2023;23(7):1240-1250. [doi:10.1080/17461391.2022.2100279](https://doi.org/10.1080/17461391.2022.2100279)
+8. Kassiano W, et al. Greater gastrocnemius muscle hypertrophy after partial range of motion training performed at long muscle lengths. *J Strength Cond Res.* 2023;37(9):1746-1753. [doi:10.1519/JSC.0000000000004460](https://doi.org/10.1519/JSC.0000000000004460)
+9. Pedrosa GF, et al. Partial range of motion training elicits favorable improvements in muscular adaptations when carried out at long muscle lengths. *Eur J Sport Sci.* 2022;22(8):1250-1260. [doi:10.1080/17461391.2021.1927199](https://doi.org/10.1080/17461391.2021.1927199)
+10. Sato S, et al. Elbow joint angles in elbow flexor unilateral resistance exercise training determine its effects on muscle strength and thickness of trained and non-trained arms. *Front Physiol.* 2021;12:734509. [doi:10.3389/fphys.2021.734509](https://doi.org/10.3389/fphys.2021.734509)
+11. Pallarés JG, et al. Effects of range of motion on resistance training adaptations: a systematic review and meta-analysis. *Scand J Med Sci Sports.* 2021;31(10):1866-1881. [doi:10.1111/sms.14006](https://doi.org/10.1111/sms.14006)
+12. Wolf M, Androulakis-Korakakis P, Fisher J, Schoenfeld B, Steele J. Partial vs full range of motion resistance training: a systematic review and meta-analysis. *Int J Strength Cond.* 2023;3(1). [doi:10.47206/ijsc.v3i1.182](https://doi.org/10.47206/ijsc.v3i1.182)
+13. Vigotsky AD, et al. Interpreting signal amplitudes in surface electromyography studies in sport and rehabilitation sciences. *Front Physiol.* 2018;8:985. [doi:10.3389/fphys.2017.00985](https://doi.org/10.3389/fphys.2017.00985)
+14. Plotkin DL, et al. Hip thrust and back squat training elicit similar gluteus muscle hypertrophy and transfer similarly to the deadlift. *Front Physiol.* 2023;14:1279170. [doi:10.3389/fphys.2023.1279170](https://doi.org/10.3389/fphys.2023.1279170)
+15. Saraceni N, et al. To flex or not to flex? Is there a relationship between lumbar spine flexion during lifting and low back pain? A systematic review with meta-analysis. *J Orthop Sports Phys Ther.* 2020;50(3):121-130. [doi:10.2519/jospt.2020.9218](https://doi.org/10.2519/jospt.2020.9218)
+16. Hartmann H, Wirth K, Klusemann M. Analysis of the load on the knee joint and vertebral column with changes in squatting depth and weight load. *Sports Med.* 2013;43(10):993-1008. [doi:10.1007/s40279-013-0073-6](https://doi.org/10.1007/s40279-013-0073-6)
+
+*Cet article est informatif et ne remplace pas un avis médical. En cas de douleur persistante, consultez un professionnel de santé.*
+`,
+  },
+  {  id: "150",
+    slug: "squat-erreurs-execution-corrections",
+    title: "Squat : les 5 erreurs d'exécution qui sabotent vos jambes, et comment les corriger",
+    seoTitle: "Squat : 5 erreurs d'exécution et corrections | APEXLABS",
+    excerpt: "Valgus, talons qui décollent, bascule du bassin, buste qui plonge, profondeur : les 5 erreurs d'exécution au squat, leur cause mécanique, la correction et le repère à vérifier sur vidéo, adaptés à votre morphologie.",
+    metaDescription: "Squat : genoux qui rentrent, talons qui décollent, butt wink, buste qui plonge, profondeur. Causes, corrections et repères vidéo, selon votre morphologie.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "17 min",
+    image: "/images/blog/squat-erreurs-execution-corrections/squat-erreurs-execution-hero.webp",
+    content: `# Squat : les 5 erreurs d'exécution qui sabotent vos jambes, et comment les corriger
+
+## Introduction : le squat ne pardonne pas les approximations
+
+Le squat est l'exercice le plus copié et le plus mal compris de la salle. Tout le monde a une consigne à donner : « genoux derrière les orteils », « dos droit », « descends plus bas », « pas sous la parallèle ». La moitié de ces consignes sont fausses, l'autre moitié ne s'applique pas à tout le monde.
+
+Les erreurs d'exécution au squat ont deux coûts. Le premier est immédiat : le travail part vers le dos ou les hanches au lieu des quadriceps, ou la profondeur disparaît avec le stimulus qui va avec. Le second se voit à long terme : des contraintes mal réparties, séance après séance, sur des articulations qui n'étaient pas censées encaisser tout ça.
+
+Dans cet article, je reprends les cinq erreurs les plus fréquentes : les genoux qui rentrent, les talons qui décollent, la bascule du bassin au point bas, le buste qui plonge et la profondeur. Pour chacune : ce qu'on voit, pourquoi ça arrive, ce que ça coûte, comment le corriger et comment le vérifier sur vidéo. Puis comment adapter le tout à votre morphologie, parce qu'un squat juste chez un pratiquant aux fémurs courts peut être impossible chez un autre.
+
+> **L'essentiel en 30 secondes**
+>
+> - Au squat, la barre doit rester **au-dessus du milieu du pied**. Le reste de la posture en découle, et votre morphologie en décide une bonne partie.
+> - Le **valgus** (genoux qui rentrent) n'est pas toujours un problème de fessiers faibles : une **cheville raide** suffit à le provoquer (Macrum, 2012 ; Bell, 2008).
+> - Les **talons qui décollent** signalent le plus souvent un manque de flexion de cheville. Une talonnette ou des chaussures d'haltérophilie augmentent la flexion du genou et, à vide, redressent le buste (Legg, 2017).
+> - **Bloquer les genoux derrière les orteils** fait passer le moment à la hanche de **28 à 303 N·m** (Fry, 2003). Laissez vos genoux avancer.
+> - Le **squat complet** fait davantage grossir les fessiers (**+6,7 % contre +2,2 %**) et les adducteurs que le demi-squat, pour un gain similaire des quadriceps (Kubo, 2019).
+> - La bonne profondeur, c'est la plus basse que vous contrôlez **sans bascule du bassin** ni décollement des talons.
+
+---
+
+## Le squat en trois repères mécaniques
+
+Avant de corriger, il faut savoir ce qu'on cherche. Trois principes suffisent, développés dans le [guide de la biomécanique en musculation](/blog/biomecanique-musculation-guide-complet) :
+
+1. **Équilibre** : le centre de masse (vous plus la barre) reste au-dessus du milieu du pied. Si la barre dérive vers l'avant, vous basculez ; si elle recule, vous tombez en arrière.
+2. **Répartition des moments** : plus le genou avance, plus le moment au genou augmente et plus les quadriceps travaillent. Plus le buste s'incline et plus la hanche recule, plus le moment se déplace vers les extenseurs de hanche et le dos (Schoenfeld, 2010 ; Glassbrook, 2017).
+3. **Amplitude** : plus vous descendez, plus les fessiers et les adducteurs travaillent en position allongée.
+
+Toutes les erreurs ci-dessous violent un de ces trois principes, ou essaient de compenser un manque de mobilité.
+
+---
+
+## Erreur 1 : les genoux qui rentrent (valgus dynamique)
+
+![Schéma de face comparant un squat avec les genoux dans l'axe des pieds et un squat avec les genoux qui rentrent vers l'intérieur, flèches jaunes indiquant la direction du genou](/images/blog/squat-erreurs-execution-corrections/squat-valgus-genou-schema.webp)
+
+### Ce qu'on voit
+
+Vue de face, au point bas ou au début de la remontée, les genoux se rapprochent et passent à l'intérieur de la ligne des pieds. Souvent, l'arche du pied s'affaisse en même temps.
+
+### Pourquoi ça arrive
+
+L'explication réflexe, ce sont les fessiers faibles. Elle est incomplète. Deux études changent la lecture :
+
+- **Macrum et al. (2012)** : 30 personnes en bonne santé ont squatté avec une cale de 12° sous l'avant-pied, pour simuler une cheville raide. Résultat : moins de flexion du genou, **plus de valgus** et un déplacement médial du genou nettement plus important (taille d'effet de 2,92), avec **moins d'activité des quadriceps**.
+- **Bell et al. (2008)** : 37 personnes, dont 18 dont le genou rentrait au squat et se corrigeait avec une talonnette. Ce groupe n'avait **pas** des hanches plus faibles : il avait même davantage de force en rotation externe et en extension de hanche. Ce qui le distinguait, c'était une **musculature de cheville raide et moins forte**.
+
+Les autres causes fréquentes : des pieds trop serrés ou trop ouverts pour votre hanche, la fatigue en fin de série, et une charge qui dépasse ce que vous contrôlez.
+
+### Ce que ça coûte
+
+Un genou qui rentre sous charge déplace les contraintes vers la face interne du genou et l'articulation fémoro-patellaire. Dans l'étude de Macrum, ce schéma ressemble à celui observé chez des personnes souffrant de douleurs fémoro-patellaires, sans que l'étude prouve qu'il les cause. Côté stimulus, les quadriceps travaillent moins dans cette configuration.
+
+### Comment le corriger
+
+- **Indice verbal** : « écartez le sol avec les pieds » ou « genoux vers les petits orteils ». Pas « genoux vers l'extérieur » à tout prix, qui crée l'erreur inverse.
+- **Réglage** : testez un écartement légèrement plus large et une ouverture des pointes de 15 à 30°, selon votre hanche. Le genou doit suivre l'axe du pied.
+- **Test de la talonnette** : refaites une série avec 1 à 2 cm sous les talons. Si le valgus disparaît, la cheville est en cause.
+- **Exercices correctifs** : goblet squat lent (3 secondes de descente, 2 secondes de pause en bas), mobilité de cheville en fente genou contre le mur, mollets genou fléchi en amplitude complète.
+
+### Comment le vérifier sur vidéo
+
+Filmez **de face**, caméra posée à hauteur de genou, à 3 ou 4 mètres. Repère : au point bas, le centre de la rotule doit rester au-dessus du deuxième ou troisième orteil. Un léger mouvement vers l'intérieur au début de la remontée, sous une charge très lourde, est fréquent ; ce qui doit vous alerter, c'est un genou qui rentre à chaque répétition, même légère.
+
+---
+
+## Erreur 2 : les talons qui décollent
+
+### Ce qu'on voit
+
+De profil, au point bas, le poids part sur l'avant-pied et les talons se soulèvent de quelques millimètres. Parfois, c'est seulement un transfert de poids visible quand les orteils se crispent.
+
+### Pourquoi ça arrive
+
+Pour descendre en gardant la barre au-dessus du milieu du pied, le genou doit avancer, donc la cheville doit fléchir. Si la **dorsiflexion de cheville** manque, le talon se lève pour libérer l'amplitude. **Kim et al. (2015)**, sur 101 personnes, montrent que la profondeur du squat est liée à la dorsiflexion de cheville et à la flexion de hanche chez les hommes, et à la dorsiflexion et à la force des releveurs du pied chez les femmes. Les autres causes : des pieds trop serrés, une descente trop rapide, des chaussures à semelle molle.
+
+### Ce que ça coûte
+
+La base d'appui se réduit à l'avant-pied, la barre avance, le buste plonge pour compenser et le contrôle de la charge se dégrade. Sur une charge lourde, c'est la répétition qui se termine en avant, sur les orteils.
+
+### Comment le corriger
+
+- **Indice verbal** : « trépied du pied » (talon, base du gros orteil, base du petit orteil), « poussez dans le talon et le milieu du pied ».
+- **Réglage** : des chaussures d'haltérophilie ou une talonnette de 1,5 à 2,5 cm. Dans l'étude de **Legg et al. (2017)**, sur 32 participants, les chaussures d'haltérophilie ont réduit la flexion de cheville nécessaire, augmenté la flexion du genou et, à vide, redressé le buste. Ce n'est pas tricher : c'est modifier la géométrie pour vos leviers.
+- **Écartement** : un peu plus large, pointes un peu plus ouvertes, réduit la dorsiflexion nécessaire.
+- **Exercices correctifs** : mobilité de cheville quotidienne (fente genou vers le mur, 2 à 3 séries de 10 par jambe), squat goblet en pause, mollets en amplitude complète.
+
+### Comment le vérifier sur vidéo
+
+**De profil**, caméra à hauteur de hanche, cadrée de façon à voir le pied entier. Repère : l'espace entre le talon et le sol au point bas. Regardez aussi les orteils : s'ils se crispent ou se soulèvent, le poids n'est déjà plus au milieu du pied.
+
+> **Vous voulez savoir laquelle de ces erreurs est la vôtre ?**
+>
+> Avec FormCheck, vous filmez votre série de squat, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : vos erreurs, leur cause (mobilité, réglage ou charge) et les corrections à faire, établis selon ma grille d'analyse. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Faire analyser mon squat avec FormCheck](/offers/formcheck)
+
+---
+
+## Erreur 3 : la bascule du bassin au point bas (butt wink)
+
+### Ce qu'on voit
+
+De profil, dans les derniers centimètres de la descente, le bassin bascule vers l'arrière et le bas du dos s'arrondit. Le dos passe d'une courbure neutre à une flexion lombaire, puis se redresse à la remontée.
+
+### Pourquoi ça arrive
+
+Quand la hanche arrive au bout de sa flexion disponible, le seul moyen de descendre plus bas est de faire basculer le bassin, donc de fléchir le bas du dos. Cette limite dépend en partie de **l'anatomie de votre hanche** (orientation et profondeur du cotyle, col du fémur), qui ne se travaille pas, et en partie de facteurs modifiables : écartement des pieds, ouverture des pointes, contrôle du tronc, vitesse de descente.
+
+### Ce que ça coûte
+
+Le débat est réel. La méta-analyse de **Saraceni et al. (2020)** ne trouve pas de lien démontré entre la flexion lombaire en soulevant et la lombalgie, avec des études de faible qualité. Une petite bascule à vide ou sous charge légère n'a pas d'intérêt à être chassée. Mon avis de coach, en revanche : une flexion lombaire répétée sous une barre lourde, sur des centaines de répétitions, est une contrainte que vous n'avez aucune raison d'ajouter. Vous ne gagnez rien en stimulus sur les jambes dans ces derniers centimètres, puisque c'est le dos qui fournit l'amplitude, pas les hanches.
+
+### Comment le corriger
+
+- **Réglage de la profondeur** : descendez jusqu'au point où la bascule commence, pas plus bas sous charge lourde. Un banc ou une box à cette hauteur sert de repère.
+- **Réglage des pieds** : un écartement un peu plus large et des pointes plus ouvertes donnent souvent quelques centimètres de flexion de hanche en plus, selon votre anatomie.
+- **Indice verbal** : « gainez avant de descendre, gardez la ceinture serrée », avec une inspiration profonde bloquée.
+- **Exercices correctifs** : squat goblet tenu en bas pendant 20 à 30 secondes, travail de la flexion de hanche à quatre pattes (rock-back), et gainage anti-flexion.
+
+### Comment le vérifier sur vidéo
+
+**De profil**, caméra à hauteur de hanche, perpendiculaire à vous. Repère : la ligne qui va du sacrum au milieu du dos. Si elle change d'angle dans les derniers centimètres, vous avez trouvé votre profondeur limite pour cette position de pieds.
+
+---
+
+## Erreur 4 : le buste qui plonge à la remontée
+
+![Schéma de profil comparant un squat genoux libres, avec un moment de 150 N·m au genou et 28 N·m à la hanche, et un squat genoux bloqués derrière les orteils, avec 117 N·m au genou et 303 N·m à la hanche](/images/blog/squat-erreurs-execution-corrections/squat-genoux-orteils-bras-de-levier-schema.webp)
+
+### Ce qu'on voit
+
+Au départ de la remontée, les hanches montent plus vite que la barre. Le buste s'incline brusquement vers l'avant et le squat se termine comme un good morning.
+
+### Pourquoi ça arrive
+
+Trois causes principales :
+
+- **Des quadriceps qui lâchent avant les extenseurs de hanche** : le corps cherche le chemin où il est le plus fort et redresse les genoux en premier, ce qui transfère le moment vers la hanche et le dos.
+- **Des genoux retenus** : la consigne « genoux derrière les orteils » oblige le buste à s'incliner. Dans l'étude de **Fry et al. (2003)**, sur 7 hommes entraînés, bloquer les genoux a fait passer le moment au genou de **150 à 117 N·m**, et le moment à la hanche de **28 à 303 N·m**, avec plus d'inclinaison du buste. **List et al. (2013)**, sur 30 sujets suivis par 12 caméras, ont mesuré plus de mouvement dans la colonne thoracique et entre les segments du tronc en squat restreint. **Lorenzetti et al. (2012)**, sur 20 sujets, ont relevé une flexion maximale du genou d'environ 86° en squat restreint contre 106° en squat libre.
+- **La morphologie** : un fémur long impose plus d'inclinaison, dès la descente. Ce n'est pas une erreur si l'angle reste constant à la remontée.
+
+### Ce que ça coûte
+
+Les quadriceps perdent une partie de leur travail au moment où ils devraient être le plus sollicités. Le bas du dos encaisse un moment plus grand, et la barre a tendance à passer devant le milieu du pied.
+
+### Comment le corriger
+
+- **Indice verbal** : « poitrine et hanches montent ensemble », « poussez le dos dans la barre ».
+- **Laissez avancer vos genoux** : c'est la correction la plus simple et la plus sous-utilisée. Pour un genou sain, un genou qui dépasse les orteils n'est pas un danger en soi, comme je l'explique dans l'article sur les [squats et les genoux](/blog/squats-mauvais-genoux-mythe).
+- **Variante** : barre haute plutôt que basse, squat avant ou squat talons surélevés, qui permettent un buste plus droit (Glassbrook, 2017).
+- **Exercices correctifs** : squat avec pause de 2 secondes en bas, tempo de 3 secondes en descente, presse à cuisses et leg extension pour renforcer des quadriceps en retard.
+
+### Comment le vérifier sur vidéo
+
+**De profil**, caméra à hauteur de hanche. Repère : l'angle entre le buste et la verticale. Comparez-le au point bas et 10 cm plus haut. Si l'angle augmente nettement à la remontée, les hanches partent avant la barre. Si l'angle est grand mais reste stable, c'est votre morphologie.
+
+> **Coaching Elite ou Private Lab : votre squat ajusté à vos leviers**
+>
+> Dans le suivi Elite ou Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires. J'adapte le programme et le choix des exercices à votre biomécanique : longueur des fémurs, mobilité de cheville et de hanche, douleurs éventuelles. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Découvrir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Découvrir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## Erreur 5 : la profondeur, trop haute ou forcée
+
+### Ce qu'on voit
+
+Deux versions opposées. La plus fréquente : des squats qui s'arrêtent bien au-dessus de la parallèle, souvent avec une charge trop lourde. L'autre : une descente « cul aux talons » forcée, qui se paie par une bascule du bassin et des talons qui décollent.
+
+### Pourquoi ça arrive
+
+La version haute vient presque toujours de l'ego et de la charge : un demi-squat permet de mettre beaucoup plus lourd. La version forcée vient d'une consigne appliquée sans tenir compte de la mobilité.
+
+### Ce que ça coûte
+
+Les données sur l'hypertrophie sont claires :
+
+- **Kubo et al. (2019)**, 17 hommes, 10 semaines, 2 séances par semaine, squat complet contre demi-squat : quadriceps **+4,9 % contre +4,6 %**, similaires ; **adducteurs +6,2 % contre +2,7 %** ; **grand fessier +6,7 % contre +2,2 %**. Le droit fémoral et les ischio-jambiers n'ont progressé dans aucun groupe.
+- **Bloomquist et al. (2013)**, 17 étudiants, 12 semaines, squat profond (0-120° de flexion du genou) contre squat court (0-60°) : la section des muscles de l'avant de la cuisse a augmenté davantage avec le squat profond (de 4 à 7 % selon les sites).
+
+Côté articulations, la revue de **Hartmann et al. (2013)** conclut que le squat profond ne fait pas courir de risque supplémentaire aux tissus passifs du genou sain, et que la compression rotulienne la plus élevée se situe autour de 90°, pas plus bas. Escamilla (2001), plus prudent, recommandait le squat parallèle pour les athlètes au genou sain. Les deux s'accordent sur un point : le demi-squat lourd n'est pas une option « plus sûre ». Pour l'aspect ischio-jambiers, lisez l'article sur les [ischio-jambiers au squat](/blog/ischio-jambiers-squat-activation).
+
+### Comment le corriger
+
+- **Règle** : descendez aussi bas que vous le pouvez **sans bascule du bassin, sans décollement des talons et sans perte de contrôle**. Pour la plupart des pratiquants, c'est au moins le pli de la hanche au niveau du haut du genou.
+- **Réglage** : baissez la charge de 10 à 20 % le temps de retrouver l'amplitude. Vous la reprendrez vite.
+- **Repère** : un banc ou une box à la bonne hauteur, touché sans s'asseoir.
+- **Progression** : ajoutez du poids seulement si la profondeur reste identique, comme le décrit le guide de la [surcharge progressive](/blog/surcharge-progressive-guide).
+
+### Comment le vérifier sur vidéo
+
+**De profil**, caméra à hauteur de hanche. Repère : au point bas, comparez la hauteur du pli de la hanche avec celle du haut du genou. Vérifiez aussi que la première et la dernière répétition descendent au même endroit : la profondeur fond souvent avec la fatigue.
+
+---
+
+## Selon votre morphologie : adapter plutôt que forcer
+
+![Schéma de profil de deux squats : fémur court et buste long avec un buste incliné d'environ 24 degrés, fémur long et buste court avec un buste incliné d'environ 58 degrés, la barre restant au-dessus du milieu du pied](/images/blog/squat-erreurs-execution-corrections/squat-morphologie-femur-schema.webp)
+
+### Le rapport fémur-buste décide de votre inclinaison
+
+À même inclinaison du tibia, un fémur long recule davantage la hanche. Pour garder la barre au-dessus du milieu du pied, le buste doit s'incliner plus. Sur le schéma, les proportions sont volontairement contrastées, mais le principe vaut pour tous : vous ne choisissez pas l'angle de votre buste, votre squelette le choisit en grande partie.
+
+### Les leviers d'adaptation
+
+| Profil | Ce qui se passe | Adaptations utiles |
+|---|---|---|
+| Fémurs longs, buste court | Buste très incliné, dos très sollicité | Talons surélevés, barre haute, écartement plus large, squat avant, hack squat |
+| Fémurs courts, buste long | Buste droit naturellement | Squat barre haute classique, peu de réglages nécessaires |
+| Cheville raide | Talons qui décollent, valgus | Chaussures d'haltérophilie ou talonnette, mobilité de cheville |
+| Hanche à faible flexion | Bascule du bassin précoce | Écartement plus large, pointes plus ouvertes, profondeur limitée au début de la bascule |
+| Objectif quadriceps | Besoin de genoux qui avancent | Barre haute, squat avant, talons surélevés |
+| Objectif fessiers et adducteurs | Besoin d'amplitude | Squat complet, écartement moyen à large |
+
+La barre basse permet un buste plus incliné, plus d'activité des extenseurs de hanche et du dos ; la barre haute, un buste plus droit et plus de travail des quadriceps (Glassbrook, 2017). Ni l'une ni l'autre n'est « la bonne » : elles servent des objectifs et des morphologies différentes. J'approfondis ces choix dans l'article [morphologie et bras de levier](/blog/morphologie-bras-de-levier-adapter-exercices).
+
+---
+
+## Tableau récapitulatif : erreur → correction
+
+| Erreur | Cause la plus fréquente | Correction prioritaire | Vérification vidéo |
+|---|---|---|---|
+| Genoux qui rentrent | Cheville raide, pieds mal placés, fatigue | « Écartez le sol », test talonnette, mobilité de cheville | De face, hauteur de genou : rotule au-dessus du 2e-3e orteil |
+| Talons qui décollent | Dorsiflexion insuffisante | Talonnette ou chaussures d'haltérophilie, écartement plus large | De profil, pied entier visible |
+| Bascule du bassin | Fin de la flexion de hanche disponible | Profondeur limitée au début de la bascule, réglage des pieds | De profil, hauteur de hanche : ligne sacrum-dos |
+| Buste qui plonge | Quadriceps en retard, genoux retenus | « Poitrine et hanches ensemble », laisser avancer les genoux, pause en bas | De profil : angle du buste au point bas puis 10 cm plus haut |
+| Profondeur trop haute | Charge trop lourde | Charge -10 à 20 %, box comme repère | De profil : pli de hanche contre haut du genou |
+| Profondeur forcée | Consigne sans tenir compte de la mobilité | Descendre jusqu'à la limite contrôlée | De profil : bascule ou talons au point bas |
+
+---
+
+## Comment filmer votre squat pour l'analyser
+
+Deux angles suffisent : **de profil**, caméra à hauteur de hanche, à 3 ou 4 mètres, pour la profondeur, le buste, les talons et la trajectoire de barre ; **de face**, caméra à hauteur de genou, pour le valgus et la symétrie. Filmez votre **série la plus lourde** de la séance, en entier, et comparez la première et la dernière répétition : c'est en fin de série que les erreurs apparaissent. La méthode complète est dans l'article [filmer sa séance pour analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique). Si une de ces erreurs s'accompagne d'une douleur, lisez d'abord l'article sur les [douleurs en musculation](/blog/douleurs-musculation-technique-epaule-genou-dos).
+
+---
+
+## FAQ : erreurs d'exécution au squat
+
+### Les genoux peuvent-ils dépasser les orteils au squat ?
+
+Oui. Pour un genou sain, c'est normal et souvent nécessaire. Bloquer les genoux derrière les orteils fait passer le moment à la hanche de 28 à 303 N·m dans l'étude de Fry (2003) et augmente les contraintes sur le dos. Ce qui compte, c'est que le genou suive l'axe du pied et que le talon reste au sol.
+
+### Pourquoi mes genoux rentrent-ils quand je squatte ?
+
+Le plus souvent à cause d'une cheville raide, d'un placement des pieds mal adapté ou de la fatigue en fin de série. Les fessiers faibles ne sont pas la seule explication : dans l'étude de Bell (2008), les personnes dont le genou rentrait avaient même des hanches plus fortes, mais des chevilles plus raides.
+
+### Le butt wink est-il dangereux ?
+
+La méta-analyse de Saraceni (2020) ne trouve pas de lien démontré entre la flexion lombaire en soulevant une charge et la lombalgie, et une légère bascule sous charge légère n'a rien d'alarmant. Sous charge lourde et répétée, il est plus prudent de limiter la profondeur au point où la bascule commence et de régler l'écartement des pieds. En cas de douleur lombaire persistante, consultez un professionnel de santé.
+
+### Faut-il descendre sous la parallèle pour progresser ?
+
+Pour les fessiers et les adducteurs, oui, l'amplitude complète donne plus d'hypertrophie que le demi-squat (Kubo, 2019). Pour les quadriceps, les gains sont proches. La bonne profondeur est la plus basse que vous contrôlez sans bascule du bassin ni décollement des talons.
+
+### Les chaussures d'haltérophilie sont-elles utiles ?
+
+Pour une cheville raide ou des fémurs longs, souvent. Elles réduisent la flexion de cheville nécessaire et augmentent la flexion du genou, avec un buste plus droit mesuré à vide (Legg, 2017). Une talonnette de 1,5 à 2,5 cm donne un effet proche et permet de tester avant d'acheter.
+
+### Comment savoir si mon buste est trop penché ?
+
+Regardez l'angle du buste sur une vidéo de profil, au point bas puis un peu plus haut. Un buste incliné mais stable est souvent une question de morphologie. Un buste qui s'incline brutalement au départ de la remontée signale que les hanches montent avant la barre.
+
+---
+
+## Conclusion : corrigez la cause, pas le symptôme
+
+Les cinq erreurs de cet article ont un point commun : elles se corrigent rarement en répétant « genoux dehors » ou « dos droit ». Le valgus vient souvent de la cheville, les talons qui décollent aussi, la bascule du bassin vient de la hanche et de la profondeur demandée, le buste qui plonge vient des quadriceps ou d'une consigne absurde sur les genoux. Trouvez la cause, ajustez le réglage, et gardez une profondeur que vous contrôlez.
+
+Ma position : laissez avancer vos genoux, descendez aussi bas que votre bassin le permet sans basculer, utilisez une talonnette sans complexe si votre cheville l'exige, et choisissez la barre haute ou basse selon votre morphologie et votre objectif. Puis filmez, parce que vous ne pouvez pas corriger ce que vous ne voyez pas.
+
+> **Votre squat analysé sous 3 heures avec FormCheck**
+>
+> Filmez votre série, envoyez-la, et recevez un rapport d'analyse biomécanique avec vos erreurs et les corrections à faire, selon ma méthode. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Envoyer mon squat à FormCheck](/offers/formcheck)
+
+> **Un suivi qui corrige votre technique dans la durée**
+>
+> En Elite ou en Private Lab, je suis votre squat à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des exercices à vos leviers, à votre mobilité et à vos éventuelles douleurs. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Pour la suite, lisez l'article sur les [erreurs d'exécution au soulevé de terre](/blog/souleve-de-terre-erreurs-execution), et le comparatif [squat contre hip thrust](/blog/squats-vs-hip-thrust-fessiers) si vos fessiers sont votre priorité.
+
+---
+
+## Références
+
+1. Fry AC, Smith JC, Schilling BK. Effect of knee position on hip and knee torques during the barbell squat. *J Strength Cond Res.* 2003;17(4):629-633. PMID: [14636100](https://pubmed.ncbi.nlm.nih.gov/14636100/)
+2. List R, et al. Kinematics of the trunk and the lower extremities during restricted and unrestricted squats. *J Strength Cond Res.* 2013;27(6):1529-1538. [doi:10.1519/JSC.0b013e3182736034](https://doi.org/10.1519/JSC.0b013e3182736034)
+3. Lorenzetti S, et al. Comparison of the angles and corresponding moments in the knee and hip during restricted and unrestricted squats. *J Strength Cond Res.* 2012;26(10):2829-2836. [doi:10.1519/JSC.0b013e318267918b](https://doi.org/10.1519/JSC.0b013e318267918b)
+4. Macrum E, et al. Effect of limiting ankle-dorsiflexion range of motion on lower extremity kinematics and muscle-activation patterns during a squat. *J Sport Rehabil.* 2012;21(2):144-150. [doi:10.1123/jsr.21.2.144](https://doi.org/10.1123/jsr.21.2.144)
+5. Bell DR, Padua DA, Clark MA. Muscle strength and flexibility characteristics of people displaying excessive medial knee displacement. *Arch Phys Med Rehabil.* 2008;89(7):1323-1328. [doi:10.1016/j.apmr.2007.11.048](https://doi.org/10.1016/j.apmr.2007.11.048)
+6. Kim SH, et al. Lower extremity strength and the range of motion in relation to squat depth. *J Hum Kinet.* 2015;45:59-69. [doi:10.1515/hukin-2015-0007](https://doi.org/10.1515/hukin-2015-0007)
+7. Legg HS, et al. The effect of weightlifting shoes on the kinetics and kinematics of the back squat. *J Sports Sci.* 2017;35(5):508-515. [doi:10.1080/02640414.2016.1175652](https://doi.org/10.1080/02640414.2016.1175652)
+8. Kubo K, Ikebukuro T, Yata H. Effects of squat training with different depths on lower limb muscle volumes. *Eur J Appl Physiol.* 2019;119(9):1933-1942. [doi:10.1007/s00421-019-04181-y](https://doi.org/10.1007/s00421-019-04181-y)
+9. Bloomquist K, et al. Effect of range of motion in heavy load squatting on muscle and tendon adaptations. *Eur J Appl Physiol.* 2013;113(8):2133-2142. [doi:10.1007/s00421-013-2642-7](https://doi.org/10.1007/s00421-013-2642-7)
+10. Hartmann H, Wirth K, Klusemann M. Analysis of the load on the knee joint and vertebral column with changes in squatting depth and weight load. *Sports Med.* 2013;43(10):993-1008. [doi:10.1007/s40279-013-0073-6](https://doi.org/10.1007/s40279-013-0073-6)
+11. Escamilla RF. Knee biomechanics of the dynamic squat exercise. *Med Sci Sports Exerc.* 2001;33(1):127-141. [doi:10.1097/00005768-200101000-00020](https://doi.org/10.1097/00005768-200101000-00020)
+12. Glassbrook DJ, et al. A review of the biomechanical differences between the high-bar and low-bar back-squat. *J Strength Cond Res.* 2017;31(9):2618-2634. [doi:10.1519/JSC.0000000000002007](https://doi.org/10.1519/JSC.0000000000002007)
+13. Schoenfeld BJ. Squatting kinematics and kinetics and their application to exercise performance. *J Strength Cond Res.* 2010;24(12):3497-3506. [doi:10.1519/JSC.0b013e3181bac2d7](https://doi.org/10.1519/JSC.0b013e3181bac2d7)
+14. Saraceni N, et al. To flex or not to flex? Is there a relationship between lumbar spine flexion during lifting and low back pain? A systematic review with meta-analysis. *J Orthop Sports Phys Ther.* 2020;50(3):121-130. [doi:10.2519/jospt.2020.9218](https://doi.org/10.2519/jospt.2020.9218)
+
+*Cet article est informatif et ne remplace pas un avis médical. En cas de douleur persistante, consultez un professionnel de santé.*
+`,
+  },
+  {  id: "151",
+    slug: "souleve-de-terre-erreurs-execution",
+    title: "Soulevé de terre : les erreurs d'exécution qui volent votre stimulus et chargent votre dos",
+    seoTitle: "Soulevé de terre : 6 erreurs d'exécution | APEXLABS",
+    excerpt: "Barre qui s'éloigne, hanches qui montent avant la barre, dos qui cède, hyperextension en haut, bras qui tirent, rebond au sol : les 6 erreurs d'exécution au soulevé de terre, leur coût mécanique, leur correction et le repère vidéo pour les vérifier. Avec les différences entre conventionnel, sumo et roumain.",
+    metaDescription: "Soulevé de terre : barre loin du corps, hanches trop rapides, dos qui s'arrondit, hyperextension. Les 6 erreurs d'exécution, leurs causes et corrections.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "16 min",
+    image: "/images/blog/souleve-de-terre-erreurs-execution/souleve-de-terre-erreurs-hero.webp",
+    content: `# Soulevé de terre : les erreurs d'exécution qui volent votre stimulus et chargent votre dos
+
+## Introduction : au soulevé de terre, quelques centimètres font toute la séance
+
+Deux pratiquants tirent 140 kg pour 5 répétitions. Le premier garde la barre collée aux tibias, pousse le sol et verrouille hanches et genoux ensemble. Le second laisse la barre partir devant les orteils, voit ses hanches monter avant la barre, puis finit en se cambrant vers l'arrière. Même carnet, mais le second a transféré le travail de ses fessiers et de ses quadriceps vers son bas du dos.
+
+Les erreurs d'exécution au soulevé de terre ont un point commun : elles allongent un bras de levier que vous auriez pu garder court. Une barre qui s'éloigne de 10 cm, des hanches qui montent trop tôt, un buste qui se couche : le moment de force grimpe sur la hanche et sur la colonne lombaire, et le muscle que vous visiez en reçoit moins.
+
+Voici les six erreurs les plus fréquentes, puis ce qui change entre conventionnel, sumo et roumain. Le risque de blessure en général est traité dans l'article [le soulevé de terre est-il dangereux ?](/blog/souleve-terre-dangereux) ; ici, le sujet est l'exécution.
+
+> **L'essentiel en 30 secondes**
+>
+> - La barre doit monter **à la verticale, au-dessus du milieu du pied**. Chaque centimètre d'écart augmente le moment à la hanche et au bas du dos.
+> - Chez des powerlifters en compétition, les moments atteignent **988 N·m au niveau L4/L5 et 1 047 N·m à la hanche** (Cholewicki, 1991). La marge d'erreur est étroite.
+> - Les **hanches qui montent avant la barre** transforment votre tirage en soulevé jambes tendues involontaire.
+> - Un dos **un peu arrondi et stable** n'a pas le même sens qu'un dos qui **s'arrondit de plus en plus** pendant la montée. Le second est à corriger.
+> - **Verrouiller ne veut pas dire se cambrer** : l'hyperextension n'ajoute aucun travail aux fessiers.
+> - Conventionnel, sumo et roumain ont trois mécaniques différentes, donc trois listes d'erreurs.
+
+---
+
+## Erreurs d'exécution au soulevé de terre : ce que l'exercice demande vraiment
+
+### Une charnière de hanche sous une barre verticale
+
+Le soulevé de terre est d'abord une **extension de hanche** associée à une extension de genou, pendant que les érecteurs du rachis et le grand dorsal gardent le tronc rigide : le tronc transmet la force, il ne la produit pas. Le centre de masse de l'ensemble (vous plus la barre) doit rester au-dessus de vos pieds. La barre étant souvent plus lourde que vous, c'est surtout **elle** qui doit rester au-dessus du milieu du pied.
+
+### Ce qui charge le dos : la distance horizontale
+
+![Schéma du bras de levier au soulevé de terre : barre au-dessus du milieu du pied avec un bras de levier d'environ 0,30 m et un moment à la hanche d'environ 294 N·m, contre barre devant les orteils avec un bras de levier d'environ 0,40 m et un moment d'environ 392 N·m, soit 33 % de plus](/images/blog/souleve-de-terre-erreurs-execution/souleve-de-terre-barre-loin-bras-de-levier-schema.webp)
+
+Le moment à la hanche est, en simplifiant, **la charge multipliée par la distance horizontale entre l'articulation et la barre**. Avec 100 kg (environ 981 N), un bras de levier de 0,30 m donne **environ 294 N·m**, un bras de levier de 0,40 m donne **environ 392 N·m** : 33 % de plus pour la même charge. Le calcul est simplifié, mais l'ordre de grandeur est là.
+
+Dans l'analyse de **Cholewicki et al. (1991)**, 57 powerlifters (13 femmes, 44 hommes) filmés en championnat national, les moments moyens les plus élevés atteignaient **988 N·m au niveau L4/L5** et **1 047 N·m à la hanche**, pour une compression lombaire estimée jusqu'à **17 192 N**. La répartition variait beaucoup d'un athlète à l'autre : votre façon de tirer décide de l'articulation qui paie.
+
+### Un mouvement en trois temps
+
+Le soulevé de terre n'est pas un squat à l'envers. Dans l'étude cinématique de **Hales et al. (2009)**, 25 powerlifters filmés en compétition, le squat montrait une extension simultanée de hanche et de genou, alors que le soulevé conventionnel se découpait en **trois phases** : extension de genou dominante, puis extension de hanche dominante, puis les deux ensemble jusqu'au verrouillage. Au point de blocage, le buste était incliné d'environ 58° en moyenne, contre 41° au squat. La revue de **Kompf et Arandjelović (2017)** y voit le signe que l'extension de hanche pourrait être la clé du point de blocage au soulevé de terre.
+
+Sautez la première phase, et les hanches montent sans la barre. Bâclez la deuxième, et vous finissez au dos ou cambré. Les bases (moment de force, bras de levier, courbe de résistance) sont dans le [guide complet de la biomécanique en musculation](/blog/biomecanique-musculation-guide-complet).
+
+---
+
+## Erreur 1 : la barre loin du corps
+
+![Trajectoire de barre au soulevé de terre vue de profil : à gauche une trajectoire verticale au-dessus du milieu du pied, barre collée aux tibias puis aux cuisses ; à droite une barre qui part vers l'avant au décollage puis revient, ce qui augmente le bras de levier au bas du dos](/images/blog/souleve-de-terre-erreurs-execution/souleve-de-terre-trajectoire-barre-schema.webp)
+
+**Ce qu'on voit.** De profil, la barre décolle et part vers l'avant, passe devant les genoux en laissant un espace avec les cuisses, puis revient vers le corps en fin de mouvement. Elle dessine une courbe au lieu d'une ligne.
+
+**Pourquoi ça arrive.** La barre est placée trop loin au départ, souvent au-dessus des orteils. Les épaules sont trop en avant de la barre. Le grand dorsal ne travaille pas : rien ne « tire la barre vers vous ». Ou les genoux restent devant la barre au décollage et elle doit les contourner.
+
+**Ce que ça coûte.** Plus de moment au bas du dos et à la hanche pour la même charge, une barre qui devient trop lourde au point de blocage, et souvent un dos qui s'arrondit pour compenser.
+
+**Comment le corriger.**
+
+- Au départ, la barre au-dessus du **milieu du pied**, ce qui la place en général à 2 ou 3 cm des tibias.
+- **Épaules au-dessus de la barre ou très légèrement devant**, pas loin devant.
+- Indice verbal : « **serrez les aisselles** » ou « **barre collée aux jambes** ». Le grand dorsal ramène la barre vers vous pendant toute la montée.
+- Exercice correctif : soulevé de terre avec pause à 3 cm du sol ou sous les genoux. La pause vous oblige à trouver la position où la barre reste en équilibre au-dessus du pied.
+
+**Comment le vérifier sur vidéo.** De profil, caméra à hauteur de hanche, à 3 ou 4 mètres. Suivez l'extrémité de la barre image par image. Si vous voyez le jour entre la barre et vos tibias au décollage, la trajectoire est déjà perdue.
+
+---
+
+## Erreur 2 : les hanches qui montent trop vite
+
+**Ce qu'on voit.** Vous poussez, les hanches montent d'abord, la barre reste au sol une fraction de seconde, puis le buste se retrouve presque à l'horizontale avec les jambes tendues. Le reste se fait « au dos », souvent à partir de la troisième répétition.
+
+**Pourquoi ça arrive.**
+
+- Les hanches sont placées trop bas au départ : vous « squattez » la barre, et à la première tension le corps remonte les hanches là où il est efficace.
+- Les quadriceps sont le maillon faible, et la phase d'extension de genou est sautée.
+- La barre est arrachée du sol sans mise en tension.
+- La fatigue. La revue systématique de **Bakhshinejad et al. (2025)**, 22 études et 293 pratiquants expérimentés, montre qu'avec l'intensité et la fatigue la vitesse de barre chute et la variabilité articulaire augmente, surtout autour du point de blocage. Seules deux études portaient sur le soulevé de terre.
+
+**Ce que ça coûte.** Le buste se couche et le bras de levier entre hanche et barre s'allonge. La revue de **Bengtsson et al. (2018)** résume le mécanisme : des genoux tendus trop tôt diminuent l'activité des quadriceps, augmentent celle des ischio-jambiers et des érecteurs du rachis, et couchent le buste. Vous faites un soulevé jambes tendues que vous n'avez pas choisi, avec une charge prévue pour un conventionnel.
+
+**Comment le corriger.**
+
+- Ne descendez pas les hanches « pour bien faire ». Tibias contre la barre, puis laissez les hanches trouver leur hauteur : en général au-dessus des genoux, sous les épaules.
+- Indice verbal : « **poussez le sol** » plutôt que « tirez la barre ».
+- Mise en tension : bras tendus, « **sortez le jeu de la barre** » jusqu'au clic contre les disques, puis poussez.
+- Exercices correctifs : soulevé avec déficit (sur une plaque de 2 à 5 cm), squat avant ou presse si les quadriceps sont en retard.
+
+**Comment le vérifier sur vidéo.** De profil, comparez l'angle du buste au départ et au passage des genoux. S'il change beaucoup alors que la barre a peu monté, les hanches sont parties seules.
+
+> **Vous voulez savoir où votre barre décroche ?**
+>
+> Avec FormCheck, vous filmez votre série de soulevé de terre, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : trajectoire de barre, position des hanches, tenue du dos, erreurs identifiées et corrections à faire, selon ma grille d'analyse. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Faire analyser mon soulevé de terre avec FormCheck](/offers/formcheck)
+
+---
+
+## Erreur 3 : le dos qui s'arrondit
+
+### Ce que disent les mesures
+
+- **Cholewicki et McGill (1992)** ont filmé sous fluoroscopie quatre powerlifters de niveau national tirant entre 183,7 et 210,9 kg. Sauf pour un essai, les vertèbres lombaires restaient **1,5 à 13° en deçà** de leur flexion maximale, et les ligaments postérieurs n'étaient pas mis en tension de façon importante. Quatre sujets, mais une mesure directe.
+- **Shoji et al. (2025)**, 13 participants en capture du mouvement de 60 à 90 % de leur 1RM : la flexion du bas du thorax et du haut des lombaires **augmente avec la charge**, avec une bascule du bassin vers l'arrière plus marquée aux charges lourdes. Une stratégie pour finir la répétition, au prix d'une contrainte probablement plus forte sur les disques.
+- La méta-analyse de **Saraceni et al. (2020)** ne trouve pas de lien entre flexion lombaire en soulevant et lombalgie (preuve de faible qualité). La revue narrative de **Cherni et al. (2026)** ajoute que les hausses brutales de charge d'entraînement prédisent mieux les blessures qu'un écart isolé à la position « neutre ».
+
+### Ce qu'il faut en retenir
+
+Un dos **légèrement arrondi au départ et qui ne bouge plus** est une position, souvent liée à la morphologie, surtout en haut du dos. Un dos qui **s'arrondit progressivement pendant la montée** est une perte de rigidité : la colonne cède sous le moment de force, la barre s'éloigne, le transfert de force se dégrade. C'est ce second cas que je corrige.
+
+**Ce qu'on voit.** La courbure du bas du dos change entre le décollage et le passage des genoux, le bassin bascule vers l'arrière, les épaules s'enroulent.
+
+**Pourquoi ça arrive.** Charge trop lourde pour votre rigidité de tronc du jour, pas de mise en tension avant de tirer, ischio-jambiers qui limitent la bascule du bassin vers l'avant, ou barre loin du corps (erreur 1).
+
+**Ce que ça coûte.** Moins de transfert de force, une barre qui ralentit au point de blocage, et une contrainte qui se concentre sur la colonne au lieu de rester sur les hanches.
+
+**Comment le corriger.**
+
+- Avant chaque répétition : **grande inspiration, ventre gonflé contre la ceinture ou vos mains**, tension du tronc, puis tirage.
+- Indice verbal : « **poitrine fière** ». Évitez « dos plat » si vous comprenez « dos cambré ».
+- Baissez la charge de 10 à 15 % jusqu'à ce que la forme du dos soit identique de la première à la dernière répétition.
+- Exercices correctifs : soulevé avec pause sous les genoux, good morning léger, soulevé roumain contrôlé.
+
+**Comment le vérifier sur vidéo.** De profil, comparez la courbure du dos au décollage et au passage des genoux. Forme identique : vous tenez. Forme qui s'arrondit pendant la montée : vous cédez.
+
+Une douleur lombaire qui persiste, descend dans une jambe ou s'accompagne de fourmillements n'est plus une question de technique : consultez un professionnel de santé. Les signaux d'alerte sont détaillés dans l'article [douleurs en musculation : épaule, genou, dos et technique](/blog/douleurs-musculation-technique-epaule-genou-dos).
+
+> **Coaching Elite ou Private Lab : votre soulevé corrigé semaine après semaine**
+>
+> Dans le suivi Elite ou Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires. Je choisis la variante de soulevé de terre et les exercices d'assistance selon votre biomécanique : longueur de vos segments, mobilité de hanche, douleurs éventuelles. Une question entre deux séances ? Je réponds sur WhatsApp, du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Découvrir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Découvrir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## Erreur 4 : l'hyperextension en haut
+
+**Ce qu'on voit.** En fin de mouvement, les épaules basculent loin derrière les hanches, le bas du dos se creuse, le bassin part vers l'avant.
+
+**Pourquoi ça arrive.** Le verrouillage est mal compris : beaucoup pensent qu'il faut aller plus loin que la position debout. La colonne termine à la place des fessiers.
+
+**Ce que ça coûte.** Aucun travail supplémentaire pour les fessiers : une fois la hanche en extension complète, aller plus loin vers l'arrière se fait par la colonne. Vous chargez les articulations postérieures des lombaires, sans bénéfice.
+
+**Comment le corriger.** Indice verbal : « **finissez grand, fessiers serrés, côtes basses** ». Visez une ligne oreille, épaule, hanche, cheville. Exercice correctif : hip thrust avec pause en haut, pour apprendre à finir l'extension par les fessiers (voir le comparatif [squat contre hip thrust pour les fessiers](/blog/squats-vs-hip-thrust-fessiers)).
+
+**Comment le vérifier sur vidéo.** De profil, à la dernière image de chaque répétition : épaule nettement derrière la hanche, vous êtes en hyperextension.
+
+---
+
+## Erreur 5 : tirer avec les bras
+
+**Ce qu'on voit.** Les coudes se fléchissent au décollage ou au passage des genoux, pour « aider » la barre.
+
+**Pourquoi ça arrive.** Réflexe de tirage, prise qui lâche, ou coup donné pour décoller une barre trop lourde.
+
+**Ce que ça coûte.** Les bras ne tireront jamais 150 kg : la force vient des hanches et des jambes. En revanche, un coude fléchi sous charge maximale met le tendon du biceps sous tension sans raison, surtout le bras en supination d'une prise mixte.
+
+**Comment le corriger.** Les bras sont des **câbles** : ils transmettent, ils ne tirent pas. Tendez-les et sortez le jeu de la barre avant de pousser. Si la prise lâche avant les jambes et le dos, travaillez-la à part (tenues statiques, prise crochet) ou utilisez des sangles sur les séries lourdes.
+
+**Comment le vérifier sur vidéo.** De profil ou de face : l'angle du coude doit rester à 180° jusqu'au verrouillage.
+
+---
+
+## Erreur 6 : la descente bâclée et le rebond au sol
+
+**Ce qu'on voit.** La barre tombe presque en descente, rebondit sur les disques et repart aussitôt. Le dos se relâche en bas, la barre atterrit devant les pieds.
+
+**Pourquoi ça arrive.** Fatigue, envie d'aller vite, ou rebond recherché pour soulager le décollage.
+
+**Ce que ça coûte.** Le rebond supprime la partie la plus dure du mouvement, le départ depuis l'arrêt complet. Et chaque départ se fait d'une position plus dégradée. La différence entre une triche utile et une triche qui vole le stimulus est détaillée dans l'article [triche, élan, rebond](/blog/triche-elan-rebond-execution-musculation).
+
+**Comment le corriger.** Descendez en inversant le mouvement : **hanches en arrière d'abord**, barre le long des cuisses, genoux fléchis une fois la barre sous les genoux. Marquez un arrêt complet au sol et reprenez la tension à chaque répétition. Contrôlée suffit, inutile de freiner sur 3 secondes.
+
+**Comment le vérifier sur vidéo.** Un rebond s'entend. Et la barre doit retomber à chaque répétition au même endroit, au-dessus du milieu du pied.
+
+---
+
+## Conventionnel, sumo, roumain : trois mécaniques, trois listes d'erreurs
+
+![Comparaison schématique de la position basse au soulevé de terre conventionnel, sumo et roumain : buste le plus incliné et trajet de barre plus long pour le conventionnel, pieds très écartés et buste plus vertical pour le sumo, hanches en arrière et ischio-jambiers étirés pour le roumain](/images/blog/souleve-de-terre-erreurs-execution/souleve-de-terre-variantes-schema.webp)
+
+### Conventionnel contre sumo : ce que montrent les mesures
+
+L'étude de référence est celle d'**Escamilla et al. (2000)** : 12 pratiquants en sumo et 12 en conventionnel filmés en 3D lors d'un championnat national de powerlifting.
+
+- **Pieds** : écartement de 70 cm en sumo contre 32 cm, pointes ouvertes à 42° contre 14°.
+- **Buste et cuisses** : plus verticaux de 5 à 10° en sumo.
+- **Trajet vertical de la barre et travail mécanique** : 25 à 40 % plus élevés en conventionnel.
+- **Moments à la hanche** : pas de différence significative ; les écarts portaient sur le genou et la cheville.
+
+En EMG (**Escamilla et al., 2002**, 13 joueurs de football américain), les vastes étaient plus actifs en sumo. Chez Cholewicki (1991), le sumo réduisait le moment L4/L5 d'environ **10 %** et le cisaillement de 8 %. La barre hexagonale va dans le même sens : chez 19 powerlifters, **Swinton et al. (2011)** mesurent des moments plus faibles au bas du dos et à la hanche, plus élevés au genou, et un 1RM plus haut (265 kg contre 245 kg). Prudence sur l'EMG : la revue de **Martín-Fuentes et al. (2020)** souligne le manque d'uniformité des méthodes.
+
+### Les erreurs propres au sumo
+
+- **Genoux qui rentrent** pendant la poussée. Indice : « genoux vers les pointes de pieds ».
+- **Écartement copié sur quelqu'un d'autre** : trop large pour votre mobilité de hanche, le bassin ne s'approche pas de la barre et vous tirez buste couché, ce qui annule l'intérêt du sumo.
+- **Décollage brutal** : le sumo se décolle lentement, en ouvrant les genoux, puis accélère.
+
+### Les erreurs propres au roumain
+
+Le roumain part du haut : genoux légèrement fléchis et presque fixes, hanches qui reculent, barre le long des cuisses jusqu'à ce que les ischio-jambiers soient étirés. Tout son intérêt est cette **position étirée sous charge**. L'essai de **Maeo et al. (2021)** a montré une hypertrophie des ischio-jambiers plus forte en position allongée (+14 % contre +9 % de volume, leg curl assis contre allongé). L'étude ne porte pas sur le roumain, mais le principe s'applique (voir l'[amplitude de mouvement](/blog/amplitude-mouvement-croissance)).
+
+- **Genoux qui se fléchissent de plus en plus** : le roumain devient un conventionnel par le haut, les ischio-jambiers ne s'étirent plus.
+- **Descendre trop bas en arrondissant le dos** : la bonne amplitude s'arrête quand les hanches ne reculent plus. Au-delà, c'est la colonne qui gagne des centimètres.
+- **Barre qui s'éloigne des cuisses** : même problème de bras de levier que l'erreur 1, avec une perte de tension en prime.
+
+### Quelle variante choisir
+
+Aucune n'est supérieure dans l'absolu. Des bras longs et un buste court favorisent souvent le conventionnel ; des fémurs longs et une bonne mobilité de hanche, souvent le sumo. Le roumain sert l'hypertrophie des ischio-jambiers et des fessiers plus que la force maximale. Les adaptations selon vos segments sont dans l'article [morphologie et bras de levier](/blog/morphologie-bras-de-levier-adapter-exercices), la place du soulevé dans la semaine dans l'article [soulevé de terre et séance dos](/blog/souleve-terre-jour-dos).
+
+---
+
+## Tableau récapitulatif : erreur → correction
+
+| Erreur | Ce que ça coûte | Correction prioritaire | Repère vidéo |
+|---|---|---|---|
+| Barre loin du corps | Moment accru au bas du dos et à la hanche | Barre au-dessus du milieu du pied, « serrez les aisselles » | Profil : jour entre barre et tibias |
+| Hanches qui montent trop vite | Quadriceps qui décrochent, dos qui prend le relais | « Poussez le sol », mise en tension, déficit | Angle du buste entre départ et genoux |
+| Dos qui s'arrondit pendant la montée | Transfert de force perdu, contrainte sur la colonne | Inspiration et gainage avant chaque répétition, charge -10 à 15 % | Courbure au décollage contre passage des genoux |
+| Hyperextension en haut | Charge lombaire sans travail des fessiers | « Finissez grand », fessiers serrés, côtes basses | Épaule derrière la hanche |
+| Tirer avec les bras | Biceps exposé, barre qui quitte la verticale | Bras tendus, sangles si la prise limite | Angle du coude |
+| Rebond au sol | Décollage supprimé, départs dégradés | Arrêt complet au sol à chaque répétition | Son du rebond, barre au même endroit |
+| Sumo trop large, genoux qui rentrent | Buste couché, intérêt du sumo perdu | Écartement adapté à la mobilité | De face : genoux et pieds |
+| Roumain trop bas ou genoux trop fléchis | Ischio-jambiers moins étirés, dos qui compense | S'arrêter quand les hanches ne reculent plus | Profil : genoux et courbure en bas |
+
+---
+
+## Comment filmer votre soulevé de terre
+
+Trajectoire de barre, angle du buste et courbure du dos se jugent **de profil strict**, caméra posée à hauteur de hanche, à 3 ou 4 mètres, pieds, tête et disques dans l'image. Filmez votre série la plus lourde en entier : les erreurs apparaissent rarement à la première répétition. Ajoutez une vue de face pour le sumo. Le détail est dans l'article [filmer sa séance pour analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique) ; les mêmes principes valent pour le [squat](/blog/squat-erreurs-execution-corrections) et le [rowing](/blog/tirage-rowing-dos-erreurs-execution).
+
+---
+
+## FAQ : erreurs d'exécution au soulevé de terre
+
+### Faut-il absolument garder le dos plat au soulevé de terre ?
+
+Il faut surtout que sa forme **ne change pas** pendant la répétition. Un dos qui s'arrondit de plus en plus pendant la montée signale une perte de rigidité : baissez la charge et retravaillez la mise en tension.
+
+### Pourquoi mes hanches montent avant la barre ?
+
+Le plus souvent : hanches trop basses au départ, barre arrachée sans mise en tension, ou quadriceps en retard. Laissez les hanches trouver leur hauteur, pensez « poussez le sol », et ajoutez un soulevé avec déficit ou un squat avant.
+
+### À quelle distance des tibias placer la barre ?
+
+Au-dessus du milieu du pied, soit en général 2 à 3 cm des tibias. Pendant la montée, elle doit frôler les tibias puis les cuisses.
+
+### Soulevé de terre sumo ou conventionnel : lequel est meilleur ?
+
+Aucun dans l'absolu. Le sumo raccourcit le trajet de la barre et redresse le buste de 5 à 10° (Escamilla, 2000), avec des quadriceps plus sollicités. Le choix dépend de vos leviers, de votre mobilité de hanche et de votre objectif.
+
+### Faut-il se pencher en arrière en fin de soulevé de terre ?
+
+Non. Debout, la hanche est déjà en extension complète. Aller plus loin cambre la colonne lombaire sans travail de plus pour les fessiers.
+
+### Jusqu'où descendre au soulevé roumain ?
+
+Jusqu'au point où vos hanches ne reculent plus, sans que le dos s'arrondisse. Pour beaucoup, c'est entre le milieu des tibias et le bas des genoux.
+
+---
+
+## Conclusion : une barre verticale, un dos qui ne bouge pas, des hanches qui poussent
+
+Presque toutes les erreurs au soulevé de terre ramènent au même problème : un bras de levier qui s'allonge là où il devrait rester court, et une charge qui passe des muscles visés vers la colonne lombaire.
+
+Ma position : corrigez dans l'ordre. D'abord la position de départ et la trajectoire de barre, ensuite la séquence jambes puis hanches, ensuite la tenue du dos sous la fatigue. Et filmez votre série la plus lourde, parce que la sensation ne voit pas la barre partir de 5 cm vers l'avant.
+
+> **Faites analyser votre soulevé de terre par FormCheck**
+>
+> Vous filmez votre série, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique avec vos erreurs et les corrections à faire, selon ma méthode. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+> **Un soulevé de terre adapté à vos leviers, corrigé au fil des semaines**
+>
+> En Elite ou en Private Lab, je suis votre technique à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte la variante, le programme et les exercices à votre biomécanique : segments, mobilité, douleurs. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Vous ne savez pas encore si votre priorité est la technique, le programme ou la récupération ? Le [Discovery Scan](/offers/discovery-scan), gratuit, fait un premier point sur votre entraînement. Et si vos charges n'avancent plus malgré une exécution propre, lisez [pourquoi vous stagnez en musculation](/blog/stagnation-musculation-pourquoi-vous-stagnez) et le guide de la [surcharge progressive](/blog/surcharge-progressive-guide).
+
+---
+
+## Références
+
+1. Cholewicki J, McGill SM, Norman RW. Lumbar spine loads during the lifting of extremely heavy weights. *Med Sci Sports Exerc.* 1991;23(10):1179-1186. PMID: [1758295](https://pubmed.ncbi.nlm.nih.gov/1758295/)
+2. Cholewicki J, McGill SM. Lumbar posterior ligament involvement during extremely heavy lifts estimated from fluoroscopic measurements. *J Biomech.* 1992;25(1):17-28. doi:10.1016/0021-9290(92)90242-s. PMID: [1733981](https://pubmed.ncbi.nlm.nih.gov/1733981/)
+3. Hales ME, Johnson BF, Johnson JT. Kinematic analysis of the powerlifting style squat and the conventional deadlift during competition: is there a cross-over effect between lifts? *J Strength Cond Res.* 2009;23(9):2574-2580. [doi:10.1519/JSC.0b013e3181bc1d2a](https://doi.org/10.1519/JSC.0b013e3181bc1d2a)
+4. Kompf J, Arandjelović O. The sticking point in the bench press, the squat, and the deadlift: similarities and differences, and their significance for research and practice. *Sports Med.* 2017;47(4):631-640. [doi:10.1007/s40279-016-0615-9](https://doi.org/10.1007/s40279-016-0615-9)
+5. Bakhshinejad JA, et al. Effects of intensity and fatigue on the kinetics and kinematics of the barbell squat, bench press, and deadlift in experienced lifters: a systematic review. *Sports Med Open.* 2025;11(1):115. [doi:10.1186/s40798-025-00921-x](https://doi.org/10.1186/s40798-025-00921-x)
+6. Bengtsson V, Berglund L, Aasa U. Narrative review of injuries in powerlifting with special reference to their association to the squat, bench press and deadlift. *BMJ Open Sport Exerc Med.* 2018;4(1):e000382. [doi:10.1136/bmjsem-2018-000382](https://doi.org/10.1136/bmjsem-2018-000382)
+7. Shoji K, Nakayama K, Shiouchi M, Manabe Y. Load-dependent increase in lumbar kyphosis is associated with posterior pelvic tilt during deadlift. *Front Sports Act Living.* 2025;7:1682991. [doi:10.3389/fspor.2025.1682991](https://doi.org/10.3389/fspor.2025.1682991)
+8. Saraceni N, et al. To flex or not to flex? Is there a relationship between lumbar spine flexion during lifting and low back pain? A systematic review with meta-analysis. *J Orthop Sports Phys Ther.* 2020;50(3):121-130. [doi:10.2519/jospt.2020.9218](https://doi.org/10.2519/jospt.2020.9218)
+9. Cherni B, et al. Beyond the neutral spine: a narrative review and modern framework for low back injury prevention in deadlifting. *Sports (Basel).* 2026;14(4):151. [doi:10.3390/sports14040151](https://doi.org/10.3390/sports14040151)
+10. Escamilla RF, et al. A three-dimensional biomechanical analysis of sumo and conventional style deadlifts. *Med Sci Sports Exerc.* 2000;32(7):1265-1275. [doi:10.1097/00005768-200007000-00013](https://doi.org/10.1097/00005768-200007000-00013)
+11. Escamilla RF, et al. An electromyographic analysis of sumo and conventional style deadlifts. *Med Sci Sports Exerc.* 2002;34(4):682-688. [doi:10.1097/00005768-200204000-00019](https://doi.org/10.1097/00005768-200204000-00019)
+12. Swinton PA, et al. A biomechanical analysis of straight and hexagonal barbell deadlifts using submaximal loads. *J Strength Cond Res.* 2011;25(7):2000-2009. [doi:10.1519/JSC.0b013e3181e73f87](https://doi.org/10.1519/JSC.0b013e3181e73f87)
+13. Martín-Fuentes I, Oliva-Lozano JM, Muyor JM. Electromyographic activity in deadlift exercise and its variants. A systematic review. *PLoS One.* 2020;15(2):e0229507. [doi:10.1371/journal.pone.0229507](https://doi.org/10.1371/journal.pone.0229507)
+14. Maeo S, et al. Greater hamstrings muscle hypertrophy but similar damage protection after training at long versus short muscle lengths. *Med Sci Sports Exerc.* 2021;53(4):825-837. [doi:10.1249/MSS.0000000000002523](https://doi.org/10.1249/MSS.0000000000002523)
+
+*Cet article est informatif et ne remplace pas un avis médical. En cas de douleur persistante, consultez un professionnel de santé.*
+`,
+  },
+  {  id: "152",
+    slug: "developpe-couche-erreurs-epaules",
+    title: "Développé couché et épaules : les erreurs d'exécution qui les abîment, et comment les corriger",
+    seoTitle: "Développé couché : erreurs qui abîment l'épaule | APEXLABS",
+    excerpt: "Omoplates qui flottent, coudes en T, prise trop large, barre qui ne revient pas au-dessus des épaules : les erreurs du développé couché qui chargent vos épaules, ce qu'elles coûtent selon les études, et comment les corriger et les vérifier sur vidéo.",
+    metaDescription: "Développé couché et douleur d'épaule : omoplates, angle des coudes, prise, trajectoire en J, arc, rebond. Les erreurs d'exécution et leurs corrections.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "16 min",
+    image: "/images/blog/developpe-couche-erreurs-epaules/developpe-couche-erreurs-epaules-hero.webp",
+    content: `# Développé couché et épaules : les erreurs d'exécution qui les abîment, et comment les corriger
+
+## Introduction : vos épaules paient la technique que vos pectoraux ne prennent pas
+
+Une gêne à l'avant de l'épaule au point bas, un point douloureux sur le dessus après une séance lourde, un clic qui revient à chaque répétition : au développé couché, la plupart des pratiquants qui arrivent avec ce tableau ne manquent ni de force ni de volonté. Ils descendent la barre au mauvais endroit, coudes au mauvais angle, sur des omoplates qui flottent.
+
+Le développé couché place l'épaule en abduction et en extension horizontale sous charge. Votre exécution décide de la part de l'effort qui va aux pectoraux et de celle qui va à la coiffe des rotateurs et aux structures passives. Les erreurs d'exécution au développé couché qui chargent les épaules sont peu nombreuses, faciles à repérer sur vidéo et presque toutes corrigeables en quelques séances.
+
+Les données viennent d'études de cinématique, d'une modélisation musculosquelettique de 2024 qui a testé 21 variantes de développé couché, et d'études cliniques sur les épaules des gros pousseurs.
+
+> **L'essentiel en 30 secondes**
+>
+> - Rétracter les omoplates **réduit les forces dans l'articulation gléno-humérale et l'activité de la coiffe des rotateurs** (Noteboom, 2024 : 10 pratiquants expérimentés, 21 variantes).
+> - Une prise **supérieure à 1,5 fois la largeur des épaules** augmente la compression sur l'articulation acromio-claviculaire.
+> - Les coudes à 90° ne sont pas le seul piège : à 45°, la contrainte vers le haut de l'épaule augmente aussi. Mon réglage de départ : **entre 60 et 75°**.
+> - Les experts gardent la barre **plus près de l'aplomb des épaules** que les novices et soulèvent **79 % de plus** (Madsen et McLaughlin, 1984).
+> - L'amplitude complète donne de meilleurs gains que les versions à 2/3 ou 1/3 sur 10 semaines (Martínez-Cava, 2022). Le rebond et la demi-répétition ne protègent pas vos épaules.
+> - Une douleur qui persiste malgré les corrections relève d'un professionnel de santé, pas d'un réglage de plus.
+
+---
+
+## Pourquoi le développé couché fait mal aux épaules
+
+### Deux articulations, deux contraintes
+
+« L'épaule » du développé couché, ce sont deux articulations :
+
+- **la gléno-humérale**, la tête de l'humérus posée dans la glène de l'omoplate. Très mobile et peu emboîtée, elle dépend de la coiffe des rotateurs pour rester centrée pendant que pectoraux et deltoïde antérieur poussent
+- **l'acromio-claviculaire**, sur le dessus de l'épaule, qui encaisse de la compression quand les bras sont écartés et chargés
+
+Au point bas, la charge tire l'humérus vers l'arrière, épaule ouverte. Gross et al. (1993) ont décrit 20 pratiquants (23 épaules) souffrant d'instabilité antérieure : tous avaient de plus en plus de mal à travailler bras écartés et en rotation externe. Treize épaules ont répondu à une rééducation associée à une **modification de la technique**, dix ont été opérées. Petite série sans groupe contrôle, mais le message est clair : la technique fait partie de la solution.
+
+### Ce que disent les données sur les blessures
+
+Chez 104 powerlifteurs suédois (Strömbäck, 2018), **70 % se déclaraient blessés** au moment de l'enquête, l'épaule figurant parmi les trois zones les plus touchées. Enquête déclarative : une fréquence, pas une cause. Côté acromio-claviculaire, Nevalainen et al. (2016) ont comparé 262 hommes atteints d'ostéolyse de la clavicule distale à 227 hommes indemnes : **56 % des premiers développaient plus de 1,5 fois leur poids de corps, contre 6 %** des seconds (rapport de cotes de 19). Le développé à intensité modérée n'était pas un facteur de risque. Le problème se situe dans les charges élevées répétées.
+
+### L'étude qui a testé les variantes
+
+**Noteboom et al. (2024)** ont fait réaliser à 10 pratiquants expérimentés (9 hommes, 1 femme, 6,7 ans de pratique en moyenne) 21 variantes combinant trois largeurs de prise (1 ; 1,5 et 2 fois la largeur bi-acromiale), trois angles des coudes (45°, 70°, 90°) et trois positions d'omoplates. Une barre instrumentée et un modèle musculosquelettique ont estimé les forces dans les deux articulations. Résultats : **la largeur de prise et la position des omoplates** pèsent bien plus que l'angle des coudes ; au-delà de 1,5 fois la largeur bi-acromiale, compression acromio-claviculaire, cisaillement postérieur et activité de la coiffe augmentent ; la rétraction diminue les forces gléno-humérales et l'activité de tous les muscles de la coiffe modélisés.
+
+Limites : 16 kg sur la barre seulement, des forces estimées par un modèle sans ligaments, aucune donnée de blessure réelle. Financement public néerlandais et Chan Zuckerberg Initiative, sans lien commercial. Des tendances mécaniques solides, pas des seuils de sécurité.
+
+---
+
+## Erreur 1 : des omoplates qui ne restent pas rétractées
+
+**Ce que vous voyez.** Les épaules décollent du banc à chaque poussée, surtout en fin de série. De profil, l'avant de l'épaule monte vers le plafond au verrouillage.
+
+**Pourquoi.** La position n'a jamais été prise, ou elle se perd au décrochage, bras tendus et épaules avancées. Ensuite, chaque verrouillage pousse les omoplates en protraction.
+
+**Ce que ça coûte.** Dans le modèle de Noteboom, la rétraction réduit la force totale gléno-humérale, le cisaillement postérieur au point bas et l'activité de la coiffe : la tête humérale reste mieux centrée. Et elle ne coûte rien en force : García-Ramos et al. (2021) n'ont trouvé aucune différence de 1RM entre un développé plat avec rétraction modérée et un développé avec arc chez 11 powerlifteurs (115,9 kg contre 115,7 kg).
+
+**Correction.** Yeux sous la barre, **serrez puis abaissez les omoplates**, comme pour les glisser dans vos poches arrière, et gardez-les ainsi toute la série. Décrochez en poussant vers le haut, pas en avançant les épaules ; prenez un pareur si c'est lourd. Indice verbal : « la poitrine monte vers la barre, les épaules restent au banc ». Exercice correctif : développé avec pause de deux secondes sur la poitrine, à charge modérée.
+
+**Vérification vidéo.** Caméra de profil, à hauteur du banc. Repère : la ligne de l'épaule par rapport au bord du banc, qui ne doit pas monter en fin de poussée. Comparez la première et la dernière répétition.
+
+---
+
+## Erreur 2 : les coudes à 90°, bras en T
+
+![Développé couché vu de dessus : coudes à 90 degrés en bras en T, coudes serrés à 30-45 degrés et coudes à 60-75 degrés avec la barre sur le bas des pectoraux](/images/blog/developpe-couche-erreurs-epaules/developpe-couche-angle-coudes-schema.webp)
+
+**Ce que vous voyez.** Bras en T par rapport au tronc au point bas, barre sur le haut de la poitrine ou presque au cou. Le mouvement ressemble à un écarté avec une barre.
+
+**Pourquoi.** Le « développé guillotine » a longtemps été vendu comme la version qui isole les pectoraux. Quand la mobilité manque, ouvrir les coudes donne l'impression d'un trajet plus court.
+
+**Ce que ça coûte.** Coudes à 90°, l'épaule est en abduction maximale au moment où elle encaisse le plus de charge. Noteboom nuance : l'angle des coudes pèse moins que la prise et les omoplates, mais certaines combinaisons à 90° ont été exclues de l'expérience car jugées dangereuses. Le bras en T est un facteur aggravant, surtout combiné à une prise très large et des omoplates relâchées, le cas le plus fréquent. L'excès inverse existe : à 45°, la même étude montre plus de cisaillement vers le haut de l'épaule, et les auteurs suggèrent aux personnes qui ont mal sur le dessus de l'épaule d'éviter coudes très serrés et prise très étroite. Coller les coudes au maximum n'est pas la protection universelle souvent annoncée.
+
+**Correction.** Mon réglage de départ : **coudes entre 60 et 75° par rapport au tronc**, barre sur le bas des pectoraux, vers la pointe du sternum. Indice verbal : « plie la barre », comme pour la tordre en U vers vos pieds. Ajustez de 5 à 10° selon vos sensations et vos segments : un torse épais avec des bras courts ne donne pas le même angle qu'un torse plat avec des bras longs (voir l'article sur la [morphologie et les bras de levier](/blog/morphologie-bras-de-levier-adapter-exercices)).
+
+**Vérification vidéo.** L'angle se lit mal de profil : filmez de dessus, ou dans l'axe du banc derrière la tête. Repère : l'angle bras-tronc au point bas et le point de contact de la barre. Barre au-dessus de la ligne des tétons avec les bras à l'horizontale, c'est un bras en T.
+
+> **Vous n'êtes pas sûr de ce que fait votre épaule au point bas ?**
+>
+> Avec FormCheck, vous filmez votre série de développé couché, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : position des omoplates, angle des coudes, trajectoire de la barre, ce qu'ils coûtent à vos épaules et les corrections à faire, établis selon ma grille d'analyse. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €. Sans création de compte.
+>
+> [Faire analyser mon développé couché avec FormCheck](/offers/formcheck)
+
+---
+
+## Erreur 3 : une trajectoire verticale au lieu d'une courbe en J
+
+![Trajectoire de la barre au développé couché vue de profil : courbe en J avec un bras de levier quasi nul au verrouillage, comparée à une trajectoire verticale qui conserve le bras de levier à l'épaule](/images/blog/developpe-couche-erreurs-epaules/developpe-couche-trajectoire-j-schema.webp)
+
+**Ce que vous voyez.** De profil, la barre monte en ligne droite au-dessus du bas des pectoraux, ou part vers les pieds. Au verrouillage, elle est au-dessus du sternum, pas des épaules.
+
+**Pourquoi.** L'intuition dit que la ligne droite est le chemin le plus court. Mais le point bas efficace (bas des pectoraux) et le point haut efficace (aplomb des épaules) ne sont pas sur la même verticale.
+
+**Ce que ça coûte.** Moment de force = force × bras de levier, la règle de base de la [biomécanique en musculation](/blog/biomecanique-musculation-guide-complet). Le bras de levier à l'épaule est la distance horizontale entre la barre et l'articulation. Barre restée au-dessus des pectoraux, ce bras de levier ne fond jamais et l'épaule supporte un moment élevé jusqu'au verrouillage. Avec une courbe en J, la barre revient vers l'aplomb de l'épaule et le moment chute en haut. Madsen et McLaughlin (1984) ont filmé 19 experts et 17 novices : les experts soulevaient 79 % de plus, descendaient plus lentement et gardaient une trajectoire plus proche des épaules. Duffey et Challis (2007) ont fait réaliser à 18 pratiquants loisir (10 hommes, 8 femmes) le maximum de répétitions à 75 % du 1RM : en approchant de l'échec, ils ramenaient la barre plus directement au-dessus de l'épaule, et le temps de montée doublait. Études anciennes et petites, mais convergentes.
+
+**Correction.** Descendez vers le bas des pectoraux, coudes légèrement sous la barre. Au départ de la poussée : « pousse vers le rack ». La barre recule en diagonale sur la première moitié de la montée, puis finit verticale au-dessus des épaules.
+
+**Vérification vidéo.** Profil strict, à hauteur du banc, à 2 ou 3 mètres, manchon visible. Suivez le centre du disque : vous devez obtenir un J inversé, point bas plus bas sur le torse que le point haut.
+
+---
+
+## Erreur 4 : une prise trop large et des poignets cassés
+
+**Ce que vous voyez.** Mains aux anneaux extérieurs ou au-delà, avant-bras penchés vers l'extérieur au point bas. Souvent, la barre est tenue dans les doigts, poignets cassés vers l'arrière.
+
+**Pourquoi.** La prise large raccourcit le trajet et fait gagner quelques kilos. Chez 14 hommes entraînés (Larsen, 2021), le 1RM était de 109,8 kg en prise large, 108,9 kg en moyenne et 103,7 kg en serrée. Chez 12 athlètes de niveau national et international (Saeterbakken, 2017), les 6RM étaient 5,8 à 11,1 % plus élevés en prise moyenne et large qu'en serrée, **sans différence d'activation EMG des pectoraux** entre les trois largeurs.
+
+**Ce que ça coûte.** Au-delà de 1,5 fois la largeur bi-acromiale, Noteboom mesure plus de compression acromio-claviculaire, plus de cisaillement postérieur et plus d'activité du sus-épineux et du sous-scapulaire. L'explication est mécanique : mains plus écartées, bras de levier plus grand, moments plus élevés. Les auteurs parlent d'un compromis entre performance et risque, à mettre en regard des données de Nevalainen sur la clavicule distale. Le poignet cassé ajoute un problème de transmission : la barre n'est plus empilée sur l'avant-bras. Dans la même étude, les forces latérales des mains sur la barre variaient énormément ; les deux participants qui poussaient vers l'intérieur étaient les moins expérimentés, et une simulation suggère qu'orienter la force vers l'extérieur réduit la plupart des forces articulaires (sur un seul essai, que les auteurs refusent de généraliser). À l'autre extrême, la prise très serrée déplace le travail vers les triceps (Lehman, 2005) : c'est un autre exercice, pas une correction.
+
+**Correction.** Visez des **avant-bras verticaux vus de face au point bas**, soit environ 1,3 à 1,5 fois la largeur des épaules pour la plupart des gabarits. Notez où tombent vos index par rapport aux anneaux et gardez la même prise à chaque séance. Barre dans le talon de la main, pouce refermé, poignet empilé au-dessus du coude. Indice verbal : « écarte la barre », sans que les mains glissent.
+
+**Vérification vidéo.** Caméra de face, au pied du banc, légèrement surélevée : inclinaison des avant-bras et symétrie des mains. Un décalage de deux doigts suffit à charger une épaule plus que l'autre. Un gros plan de profil montre l'alignement barre, poignet, coude.
+
+> **Coaching Elite ou Private Lab : votre développé corrigé semaine après semaine**
+>
+> Dans le suivi Elite ou Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires. J'adapte le programme et le choix des exercices à votre biomécanique : longueur des bras, épaisseur du torse, mobilité des épaules, douleurs éventuelles. Si la barre ne vous convient pas, elle est remplacée par la variante qui vous convient. Une question entre deux séances ? Je réponds sur WhatsApp, du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Découvrir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Découvrir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## Erreur 5 : pas d'arc, ou un arc mal compris
+
+**Ce que vous voyez.** Soit un dos complètement à plat, épaules qui roulent vers l'avant dès la deuxième répétition. Soit un pont lombaire spectaculaire avec des fesses qui décollent à la poussée.
+
+**Pourquoi.** L'arc passe pour une triche de powerlifter : certains s'interdisent toute extension, d'autres copient les compétiteurs sans savoir ce que l'arc doit produire.
+
+**Ce que ça coûte.** L'arc utile est une **extension du haut du dos** qui découle de la rétraction des omoplates : la poitrine monte vers la barre. Sans elle, les omoplates tiennent mal (erreur 1). Avec un pont excessif, vous raccourcissez l'amplitude, donc le travail des pectoraux en position étirée, et les fesses qui décollent rendent la trajectoire imprévisible. Chez les 11 powerlifteurs de García-Ramos (2021), l'arc prononcé n'a même pas augmenté le 1RM.
+
+**Correction.** Arc thoracique modéré, bas du dos dans sa courbure naturelle, fesses au banc toute la série, pieds qui poussent vers l'arrière du banc. Indice verbal : « poitrine vers la barre, fesses au banc ».
+
+**Vérification vidéo.** Profil. Repères : l'espace entre bas du dos et banc (une main à plat passe ; un poing entier, c'est trop pour un objectif d'hypertrophie) et le contact des fesses au point le plus dur de la montée.
+
+---
+
+## Erreur 6 : le rebond sur la poitrine et les demi-répétitions
+
+**Ce que vous voyez.** La barre tombe sur le sternum et repart sur le choc, la cage thoracique s'écrase. Ou elle s'arrête à 10 cm de la poitrine, répétition après répétition, pendant que la charge monte chaque semaine.
+
+**Pourquoi.** Le rebond fait passer le point le plus dur avec l'énergie élastique. La demi-répétition est présentée comme une protection des épaules, ou s'installe parce que l'ego a choisi la charge. Les deux sont décortiqués dans l'article sur la [triche, l'élan et le rebond](/blog/triche-elan-rebond-execution-musculation).
+
+**Ce que ça coûte.** Martínez-Cava et al. (2022) ont réparti 50 hommes entraînés en trois groupes : amplitude complète, 2/3 et 1/3, même charge relative pendant 10 semaines. L'amplitude complète a donné les meilleurs gains de force sur les **trois** versions du mouvement, y compris les partielles. L'étude mesurait la force, pas l'hypertrophie, mais la logique de l'[amplitude de mouvement](/blog/amplitude-mouvement-croissance) va dans le même sens : la portion où les pectoraux sont étirés est celle à ne pas sacrifier. Le rebond rend cette portion passive et fait passer la barre au point bas à une vitesse que vous ne contrôlez plus : elle dérive, l'épaule absorbe.
+
+**Correction.** Descente en 2 secondes environ, toucher la poitrine sans s'y appuyer, repartir sans rebond. Baissez la charge de 10 à 15 % le temps de stabiliser l'amplitude. Si toucher la poitrine fait mal, ne coupez pas les répétitions par réflexe : revoyez d'abord les erreurs 1 à 4, puis consultez si la douleur persiste.
+
+**Vérification vidéo.** Profil, au ralenti. Une barre qui accélère juste avant le contact ou un torse qui s'enfonce signale le rebond. Comparez la hauteur du point bas sur toute la série.
+
+---
+
+## Tableau récapitulatif : erreur → correction
+
+| Erreur | Ce qui se passe mécaniquement | Correction | Repère vidéo |
+|---|---|---|---|
+| Omoplates non rétractées | Tête humérale moins centrée, coiffe plus sollicitée | Serrer et abaisser avant le décrochage, garder toute la série | Profil : l'épaule ne monte pas au verrouillage |
+| Coudes à 90° (bras en T) | Abduction maximale sous charge maximale | Coudes à 60-75°, barre sur le bas des pectoraux | Dessus : angle bras-tronc au point bas |
+| Coudes collés à 45°, prise serrée | Cisaillement vers le haut de l'épaule | Ouvrir légèrement les coudes, prise moyenne | Face : coudes à l'intérieur des poignets |
+| Trajectoire verticale | Bras de levier à l'épaule conservé jusqu'en haut | Courbe en J, fin au-dessus des épaules | Profil : chemin du manchon |
+| Prise trop large | Plus de compression acromio-claviculaire et de cisaillement | Avant-bras verticaux, environ 1,3 à 1,5 fois les épaules | Face : inclinaison des avant-bras |
+| Poignets cassés | Barre mal empilée, épaule qui compense | Barre dans le talon de la main, « écarte la barre » | Gros plan : barre, poignet, coude alignés |
+| Arc absent ou pont excessif | Omoplates instables ou amplitude réduite | Arc thoracique modéré, fesses au banc | Profil : espace lombaire, fesses |
+| Rebond, demi-répétitions | Stimulus perdu au point bas, barre non contrôlée | Descente en 2 s, toucher sans rebond, charge baissée | Profil au ralenti : accélération avant contact |
+
+---
+
+## Filmer votre développé couché
+
+![Banc de développé couché dans une salle sombre avec un smartphone sur trépied placé de profil à hauteur du banc](/images/blog/developpe-couche-erreurs-epaules/developpe-couche-filmer-banc.webp)
+
+Trois angles se complètent : le **profil**, à hauteur du banc et à 2 ou 3 mètres (trajectoire, omoplates, arc, rebond ; l'angle prioritaire si vous n'en faites qu'un), la **face**, au pied du banc et légèrement surélevée (prise, avant-bras, symétrie), et le **dessus** quand la salle le permet (angle des coudes). Filmez une série de travail entière, pas un échauffement : les erreurs apparaissent sur les dernières répétitions, comme Duffey et Challis l'ont montré sur la trajectoire. Évitez le contre-jour et cadrez large, du décrochage au retour au rack. Les réglages détaillés sont dans l'article [filmer sa séance pour analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique).
+
+---
+
+## Douleur d'épaule : ce que la technique peut faire, et ce qu'elle ne peut pas faire
+
+Corriger votre technique change la répartition des contraintes. Ce n'est pas un traitement, et cela ne dit pas pourquoi vous avez mal : seul un professionnel de santé peut poser un diagnostic. Consultez sans attendre si la douleur persiste au repos ou la nuit, si elle s'aggrave d'une séance à l'autre malgré les corrections et une charge réduite, si vous ressentez une sensation d'épaule qui se déboîte, une faiblesse soudaine ou des fourmillements dans le bras, ou si vous avez senti un claquement au niveau de la poitrine ou de l'aisselle pendant une répétition lourde.
+
+En attendant, réduisez la charge et remplacez temporairement la barre par des haltères, qui laissent la main et le coude trouver leur trajectoire, ou par une machine convergente. Les signaux d'alerte et les alternatives sont détaillés dans l'article sur les [douleurs en musculation liées à la technique](/blog/douleurs-musculation-technique-epaule-genou-dos). Pour la programmation des pectoraux eux-mêmes, le [guide scientifique des pectoraux](/blog/pectoraux-guide-scientifique) prend le relais, et [le rôle des dorsaux au développé couché](/blog/dorsaux-developpe-couche-mythe) a son propre article.
+
+---
+
+## FAQ : développé couché et épaules
+
+### Pourquoi j'ai mal à l'épaule au développé couché ?
+
+Les causes techniques les plus fréquentes : omoplates qui ne restent pas rétractées, coudes ouverts à 90°, prise trop large et barre qui reste loin de l'aplomb des épaules. Elles augmentent les forces dans les articulations gléno-humérale ou acromio-claviculaire et la sollicitation de la coiffe. Une douleur peut avoir d'autres origines : si elle persiste malgré les corrections, consultez un professionnel de santé.
+
+### Quel angle des coudes au développé couché ?
+
+Mon réglage de départ : 60 à 75° entre le bras et le tronc au point bas, barre sur le bas des pectoraux. À 90°, l'épaule est en abduction maximale sous charge ; à 45° avec une prise serrée, le cisaillement vers le haut de l'épaule augmente (Noteboom, 2024). Ajustez ensuite selon votre morphologie.
+
+### Faut-il serrer les omoplates au développé couché ?
+
+Oui. La rétraction réduit les forces gléno-humérales et l'activité de la coiffe dans le modèle de Noteboom, sans baisse du 1RM selon García-Ramos (2021). Prenez la position avant le décrochage et gardez-la jusqu'à la dernière répétition.
+
+### Quelle largeur de prise pour protéger les épaules ?
+
+Celle qui place les avant-bras à la verticale au point bas, environ 1,3 à 1,5 fois la largeur des épaules. Au-delà de 1,5 fois la largeur bi-acromiale, compression acromio-claviculaire et cisaillement augmentent. La prise très large fait gagner quelques kilos, sans activation mesurée supérieure des pectoraux.
+
+### L'arc au développé couché est-il dangereux ?
+
+Un arc thoracique modéré, qui découle de la rétraction des omoplates, aide à stabiliser l'épaule. Le pont lombaire excessif raccourcit l'amplitude et n'a pas augmenté le 1RM de powerlifteurs (García-Ramos, 2021). Gardez les fesses au banc et le bas du dos dans sa courbure naturelle.
+
+### Faut-il toucher la poitrine au développé couché ?
+
+Oui, si l'épaule le tolère sans douleur. L'amplitude complète a donné de meilleurs gains que les versions à 2/3 et 1/3 sur 10 semaines (Martínez-Cava, 2022). Touchez sans rebondir, après une descente contrôlée. Si le point bas fait mal, corrigez omoplates, coudes et prise, et faites examiner l'épaule si la douleur persiste.
+
+---
+
+## Conclusion : pas moins de développé couché, un meilleur développé couché
+
+La plupart des épaules qui souffrent au développé couché ne souffrent pas de l'exercice mais de quatre réglages : omoplates qui flottent, coudes en T, prise trop large, barre qui ne revient jamais au-dessus des épaules. Ajoutez rebond et demi-répétitions, et l'exercice charge les articulations tout en volant aux pectoraux la portion du mouvement qui les fait grandir.
+
+Ma position : omoplates serrées et basses avant le décrochage, coudes entre 60 et 75°, avant-bras verticaux au point bas, courbe en J, descente contrôlée jusqu'à la poitrine. Et une vérification sur vidéo plutôt qu'à la sensation, parce que la sensation ne voit ni vos coudes ni la trajectoire de la barre.
+
+> **Faites analyser votre développé couché par FormCheck**
+>
+> Vous filmez votre série, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique avec vos erreurs et les corrections à faire, selon ma méthode : omoplates, coudes, prise, trajectoire, amplitude. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €. Sans compte à créer.
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+> **Un développé couché construit pour vos épaules, pas pour celles d'un autre**
+>
+> En Elite ou en Private Lab, je suis votre technique à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des exercices à votre biomécanique : segments, mobilité, douleurs. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Vous ne savez pas encore par où commencer ? Le [Discovery Scan](/offers/discovery-scan), gratuit, fait un premier point sur votre entraînement, votre récupération et vos priorités.
+
+*ACHZOD*
+
+---
+
+## Références
+
+1. Noteboom L, Belli I, Hoozemans MJM, Seth A, Veeger HEJ, Van Der Helm FCT. Effects of bench press technique variations on musculoskeletal shoulder loads and potential injury risk. *Front Physiol.* 2024;15:1393235. [doi:10.3389/fphys.2024.1393235](https://doi.org/10.3389/fphys.2024.1393235)
+2. Madsen N, McLaughlin T. Kinematic factors influencing performance and injury risk in the bench press exercise. *Med Sci Sports Exerc.* 1984;16(4):376-381. PMID: [6493018](https://pubmed.ncbi.nlm.nih.gov/6493018/)
+3. Duffey MJ, Challis JH. Fatigue effects on bar kinematics during the bench press. *J Strength Cond Res.* 2007;21(2):556-560. [doi:10.1519/R-19885.1](https://doi.org/10.1519/R-19885.1)
+4. Larsen S, Gomo O, van den Tillaar R. A biomechanical analysis of wide, medium, and narrow grip width effects on kinematics, horizontal kinetics, and muscle activity on the sticking region in recreationally trained males during 1-RM bench pressing. *Front Sports Act Living.* 2021;2:637066. [doi:10.3389/fspor.2020.637066](https://doi.org/10.3389/fspor.2020.637066)
+5. Saeterbakken AH, Mo DA, Scott S, Andersen V. The effects of bench press variations in competitive athletes on muscle activity and performance. *J Hum Kinet.* 2017;57:61-71. [doi:10.1515/hukin-2017-0047](https://doi.org/10.1515/hukin-2017-0047)
+6. Lehman GJ. The influence of grip width and forearm pronation/supination on upper-body myoelectric activity during the flat bench press. *J Strength Cond Res.* 2005;19(3):587-591. [doi:10.1519/R-15024.1](https://doi.org/10.1519/R-15024.1)
+7. García-Ramos A, Pérez-Castilla A, Villar Macias FJ, et al. Differences in the one-repetition maximum and load-velocity profile between the flat and arched bench press in competitive powerlifters. *Sports Biomech.* 2021;20(3):261-273. [doi:10.1080/14763141.2018.1544662](https://doi.org/10.1080/14763141.2018.1544662)
+8. Martínez-Cava A, Hernández-Belmonte A, Courel-Ibáñez J, Morán-Navarro R, González-Badillo JJ, Pallarés JG. Bench press at full range of motion produces greater neuromuscular adaptations than partial executions after prolonged resistance training. *J Strength Cond Res.* 2022;36(1):10-15. [doi:10.1519/JSC.0000000000003391](https://doi.org/10.1519/JSC.0000000000003391)
+9. Nevalainen MT, Ciccotti MG, Morrison WB, Zoga AC, Roedl JB. Distal clavicular osteolysis in adults: association with bench pressing intensity. *Skeletal Radiol.* 2016;45(11):1473-1479. [doi:10.1007/s00256-016-2446-z](https://doi.org/10.1007/s00256-016-2446-z)
+10. Gross ML, Brenner SL, Esformes I, Sonzogni JJ. Anterior shoulder instability in weight lifters. *Am J Sports Med.* 1993;21(4):599-603. [doi:10.1177/036354659302100419](https://doi.org/10.1177/036354659302100419)
+11. Strömbäck E, Aasa U, Gilenstam K, Berglund L. Prevalence and consequences of injuries in powerlifting: a cross-sectional study. *Orthop J Sports Med.* 2018;6(5):2325967118771016. [doi:10.1177/2325967118771016](https://doi.org/10.1177/2325967118771016)
+
+*Cet article est informatif et ne remplace pas un avis médical. En cas de douleur persistante, consultez un professionnel de santé.*
+`,
+  },
+  {  id: "153",
+    slug: "tirage-rowing-dos-erreurs-execution",
+    title: "Tirage et rowing : les 6 erreurs d'exécution qui volent le travail du dos, et comment les corriger",
+    seoTitle: "Tirage et rowing : 6 erreurs qui volent le dos | APEXLABS",
+    excerpt: "Biceps qui font le travail, élan du buste, omoplates figées, coudes mal orientés, amplitude coupée, prise inadaptée : les 6 erreurs d'exécution au tirage et au rowing, leur coût mécanique, la correction et le repère à vérifier sur vidéo.",
+    metaDescription: "Tirage et rowing : biceps qui dominent, élan du buste, omoplates figées, coudes, amplitude, prise. Causes, corrections et repères vidéo pour cibler le dos.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "17 min",
+    image: "/images/blog/tirage-rowing-dos-erreurs-execution/tirage-rowing-dos-hero.webp",
+    content: `# Tirage et rowing : les 6 erreurs d'exécution qui volent le travail du dos, et comment les corriger
+
+## Introduction : vous tirez lourd, mais pas avec le dos
+
+Rowing barre, tirage vertical, tirage horizontal : les charges montent depuis des mois, les biceps sont congestionnés, et votre dos ne change presque pas. Le problème ne vient ni du volume ni des exercices. Il vient de l'exécution.
+
+Un tirage mobilise l'épaule, l'omoplate, le coude et souvent la hanche. Chaque articulation peut prendre une part du travail, et la plupart des erreurs de tirage et de rowing ont le même effet : elles déplacent l'effort du grand dorsal, des trapèzes et des rhomboïdes vers les bras, vers l'élan du buste ou vers le bas du dos. La charge progresse sur le carnet, le stimulus du dos stagne.
+
+Voici les six erreurs que je vois le plus souvent sur les tirages : ce qu'on voit, pourquoi ça arrive, ce que ça coûte, la correction et le repère vidéo.
+
+> **L'essentiel en 30 secondes**
+>
+> - Le grand dorsal et le grand rond ramènent **le bras** vers le corps (extension et adduction de l'épaule). Les trapèzes moyens et les rhomboïdes rapprochent **les omoplates**. Le coude ne fait que transmettre.
+> - Une simple consigne technique augmente l'activité EMG du grand dorsal au tirage vertical (Snyder et Leech, 2009), sans que le biceps travaille moins.
+> - Redresser le buste pour lancer la barre au rowing peut réduire d'environ **40 %** le bras de levier à la hanche : c'est l'élan qui soulève, pas le dos.
+> - Le rowing barre buste penché produit **la plus forte charge lombaire** des trois rowings comparés par Fenwick et al. (2009).
+> - Coudes près du corps : priorité au grand dorsal. Coudes écartés : priorité aux trapèzes moyens, aux rhomboïdes et au deltoïde postérieur.
+> - Couper l'étirement, bras tendus et omoplates ouvertes, vous prive de la portion la plus intéressante pour l'hypertrophie.
+
+---
+
+## Erreurs de tirage et de rowing : ce que fait vraiment votre dos
+
+### Trois groupes de muscles, trois fonctions
+
+- **Le grand dorsal et le grand rond** déplacent l'humérus vers le bas et vers l'arrière. Dans les mesures sur cadavre d'Ackland et al. (2008), le grand rond et les fibres moyennes et inférieures du grand dorsal figurent parmi les adducteurs les plus efficaces de l'épaule, et le grand rond possède l'un des plus grands bras de levier en extension.
+- **Les trapèzes moyens et inférieurs et les rhomboïdes** rapprochent l'omoplate de la colonne et, pour le trapèze inférieur, la tirent vers le bas.
+- **Le biceps, le brachial et le brachio-radial** fléchissent le coude. Indispensables, mais pas la cible.
+
+Le grand dorsal ne voit pas votre main, il voit le déplacement de l'humérus. Si la main arrive au ventre parce que le coude s'est plié sans que le bras ait vraiment reculé, c'est le biceps qui a fait le trajet.
+
+### Pourquoi les bras prennent toujours le relais
+
+Le biceps, vous le sentez et vous le voyez. Le grand dorsal est derrière vous, et beaucoup n'ont jamais appris à le contracter volontairement. Dès que la charge devient difficile, le cerveau plie les coudes.
+
+Youdas et al. (2010) donnent un ordre de grandeur. Sur 25 jeunes adultes aux tractions, l'activité EMG moyenne allait de **117 à 130 %** de la contraction maximale de référence pour le grand dorsal et de **78 à 96 %** pour le biceps, davantage en supination qu'en pronation.
+
+Attention : l'EMG de surface dit si un muscle est sollicité, pas combien il va grossir. Je m'en sers pour comprendre la répartition du travail, pas pour classer les exercices. Si les notions de moment de force et de bras de levier ne vous parlent pas encore, lisez d'abord le [guide complet de biomécanique en musculation](/blog/biomecanique-musculation-guide-complet).
+
+### Pourquoi les erreurs de tirage et de rowing volent le travail du dos
+
+La charge crée un moment autour de l'épaule, du coude et parfois de la hanche, et votre exécution décide de la part de chacun. Coudes pliés avant que l'humérus bouge : le moment se concentre au coude. Barre lancée avec les hanches : les extenseurs de hanche et les lombaires font une partie du travail. Amplitude coupée en position étirée : le grand dorsal ne travaille jamais à grande longueur. Le dos reçoit moins de tension que ce que la charge laisse croire.
+
+---
+
+## Erreur 1 : tirer avec les bras plutôt qu'avec le dos
+
+**Ce qu'on voit.** Le mouvement commence aux coudes. En fin de tirage, les mains sont près du torse, mais les coudes restent devant la ligne des épaules et les poignets se cassent vers vous. Après la série, les biceps sont plus fatigués que le dos.
+
+**Pourquoi ça arrive.** Commande motrice plus que force : la flexion du coude est le geste le plus familier, et la charge est souvent trop lourde pour l'épaule seule.
+
+**Ce que ça coûte.** Le grand dorsal travaille sur une amplitude réduite. Les biceps saturent en premier et la série s'arrête quand les bras lâchent, pas quand le dos approche de l'échec.
+
+**Ce que disent les études.** Snyder et Leech (2009) ont fait réaliser un tirage vertical prise large à **8 femmes** débutantes, à 30 % de leur maximum, avant puis après une consigne visant à insister sur le grand dorsal. L'activité EMG du grand dorsal a augmenté de façon significative ; celle du biceps et du grand rond n'a pas bougé. Échantillon minuscule, charge légère, mais la façon de penser le mouvement change bien la répartition du travail.
+
+**Comment le corriger.**
+- Indice verbal : « les mains sont des crochets ». Au tirage vertical : « coudes dans les poches arrière ». Au rowing : « coudes vers les hanches ».
+- Sangles de tirage sur les séries lourdes, poignets neutres.
+- En éducatif, le tirage bras tendus à la poulie haute : seul l'humérus bouge. Deux ou trois séries légères en début de séance apprennent à sentir le grand dorsal.
+- Baissez la charge de 10 à 20 % le temps de reprogrammer le geste.
+
+**Comment le vérifier sur vidéo.** De profil, caméra à hauteur d'épaule. Dans le premier tiers de la répétition, le coude doit commencer à descendre ou à reculer avant que son angle se ferme nettement. En fin de rowing, il dépasse la ligne du dos.
+
+---
+
+## Erreur 2 : l'élan du buste qui fait le travail à la place du dos
+
+![Schéma de profil du rowing buste penché : à gauche, buste fixe incliné vers 30 à 45 degrés et long bras de levier horizontal entre la hanche et la barre ; à droite, buste qui se redresse avec élan des hanches et bras de levier réduit d'environ 40 %](/images/blog/tirage-rowing-dos-erreurs-execution/rowing-buste-penche-execution-schema.webp)
+
+**Ce qu'on voit.** Au rowing, le buste se relève à chaque répétition. Au tirage horizontal assis, vous partez allongé vers l'avant et finissez penché en arrière. La barre monte par un coup de reins.
+
+**Pourquoi ça arrive.** La charge est trop lourde pour l'amplitude et le tempo choisis, et les extenseurs de hanche sont bien plus puissants que le dos supérieur. Au rowing buste penché s'ajoute la fatigue des ischio-jambiers et des lombaires, qui tiennent la position : elle se dégrade au fil de la série.
+
+**Ce que ça coûte.** Le moment que la charge crée à la hanche dépend de la distance horizontale entre la hanche et la barre. Quand le buste se redresse, cette distance fond, d'environ 40 % dans l'exemple du schéma. Une partie de la vitesse de la barre vient alors de l'extension de hanche, pas de l'épaule ni des omoplates.
+
+La colonne paie aussi. Fenwick, Brown et McGill (2009) ont comparé trois rowings chez **7 hommes**. Le rowing barre buste penché activait fortement tout le dos, mais produisait **la plus forte charge lombaire** des trois. Le rowing inversé au poids du corps activait le plus le grand dorsal, pour la plus faible charge lombaire. Chaque répétition lancée au buste ajoute un cycle de flexion-extension sous charge, comme expliqué dans l'article sur les [erreurs d'exécution au soulevé de terre](/blog/souleve-de-terre-erreurs-execution).
+
+Au tirage horizontal assis, un léger mouvement du buste, de l'ordre de 10 à 15°, accompagne naturellement l'étirement. Le problème, c'est le buste qui **lance** la charge. La triche contrôlée sur les dernières répétitions a sa place chez un pratiquant avancé ; c'est l'objet de l'article sur la [triche, l'élan et le rebond](/blog/triche-elan-rebond-execution-musculation).
+
+**Comment le corriger.**
+- Indice verbal : « le buste est une table, seuls les bras bougent ».
+- Passez au rowing poitrine appuyée (banc incliné, T-bar ou machine à appui thoracique) : l'appui supprime l'élan et soulage les lombaires.
+- Marquez une pause d'une seconde, coudes en arrière. Pas de pause possible, charge trop lourde.
+- Au rowing barre, choisissez un angle de buste tenable toute la série, souvent entre 30 et 45° au-dessus de l'horizontale. Un peu plus redressé mais stable vaut mieux qu'un buste très penché qui oscille.
+
+**Comment le vérifier sur vidéo.** De profil, caméra au niveau de la hanche. Repérez la ligne épaule-hanche sur la première image : si son angle varie de plus de quelques degrés pendant le tirage, l'élan participe. Un départ explosif suivi d'une fin molle trahit aussi un coup de hanches.
+
+> **Votre tirage, analysé avec ma grille biomécanique**
+>
+> Vous pensez tirer avec le dos sans en être sûr ? Filmez votre série de rowing ou de tirage, envoyez-la à FormCheck, et vous recevez sous 3 heures un rapport d'analyse biomécanique : vos erreurs, ce qu'elles coûtent et les corrections à faire, selon ma méthode. Sans compte à créer. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+---
+
+## Erreur 3 : des omoplates figées du début à la fin
+
+**Ce qu'on voit.** Soit les omoplates restent écartées toute la série, épaules enroulées vers l'avant. Soit elles sont verrouillées en rétraction dès la première répétition, « pour serrer les omoplates », et ne bougent plus.
+
+**Pourquoi ça arrive.** Dans le premier cas, la fatigue ou une charge trop lourde. Dans le second, une consigne importée du développé couché, où l'omoplate doit rester stable sur le banc. Au tirage, elle doit glisser sur la cage thoracique : s'ouvrir quand les bras se tendent, se fermer quand vous tirez.
+
+**Ce que ça coûte.** Omoplates figées en ouverture : les trapèzes moyens et les rhomboïdes ne terminent jamais leur course. Omoplates verrouillées en fermeture : vous perdez l'étirement du haut du dos en début de répétition.
+
+Lehman et al. (2004) apportent une nuance. Sur **12 hommes** entraînés, en maintien isométrique à charge modérée, rétracter activement les omoplates au tirage horizontal **n'a pas augmenté** l'activité des trapèzes moyens et des rhomboïdes, ni celle du grand dorsal. Position statique, charge légère : impossible d'en tirer une règle d'hypertrophie. Mais « serrer les omoplates » en permanence n'est pas une garantie de travail du dos. Ce qui compte, c'est le trajet complet de l'omoplate.
+
+**Comment le corriger.**
+- Indice verbal : « laissez partir l'épaule vers l'avant, puis ramenez-la avant de plier le coude ». Au tirage vertical : « épaules aux oreilles en haut, dans les poches arrière en bas ».
+- Séquence : l'omoplate bouge d'abord, le coude ensuite. Au retour, l'inverse.
+- En éducatif, les tirages scapulaires : bras tendus à la poulie ou suspendu à la barre, seulement le mouvement des omoplates, 2 séries de 10 à 12.
+
+**Comment le vérifier sur vidéo.** De dos, caméra à hauteur des omoplates, tenue près du corps. L'écart entre les bords internes des omoplates doit augmenter nettement en position étirée et diminuer nettement en fin de tirage.
+
+---
+
+## Erreur 4 : des coudes qui ne vont pas là où le muscle cible les attend
+
+![Schéma vu de dessus de la fin d'un rowing : coudes près du corps entre 15 et 30 degrés, extension de l'épaule ciblant le grand dorsal et le grand rond, et coudes écartés entre 60 et 90 degrés, abduction horizontale ciblant le trapèze moyen, les rhomboïdes et le deltoïde postérieur](/images/blog/tirage-rowing-dos-erreurs-execution/tirage-rowing-trajectoire-coude-schema.webp)
+
+**Ce qu'on voit.** Un rowing « pour les dorsaux » fait coudes écartés à 90°, ou des coudes qui changent d'angle d'une répétition à l'autre.
+
+**Pourquoi ça arrive.** L'angle entre le bras et le tronc change la fonction de l'épaule. Coudes à 15-30° du corps, l'humérus recule dans un plan proche du plan sagittal : c'est de l'extension de l'épaule, fonction principale du grand dorsal et du grand rond. Coudes à 60-90°, il recule dans un plan horizontal : c'est de l'abduction horizontale, qui sollicite davantage le deltoïde postérieur, les trapèzes moyens et les rhomboïdes.
+
+**Ce que ça coûte.** Sur des mois, vous construisez le dos que votre trajectoire vous donne, pas celui que vous visez.
+
+**Comment le corriger.**
+- Pour le grand dorsal : prise neutre ou légèrement supinée, coudes près des flancs, « coude vers la hanche » en suivant un arc. La poignée arrive vers le nombril.
+- Pour l'épaisseur : prise pronation plus large, coudes à 60-90°, « coude vers l'arrière et vers l'extérieur ». La poignée arrive vers le bas de la poitrine.
+- Gardez au moins un tirage de chaque type par semaine si vous visez un dos complet.
+
+**Comment le vérifier sur vidéo.** De face ou de dos, caméra en hauteur, pour voir l'angle bras-tronc en fin de tirage. Sur un rowing unilatéral, un téléphone fixé au-dessus de vous le montre très bien.
+
+> **Une technique corrigée semaine après semaine**
+>
+> Corriger un tirage, ce n'est pas une consigne lue une fois. En Elite ou en Private Lab, je suis votre technique à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des tirages à votre biomécanique : longueur des bras, mobilité des épaules, douleurs éventuelles. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## Erreur 5 : l'amplitude amputée en position étirée
+
+**Ce qu'on voit.** Au tirage vertical, la barre ne remonte jamais au-dessus du front, bras à moitié pliés. Au rowing, elle s'arrête loin de l'extension complète. Toute la série se fait dans la moitié la plus courte du mouvement.
+
+**Pourquoi ça arrive.** La position étirée est la plus inconfortable, et la couper permet de charger plus. Une mobilité d'épaule limitée pousse aussi à raccourcir ou à cambrer.
+
+**Ce que ça coûte.** La revue systématique de Kassiano et al. (2023), sur 11 études, conclut que l'amplitude complète et les partielles dans la portion étirée favorisent la croissance de plusieurs muscles, et que les partielles en position raccourcie font moins bien. Chez de jeunes hommes suivis 10 semaines, Pinto et al. (2012) mesuraient un gain d'épaisseur des fléchisseurs du coude de 9,65 % en amplitude complète contre 7,83 % en partielle, et un net avantage de force.
+
+Wolf et al. (2025) ont comparé chez **30 pratiquants entraînés**, un bras contre l'autre pendant 8 semaines, des répétitions complètes et des partielles limitées à la portion étirée. Gains d'épaisseur des bras et de performance au tirage vertical unilatéral similaires. Leur conclusion pratique : insistez sur la position étirée, en amplitude complète ou en partielles allongées. Le détail est dans l'article sur l'[amplitude de mouvement et la croissance](/blog/amplitude-mouvement-croissance).
+
+**Comment le corriger.**
+- Indice verbal : « bras tendus, épaules aux oreilles, étirement sous l'aisselle » au tirage vertical ; « laissez la charge vous tirer vers l'avant » au rowing.
+- Baissez la charge jusqu'à contrôler chaque retour complet sans faire claquer la pile.
+- Privilégiez les tirages unilatéraux (poulie à un bras, rowing haltère sur banc) : le tronc peut légèrement pivoter et l'étirement est plus grand.
+
+**Comment le vérifier sur vidéo.** De profil. En bas du tirage vertical, le coude est quasiment tendu. Au rowing, comparez la position basse de la barre sur la première et la dernière répétition : si l'amplitude rétrécit, la charge est trop lourde.
+
+---
+
+## Erreur 6 : la prise et le trajet qui sabotent l'épaule
+
+**Ce qu'on voit.** Prise ultra-large au tirage vertical « pour élargir le dos », tirage derrière la nuque tête projetée vers l'avant, ou épaules qui montent vers les oreilles en fin de tirage.
+
+**Pourquoi ça arrive.** Des croyances, et une charge trop lourde pour le haussement d'épaules.
+
+**Ce que disent les études.**
+- **Largeur de prise** : Andersen et al. (2014) ont testé 15 hommes sur 6 répétitions maximales au tirage vertical avec trois prises (1, 1,5 et 2 fois la largeur des épaules). Les prises serrée et moyenne permettaient plus de charge que la large (80,3 et 80 kg contre 77,3 kg), pour une activité du grand dorsal **similaire**.
+- **Tirage derrière la nuque** : chez 24 hommes entraînés à 80 % du maximum, Sperandei et al. (2009) ne trouvaient aucune différence d'activité du grand dorsal entre tirage devant, derrière la nuque et prise neutre en V. Le tirage nuque augmentait celle du deltoïde postérieur et du biceps. Les auteurs le déconseillent. J'ajoute qu'il impose une forte rotation externe de l'épaule bras levé, sans bénéfice pour le dos.
+
+**Ce que ça coûte.** Moins de charge, une épaule plus exposée, et des trapèzes supérieurs qui volent la fin du tirage.
+
+**Comment le corriger.** Prise entre 1 et 1,5 fois la largeur des épaules, celle qui vous donne l'amplitude la plus complète sans douleur. Tirage devant, vers le haut de la poitrine, buste légèrement reculé. « Épaules loin des oreilles » en fin de tirage ; si elles montent, baissez la charge.
+
+**Comment le vérifier sur vidéo.** De face : la distance épaules-oreilles doit augmenter en fin de tirage. De profil : la barre descend devant le visage, la tête ne part pas vers l'avant.
+
+---
+
+## Grand dorsal contre trapèzes et rhomboïdes : choisir son tirage selon la cible
+
+| Objectif | Exécution qui le sert | Exemples d'exercices |
+|---|---|---|
+| Largeur : grand dorsal et grand rond | Coudes près du corps, trajet en arc vers la hanche, grand étirement | Tirage vertical prise neutre ou supination, tirage poulie un bras, rowing haltère coude collé, tirage bras tendus |
+| Épaisseur : trapèzes moyens et rhomboïdes | Coudes écartés, trajet complet des omoplates, pause en fin de tirage | Rowing poitrine appuyée prise large, tirage horizontal barre large, rowing inversé |
+| Deltoïde postérieur | Coudes à 90°, abduction horizontale, peu de rétraction | Oiseau à la poulie, face pull |
+| Ménager les lombaires | Buste appuyé, pas de position penchée prolongée | Rowing poitrine appuyée, rowing machine, rowing inversé |
+
+Le rowing barre reste un bon exercice global, mais si vous faites déjà un [soulevé de terre le jour du dos](/blog/souleve-terre-jour-dos), un rowing appuyé évite de cumuler la fatigue lombaire. Pour comprendre pourquoi une poulie et un haltère ne chargent pas le muscle au même endroit, lisez l'article sur la [courbe de résistance](/blog/courbe-de-resistance-choisir-exercices). Votre morphologie compte aussi : des bras longs allongent le trajet, un torse court change l'angle de buste possible. C'est développé dans l'article sur la [morphologie et les bras de levier](/blog/morphologie-bras-de-levier-adapter-exercices).
+
+---
+
+## Tableau récapitulatif : erreur → correction
+
+| Erreur | Ce que ça coûte | Correction prioritaire | Repère vidéo |
+|---|---|---|---|
+| Tirer avec les bras | Biceps saturés avant le dos | « Coudes vers les hanches », sangles, tirage bras tendus | Profil : le coude recule avant de se plier nettement |
+| Élan du buste | Travail transféré aux hanches et aux lombaires | Rowing poitrine appuyée, pause d'une seconde | Profil : angle épaule-hanche stable |
+| Omoplates figées | Trapèzes moyens et rhomboïdes sans trajet complet | L'omoplate d'abord, le coude ensuite | Dos : l'écart entre les omoplates varie nettement |
+| Coudes mal orientés | Muscle cible sous-exploité sur la durée | Coudes près pour la largeur, écartés pour l'épaisseur | Face ou dessus : angle bras-tronc conforme |
+| Amplitude amputée | Position étirée perdue | Charge plus légère, étirement complet, unilatéral | Profil : bras tendu en bas, amplitude stable |
+| Prise et trajet inadaptés | Moins de charge, épaule plus exposée | Prise 1 à 1,5 fois les épaules, tirage devant | Face : épaules loin des oreilles |
+
+---
+
+## Comment filmer vos tirages pour vous corriger
+
+![Haltères, sangles de tirage et bol de magnésie au pied d'une cage à squat dans une salle de musculation sombre, avec un projecteur sur pied pour filmer la séance](/images/blog/tirage-rowing-dos-erreurs-execution/tirage-rowing-materiel.webp)
+
+Un tirage se lit sur au moins deux angles. **De profil**, à 2 ou 3 mètres, téléphone à hauteur de hanche pour le rowing buste penché et à hauteur d'épaule pour les tirages : c'est l'angle de l'élan, de l'amplitude et de l'ordre épaule puis coude. **De dos**, à hauteur des omoplates, pour leur trajet et la symétrie. Filmez une série complète à charge de travail : les erreurs apparaissent sur les dernières répétitions. Tous les réglages sont dans l'article consacré à [filmer sa séance pour analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique).
+
+---
+
+## Douleur en tirant : quand s'arrêter
+
+Un tirage bien exécuté ne devrait pas faire mal. En cas de gêne à l'épaule, au coude ou au bas du dos, réduisez la charge et passez à une variante appuyée. Si la douleur persiste au-delà de quelques jours, irradie dans le bras, s'accompagne de fourmillements ou d'une perte de force, arrêtez l'exercice et consultez un professionnel de santé. Les liens entre technique et douleurs sont détaillés dans l'article sur les [douleurs en musculation à l'épaule, au genou et au dos](/blog/douleurs-musculation-technique-epaule-genou-dos).
+
+---
+
+## FAQ : erreurs de tirage et de rowing
+
+### Pourquoi je sens mes biceps et pas mon dos au rowing ?
+
+Parce que votre coude se plie avant que votre bras recule. Pensez « coudes vers les hanches », prenez des sangles, baissez la charge et ajoutez un tirage bras tendus en début de séance. Le biceps restera actif : l'objectif est que le dos cesse d'être secondaire.
+
+### Faut-il serrer les omoplates pendant tout le tirage ?
+
+Non. L'omoplate doit s'ouvrir en position étirée et se fermer en fin de tirage. Chez Lehman (2004), rétracter activement les omoplates n'augmentait pas l'activité des trapèzes moyens et des rhomboïdes. Visez un trajet complet, pas une position figée.
+
+### Prise large ou prise serrée au tirage vertical pour élargir le dos ?
+
+Pas d'avantage net de la prise large : activité du grand dorsal similaire entre 1 et 2 fois la largeur des épaules (Andersen, 2014), avec plus de charge en prise serrée ou moyenne.
+
+### Le tirage derrière la nuque est-il dangereux ?
+
+Il n'apporte rien de plus pour le grand dorsal que le tirage devant (Sperandei, 2009) et impose une position d'épaule plus exigeante. Je ne le programme pas. Tirez devant, vers le haut de la poitrine.
+
+### Rowing barre ou rowing poitrine appuyée : lequel choisir ?
+
+Le rowing barre sollicite tout le dos mais impose la plus forte charge lombaire (Fenwick, 2009) et invite à l'élan. Le rowing appuyé ménage les lombaires : avec du soulevé de terre ou du squat lourd dans la semaine, c'est souvent le meilleur choix.
+
+### Combien de temps faut-il pour corriger un tirage mal exécuté ?
+
+Une consigne claire change souvent le geste dès la première séance à charge réduite, comme le suggère l'étude de Snyder et Leech (2009). Le rendre stable sous charge lourde prend plusieurs semaines. Filmez-vous régulièrement et reprenez la [surcharge progressive](/blog/surcharge-progressive-guide) quand la technique tient sur toute la série.
+
+---
+
+## Ce qu'il faut retenir
+
+Un dos se construit avec la tension que reçoivent ses muscles, pas avec la charge affichée sur la pile. Bougez l'omoplate puis le coude, gardez le buste stable, orientez les coudes selon la cible, allez chercher l'étirement, tirez devant avec une prise raisonnable.
+
+Ma position : sur les tirages, baisser la charge de 15 % pour exécuter proprement fait presque toujours progresser le dos plus vite que de forcer avec l'élan. Et sur un mouvement que vous ne voyez pas, la sensation trompe : la vidéo tranche.
+
+> **Faites analyser votre tirage par FormCheck**
+>
+> Vous filmez votre série de rowing ou de tirage, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique avec vos erreurs et les corrections à faire, selon ma grille d'analyse. Sans compte à créer. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+> **Un programme de dos construit pour vos leviers**
+>
+> En Elite ou en Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des exercices à votre biomécanique : longueur des segments, mobilité, douleurs. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Vous voulez d'abord faire le point sur votre entraînement et vos priorités ? Le [Discovery Scan](/offers/discovery-scan), gratuit, est un bon point de départ.
+
+*ACHZOD*
+
+---
+
+## Références
+
+1. Ackland DC, Pak P, Richardson M, Pandy MG. Moment arms of the muscles crossing the anatomical shoulder. *J Anat.* 2008;213(4):383-390. [doi:10.1111/j.1469-7580.2008.00965.x](https://doi.org/10.1111/j.1469-7580.2008.00965.x)
+2. Youdas JW, et al. Surface electromyographic activation patterns and elbow joint motion during a pull-up, chin-up, or perfect-pullup rotational exercise. *J Strength Cond Res.* 2010;24(12):3404-3414. [doi:10.1519/JSC.0b013e3181f1598c](https://doi.org/10.1519/JSC.0b013e3181f1598c)
+3. Snyder BJ, Leech JR. Voluntary increase in latissimus dorsi muscle activity during the lat pull-down following expert instruction. *J Strength Cond Res.* 2009;23(8):2204-2209. [doi:10.1519/JSC.0b013e3181bb7213](https://doi.org/10.1519/JSC.0b013e3181bb7213)
+4. Fenwick CM, Brown SH, McGill SM. Comparison of different rowing exercises: trunk muscle activation and lumbar spine motion, load, and stiffness. *J Strength Cond Res.* 2009;23(2):350-358. [doi:10.1519/JSC.0b013e3181942019](https://doi.org/10.1519/JSC.0b013e3181942019)
+5. Lehman GJ, Buchan DD, Lundy A, Myers N, Nalborczyk A. Variations in muscle activation levels during traditional latissimus dorsi weight training exercises: an experimental study. *Dyn Med.* 2004;3(1):4. [doi:10.1186/1476-5918-3-4](https://doi.org/10.1186/1476-5918-3-4)
+6. Kassiano W, Costa B, Nunes JP, Ribeiro AS, Schoenfeld BJ, Cyrino ES. Which ROMs lead to Rome? A systematic review of the effects of range of motion on muscle hypertrophy. *J Strength Cond Res.* 2023;37(5):1135-1144. [doi:10.1519/JSC.0000000000004415](https://doi.org/10.1519/JSC.0000000000004415)
+7. Pinto RS, et al. Effect of range of motion on muscle strength and thickness. *J Strength Cond Res.* 2012;26(8):2140-2145. [doi:10.1519/JSC.0b013e31823a3b15](https://doi.org/10.1519/JSC.0b013e31823a3b15)
+8. Wolf M, et al. Lengthened partial repetitions elicit similar muscular adaptations as full range of motion repetitions during resistance training in trained individuals. *PeerJ.* 2025;13:e18904. [doi:10.7717/peerj.18904](https://doi.org/10.7717/peerj.18904)
+9. Andersen V, Fimland MS, Wiik E, Skoglund A, Saeterbakken AH. Effects of grip width on muscle strength and activation in the lat pull-down. *J Strength Cond Res.* 2014;28(4):1135-1142. [doi:10.1097/JSC.0000000000000232](https://doi.org/10.1097/JSC.0000000000000232)
+10. Sperandei S, Barros MA, Silveira-Júnior PC, Oliveira CG. Electromyographic analysis of three different types of lat pull-down. *J Strength Cond Res.* 2009;23(7):2033-2038. [doi:10.1519/JSC.0b013e3181b8d30a](https://doi.org/10.1519/JSC.0b013e3181b8d30a)
+
+*Cet article est informatif et ne remplace pas un avis médical. En cas de douleur persistante, consultez un professionnel de santé.*
+`,
+  },
+  {  id: "154",
+    slug: "courbe-de-resistance-choisir-exercices",
+    title: "Courbe de résistance : choisir ses exercices entre haltères, poulies, machines et élastiques",
+    seoTitle: "Courbe de résistance : choisir ses exercices | APEXLABS",
+    excerpt: "Haltère, poulie, machine à came ou élastique : chaque outil place la difficulté ailleurs. Lire la courbe de résistance en trois questions et choisir vos exercices muscle par muscle.",
+    metaDescription: "Courbe de résistance : comment haltères, poulies, machines et élastiques chargent vos muscles, et quels exercices choisir pour pecs, biceps, fessiers.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "16 min",
+    image: "/images/blog/courbe-de-resistance-choisir-exercices/courbe-de-resistance-hero.webp",
+    content: `# Courbe de résistance : choisir ses exercices entre haltères, poulies, machines et élastiques
+
+## Introduction : le même mouvement, quatre exercices différents
+
+Élévation latérale à l'haltère, à la poulie basse, à la machine ou avec un élastique sous le pied : le bras fait le même trajet. Pour votre deltoïde, ce sont quatre exercices différents, parce que chacun place la difficulté à un endroit différent de l'amplitude.
+
+C'est ce que décrit la **courbe de résistance** : la façon dont l'effort imposé à l'articulation varie du début à la fin du mouvement. Elle dépend de l'outil, de la direction dans laquelle il tire et de la position de votre corps. La lire permet de choisir ses exercices pour une raison mécanique, et plus parce que la machine était libre.
+
+L'[article pilier sur la biomécanique en musculation](/blog/biomecanique-musculation-guide-complet) pose la définition. Ici, place au concret : lire la courbe de n'importe quel exercice, ce que fait vraiment chaque outil, l'associer au muscle visé (pectoraux, biceps, fessiers, deltoïdes latéraux) et les erreurs de réglage qui l'annulent.
+
+> **L'essentiel en 30 secondes**
+>
+> - Avec un **poids libre**, la résistance est maximale quand le segment qui porte la charge est **horizontal**. Avec une **poulie**, quand le segment est **perpendiculaire au câble**.
+> - La **poulie** ne vaut que par son réglage : hauteur, côté et distance décident de la courbe. Mal placée, elle n'apporte rien de plus que l'haltère.
+> - Les **machines à came** promettent de suivre votre profil de force. Sur 8 machines d'extension de jambes testées, aucune ne le faisait vraiment (Folland, 2008).
+> - L'**élastique** est le plus dur en fin de mouvement. Pour la force, il fait jeu égal avec les poids et machines (méta-analyse de 8 études, Lopes, 2019), mais il charge peu la position étirée.
+> - Ma règle de départ pour l'hypertrophie : un exercice qui **charge le muscle étiré** en base, un exercice qui charge la position raccourcie en complément si besoin.
+> - La théorie ne gagne pas toujours : haltère et poulie ont donné la **même hypertrophie** du deltoïde latéral sur 8 semaines (Larsen, 2025).
+
+![Quatre courbes de résistance comparées pour l'élévation latérale : haltère nulle en bas et maximale à l'horizontale, poulie basse chargée dès le départ, machine à came au profil variable selon le fabricant, élastique léger en bas et maximal en haut](/images/blog/courbe-de-resistance-choisir-exercices/courbe-resistance-quatre-outils-schema.webp)
+
+---
+
+## Courbe de résistance : la lire en trois questions
+
+Trois questions suffisent pour connaître la courbe de n'importe quel exercice en salle.
+
+### 1. Dans quelle direction la résistance tire-t-elle ?
+
+Un haltère, une barre ou un kettlebell tirent **toujours vers le bas** : c'est la gravité. Un câble tire **dans l'axe du câble**, vers la poulie. Un élastique tire vers son point d'ancrage, avec une force qui grandit à mesure qu'il s'allonge. Une machine guidée tire dans la direction que lui imposent son bras de levier et sa came.
+
+Changez cette direction, et vous changez l'endroit où le mouvement devient dur, à charge et geste identiques.
+
+### 2. À quel moment le segment est-il perpendiculaire à cette direction ?
+
+Le moment de force est maximal quand le segment chargé (avant-bras, bras, cuisse) est **perpendiculaire** à la ligne de traction : **horizontal** avec un poids libre, à 90° du câble avec une poulie.
+
+À l'inverse, quand le segment est **aligné** avec la ligne de traction, le bras de levier tombe à zéro : vous tenez la charge, mais le muscle ne travaille presque plus. C'est le haut d'un curl à l'haltère, le bas d'une élévation latérale, le haut d'un écarté couché.
+
+### 3. À ce moment-là, le muscle est-il long ou court ?
+
+C'est la question qui compte pour l'hypertrophie. Un exercice qui est dur quand le muscle est **étiré** ne donne pas le même stimulus qu'un exercice dur quand le muscle est **raccourci**. Les essais qui comparent les deux sur un même muscle penchent souvent vers la position étirée : +8,9 % d'épaisseur des fléchisseurs du coude contre +3,4 % chez 32 débutants entraînés 5 semaines, selon que l'amplitude travaillée allait de 0 à 50° ou de 80 à 130° de flexion (Sato, 2021).
+
+Indice pratique : l'endroit où la répétition échoue est le sommet de la courbe, croisé avec votre profil de force.
+
+---
+
+## Haltères, poulies, machines, élastiques : ce que fait chaque outil
+
+### Haltères et barres : la gravité ne négocie pas
+
+Avec un poids libre, la courbe dépend uniquement de l'orientation de votre corps par rapport au sol. C'est une contrainte, mais aussi un réglage sans matériel : **inclinez le banc ou le buste, et vous déplacez le pic de résistance**.
+
+Exemples concrets :
+
+- **Curl debout** : avant-bras horizontal à 90° de flexion, donc pic à mi-parcours, presque rien bras tendu.
+- **Curl pupitre à 45°** : l'avant-bras devient horizontal beaucoup plus tôt, donc le pic se déplace vers 45° de flexion, quand le biceps est encore long.
+- **Élévation latérale debout** : nulle en bas, maximale bras horizontal. Penchez-vous sur le côté en vous tenant à un montant, et le bras part déjà incliné : la tension apparaît plus tôt dans l'amplitude.
+- **Écarté couché** : maximal en bas, bras ouverts, quand les pectoraux sont étirés ; nul en haut, bras verticaux.
+
+La limite des poids libres : vous ne pouvez pas faire tirer la gravité de côté.
+
+### Poulies : vous choisissez la direction
+
+La poulie est l'outil le plus souple, à condition de la régler. **Trois paramètres** décident de sa courbe :
+
+1. **La hauteur de la poulie.** Elle fixe l'angle du câble, donc le moment où votre segment lui sera perpendiculaire.
+2. **Le côté.** Une poulie basse du côté opposé, pour une élévation latérale, fait passer le câble devant le corps et crée de la tension dès le départ, bras le long du corps.
+3. **La distance.** Plus vous êtes loin de la poulie, plus l'angle du câble change peu pendant la série, et plus la courbe devient régulière. Trop près, le câble pivote beaucoup et la résistance peut s'effondrer en fin de mouvement.
+
+La poulie ne charge pas toute seule la position étirée. Un curl face à une poulie basse a une courbe proche du curl à l'haltère (schéma ci-dessous) : le câble part presque dans l'axe de l'avant-bras. Pour charger le biceps étiré, tournez le dos à la poulie, bras en arrière.
+
+![Courbes de résistance du curl selon l'angle de flexion du coude : haltère debout au pic vers 90 degrés, pupitre à 45 degrés au pic vers 45 degrés, poulie basse de face proche de l'haltère, comparées à la capacité de force du coude](/images/blog/courbe-de-resistance-choisir-exercices/courbe-resistance-curl-schema.webp)
+
+### Machines à came : le dessin du constructeur
+
+La came est la pièce en forme d'escargot sur laquelle s'enroule la courroie. Son rayon variable modifie la résistance selon l'angle. Sur le principe, c'est l'outil idéal : dessiné pour suivre le profil de force d'une articulation.
+
+Sur le terrain, c'est moins net. **Folland et Morris (2008)** ont mesuré la résistance de **8 machines d'extension de jambes de 6 fabricants** à cinq angles du genou, et l'ont comparée au profil de force de 10 hommes jeunes. Ce que montre l'étude :
+
+- la force des quadriceps suit un **U inversé** : environ **+40 %** en sortant de la flexion profonde, puis **−60 %** en approchant de l'extension
+- les machines étaient toutes **moins courbées** : de +2,5 à +22,2 % sur la première portion, de +37,6 à −20,5 % sur la seconde
+- certaines **augmentaient** la résistance vers l'extension, là où le quadriceps est le plus faible
+
+Les limites : une seule famille de machines, 10 sujets, des modèles de 2008. Mais le message tient : **« machine à came » ne veut pas dire « courbe adaptée »**. Deux presses à pectoraux de marques différentes peuvent se comporter très différemment. Sentez où la machine devient dure et comparez avec le muscle visé.
+
+Leur vrai atout reste la stabilité : vous allez près de l'échec sans que l'équilibre ne limite la série.
+
+### Élastiques : la tension grandit avec l'étirement
+
+Un élastique résiste proportionnellement à son allongement : léger en bas, maximal en haut. C'est l'inverse de ce qu'il faut pour charger la position étirée de la plupart des muscles.
+
+Côté force, pourtant, rien à lui reprocher. La méta-analyse de **Lopes et al. (2019)** regroupe **8 études** comparant l'entraînement avec élastiques (tubes et bandes) à l'entraînement avec machines ou haltères : **aucune différence** de gains de force, ni pour le bas du corps ni pour le haut du corps. Les limites : peu d'études, des populations souvent non entraînées ou âgées, et la force mesurée plutôt que l'hypertrophie.
+
+Où l'élastique a du sens :
+
+- **ajouté à une barre** au squat ou au développé, où vous êtes plus fort en haut qu'en bas
+- **en complément** pour charger une position raccourcie (fin d'extension de hanche, fin d'abduction)
+- **en déplacement**, quand il n'y a rien d'autre
+
+Où il en a peu : comme outil principal pour un muscle à charger étiré (écarté, curl). Si vous n'avez que ça, ancrez-le déjà tendu au départ et éloignez le point d'ancrage pour lisser la courbe.
+
+> **Vous ne savez pas si votre exercice charge vraiment le bon endroit ?**
+>
+> Avec FormCheck, vous filmez votre série, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : où votre exécution perd la tension, pourquoi, et les corrections à faire (réglage de poulie, position du corps, amplitude), établis selon ma grille d'analyse. Sans création de compte. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Faire analyser ma série avec FormCheck](/offers/formcheck)
+
+---
+
+## Associer la courbe de résistance au muscle : ma méthode en trois étapes
+
+Choisir ses exercices, c'est faire coïncider l'endroit où l'outil est dur avec l'endroit où vous voulez que le muscle travaille. Voici l'ordre dans lequel je raisonne.
+
+1. **Trouver la position étirée du muscle.** Elle découle de son anatomie : quelles articulations il croise, quel mouvement l'allonge.
+2. **Choisir l'outil et le réglage qui chargent cette position.** C'est l'exercice de base pour ce muscle.
+3. **Ajouter, si besoin, un exercice qui charge la position raccourcie.** Il complète, il ne remplace pas.
+
+Pourquoi la position étirée en premier ? La revue de **Kassiano et al. (2023)**, sur 11 études, conclut que le quadriceps, le biceps et le triceps tendent à mieux grossir quand ils travaillent plus longs. Chez 30 pratiquants entraînés, des répétitions partielles limitées à la portion étirée ont donné la même hypertrophie des bras qu'une amplitude complète sur 8 semaines (Wolf, 2025). Ce n'est pas une loi universelle, mais c'est une base solide. Le détail des études sur l'amplitude est dans l'article sur [l'amplitude de mouvement et la croissance](/blog/amplitude-mouvement-croissance).
+
+![Tableau de correspondance entre muscle et courbe de résistance : position étirée et exercices qui la chargent pour les pectoraux, les biceps, les fessiers et les deltoïdes latéraux](/images/blog/courbe-de-resistance-choisir-exercices/courbe-resistance-muscles-schema.webp)
+
+### Pectoraux : ouvrir les bras sous tension
+
+**Position étirée** : bras ouverts, coudes en arrière du tronc (abduction horizontale).
+
+- **Développé aux haltères** : les mains descendent plus bas que la barre, qui s'arrête sur la poitrine. Vous gagnez de l'amplitude côté étiré.
+- **Écarté aux haltères** : maximal bras ouverts, nul en haut. Inutile de serrer les haltères l'un contre l'autre : il n'y a plus rien à serrer.
+- **Écarté à la poulie** ou **pec deck** : la tension persiste jusqu'à la fermeture. Réglez poignées ou siège pour que l'étirement soit déjà chargé au départ.
+- **Faisceau claviculaire** : ses fibres ont un bras de levier important en flexion d'épaule, contrairement aux fibres moyennes et basses (Ackland, 2008, 8 épaules de cadavres). Développé incliné ou écarté de la poulie basse vers le haut.
+
+L'anatomie complète est dans [pectoraux : le guide scientifique](/blog/pectoraux-guide-scientifique), et les réglages d'épaules dans [les erreurs du développé couché](/blog/developpe-couche-erreurs-epaules).
+
+### Biceps : le curl debout laisse le bas vide
+
+**Position étirée** : coude tendu, et bras en arrière du tronc, puisque le biceps croise aussi l'épaule.
+
+- **Curl debout à l'haltère** : pic à 90°, presque rien bras tendu.
+- **Curl pupitre** : pic vers 45°. C'est la logique de l'étude de Sato : la portion 0-50° a donné **2,6 fois plus de gain d'épaisseur** que la portion 80-130° (8,9 % contre 3,4 %). 12 débutants par groupe, 5 semaines : un signal, pas une vérité gravée.
+- **Curl incliné** : le bras passe derrière le corps, le biceps est allongé à l'épaule. Même courbe au coude que debout, mais un muscle plus long.
+- **Curl poulie dos à la poulie**, bras en arrière : tension coude tendu, biceps étiré aux deux articulations. C'est celui que je place le plus souvent en exercice principal.
+
+Le curl debout et le curl marteau restent en complément, notamment pour le brachial et le brachioradial.
+
+### Fessiers : la hanche fléchie d'abord, le hip thrust ensuite
+
+**Position étirée** : hanche fléchie profondément.
+
+- **Squat complet** : chez 17 hommes suivis 10 semaines, le squat complet a fait progresser le volume du grand fessier de **6,7 %**, contre **2,2 %** pour le demi-squat (Kubo, 2019). Même logique pour les adducteurs : 6,2 % contre 2,7 %.
+- **Fentes, fentes bulgares, soulevé de terre jambes tendues** : la charge est maximale quand la hanche est fléchie et le fessier long.
+- **Hip thrust** : pic en haut, hanche tendue, fessier raccourci, soit l'inverse du squat. Et pourtant, chez 34 débutants entraînés 9 semaines, il a donné une hypertrophie des fessiers **similaire** au squat à l'IRM (Plotkin, 2023), le squat faisant davantage grossir quadriceps et adducteurs.
+
+Ma lecture : squat et fente en base, hip thrust en complément pour sa courbe opposée et sa fatigue moindre. Le comparatif détaillé est dans [squats vs hip thrust pour les fessiers](/blog/squats-vs-hip-thrust-fessiers).
+
+### Deltoïdes latéraux : la poulie n'a pas gagné
+
+**Position étirée** : bras le long du corps, voire légèrement croisé devant le bassin.
+
+- **Élévation latérale à l'haltère** : rien en bas, maximum à l'horizontale.
+- **Élévation latérale à la poulie basse**, poulie du côté opposé : tension dès le départ, bras le long du corps, profil plus régulier.
+- **Élévation latérale penchée** : en vous penchant sur le côté, le bras part incliné et la tension arrive plus tôt.
+
+Sur le papier, la poulie devrait l'emporter. **Larsen et al. (2025)** l'ont testé chez **24 pratiquants entraînés**, hommes et femmes : un bras à l'haltère, l'autre à la poulie, 8 semaines, séries menées à l'échec, même amplitude pour les deux bras. Résultat : **3,3 à 4,6 %** d'épaisseur gagnée, **sans différence** entre les deux bras. Un des auteurs a siégé au conseil scientifique d'un fabricant d'appareils à câbles, ce qui rend ce match nul d'autant plus parlant.
+
+Ce que j'en retire : pour le deltoïde latéral, l'outil compte moins que l'effort. Choisissez celui que vous exécutez proprement jusqu'à l'échec, sans élan ni haussement d'épaules.
+
+> **Coaching Elite ou Private Lab : des exercices choisis pour votre corps**
+>
+> Dans le suivi Elite ou Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires, et je choisis vos exercices selon votre biomécanique : longueur de vos segments, mobilité, douleurs éventuelles, matériel disponible. Si un exercice ne charge pas le bon endroit chez vous, il change. Vous avez une question entre deux séances ? Je réponds sur WhatsApp, du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Découvrir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Découvrir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## Ce que la courbe de résistance ne décide pas
+
+La courbe de résistance est un critère de choix, pas un juge final.
+
+**L'effort pèse plus lourd que l'outil.** Deux courbes différentes menées à l'échec sur la même amplitude donnent le même résultat chez Larsen. Une courbe parfaite loin de l'échec rapporte moins qu'un exercice ordinaire fait sérieusement : la progression reste le moteur, comme l'explique [le guide de la surcharge progressive](/blog/surcharge-progressive-guide).
+
+**Votre profil de force n'est pas celui du voisin.** Longueur des segments, insertions tendineuses et mobilité déplacent votre point fort et votre point faible. C'est le sujet de l'article sur [la morphologie et les bras de levier](/blog/morphologie-bras-de-levier-adapter-exercices). Et si vous stagnez sur un muscle, le choix d'exercices n'est qu'un levier parmi ceux passés en revue dans [pourquoi vous stagnez en musculation](/blog/stagnation-musculation-pourquoi-vous-stagnez).
+
+**Les études sont petites et courtes** : 17 à 34 participants, 5 à 10 semaines, souvent des débutants. Elles indiquent une direction. L'activation EMG ne tranche pas davantage, voir [la biomécanique de la croissance musculaire](/blog/biomecanique-croissance-musculaire).
+
+---
+
+## Les erreurs de réglage et d'exécution qui ruinent la courbe
+
+Choisir le bon outil ne sert à rien si le réglage ou l'exécution le transforme en autre chose. Voici les cinq erreurs que je vois le plus souvent.
+
+### 1. Le câble aligné avec le segment au départ
+
+**Ce que vous voyez** : le premier tiers d'un curl ou d'une élévation latérale à la poulie monte sans effort.
+**Pourquoi** : le câble part dans l'axe du bras ou de l'avant-bras. Bras de levier nul, tension nulle.
+**Ce que ça coûte** : la portion que la poulie devait charger, souvent la position étirée.
+**Correction** : déplacez la poulie ou votre corps jusqu'à ce que le câble forme un angle franc avec le segment dès la première seconde.
+**Vérification vidéo** : de face ou de profil selon le plan du mouvement, regardez l'angle câble-segment au départ. Proche de zéro, le réglage est à revoir.
+
+### 2. Les plaques qui se posent en bas de la répétition
+
+**Ce que vous voyez** : un clac de la pile de charges à chaque répétition.
+**Pourquoi** : vous êtes trop près de la poulie, ou l'amplitude dépasse la course du câble.
+**Ce que ça coûte** : le muscle se repose précisément en position étirée.
+**Correction** : reculez d'un ou deux pas, ou changez de poignée, pour que la pile reste suspendue au point le plus étiré.
+**Vérification vidéo** : cadrez la pile en même temps que vous. Elle ne doit jamais toucher.
+
+### 3. Machine désalignée de l'articulation
+
+**Ce que vous voyez** : le coussin glisse sur le membre, ou la charge change brutalement à un angle précis.
+**Pourquoi** : la came est dessinée pour un axe de rotation aligné avec votre genou, votre coude ou votre épaule. Désaxée, la courbe prévue est faussée.
+**Ce que ça coûte** : une résistance mal répartie et une contrainte articulaire inutile.
+**Correction** : réglez siège et dossier pour aligner l'articulation sur l'axe de la machine, souvent repéré par un point de couleur.
+**Vérification vidéo** : de profil, à hauteur de l'articulation. Les deux axes restent superposés du début à la fin.
+
+### 4. Couper la portion étirée d'un exercice choisi pour elle
+
+**Ce que vous voyez** : un curl pupitre qui ne redescend jamais sous 45°, un écarté à peine ouvert, une fente qui ne descend pas.
+**Pourquoi** : c'est la portion la plus dure, et la charge est trop lourde pour la traverser.
+**Ce que ça coûte** : la contrainte de l'exercice sans son bénéfice principal.
+**Correction** : baissez la charge et descendez jusqu'à la position étirée, contrôlée, sans rebond. Si une douleur apparaît en fin d'amplitude, restez dans une zone indolore et consultez un professionnel de santé si elle persiste.
+**Vérification vidéo** : de profil, comparez l'angle en bas de la première et de la dernière répétition. L'amplitude ne doit pas fondre avec la fatigue.
+
+### 5. Bouger le corps pour fuir la partie dure
+
+**Ce que vous voyez** : l'épaule qui avance au curl pupitre, le buste qui se cambre en élévation latérale, le bassin qui décolle au pec deck.
+**Pourquoi** : en bougeant, vous réduisez le bras de levier au moment le plus dur, sans le décider.
+**Ce que ça coûte** : la courbe choisie disparaît et la charge passe à d'autres muscles.
+**Correction** : verrouillez les appuis (aisselle calée, dos plaqué, bassin fixe) et baissez la charge. L'article sur [la triche, l'élan et le rebond](/blog/triche-elan-rebond-execution-musculation) détaille quand ces compensations sont acceptables.
+**Vérification vidéo** : suivez un repère fixe (épaule, bassin) image par image. S'il bouge quand la répétition ralentit, c'est une compensation.
+
+### Tableau récapitulatif : erreur → correction
+
+| Erreur | Ce qu'elle coûte | Correction | Repère vidéo |
+|---|---|---|---|
+| Câble aligné avec le segment au départ | Portion étirée sans tension | Changer la hauteur ou le côté de la poulie | Angle câble-segment à la première seconde |
+| Plaques qui se posent en bas | Repos en position étirée | Reculer, ajuster la poignée | Pile toujours suspendue |
+| Articulation désalignée de l'axe machine | Courbe faussée, frottements | Régler siège et dossier | Axes superposés, vue de profil |
+| Amplitude coupée côté étiré | Bénéfice de l'exercice perdu | Baisser la charge, descendre contrôlé | Angle bas identique de la 1re à la dernière répétition |
+| Corps qui bouge au point dur | Charge déplacée vers d'autres muscles | Verrouiller les appuis | Repère fixe immobile |
+
+---
+
+## FAQ : courbe de résistance et choix des exercices
+
+### Qu'est-ce que la courbe de résistance d'un exercice ?
+
+C'est la variation de l'effort imposé à l'articulation du début à la fin du mouvement. Elle dépend de l'outil (gravité, câble, came, élastique) et de la position du corps. Avec un poids libre, l'effort est maximal quand le segment chargé est horizontal ; avec une poulie, quand il est perpendiculaire au câble.
+
+### Les poulies sont-elles meilleures que les haltères pour la prise de muscle ?
+
+Pas forcément. La poulie permet de choisir la direction de la résistance, donc de charger des portions que l'haltère laisse vides, à condition d'être bien réglée. Mais sur l'élévation latérale, haltère et poulie ont donné la même hypertrophie en 8 semaines chez des pratiquants entraînés (Larsen, 2025). Choisissez selon le muscle visé et la qualité d'exécution.
+
+### Les machines guidées sont-elles moins efficaces que les poids libres ?
+
+Non. Leur stabilité permet d'aller près de l'échec, un atout pour l'hypertrophie. Leur point faible : toutes les cames ne suivent pas le profil de force du muscle. Testez où la machine devient dure et alignez-la sur votre articulation.
+
+### Les élastiques suffisent-ils pour prendre du muscle ?
+
+Pour la force, les élastiques font jeu égal avec les machines et les haltères dans une méta-analyse de 8 études (Lopes, 2019). Pour l'hypertrophie, leur courbe pose un problème : ils chargent peu la position étirée. Ils sont utiles en complément, en voyage ou ajoutés à une barre, moins comme outil principal.
+
+### Faut-il toujours choisir l'exercice qui charge le muscle étiré ?
+
+C'est ma règle de départ, pas un dogme. Les essais penchent vers la position étirée pour plusieurs muscles, mais le hip thrust, dur en position raccourcie, a donné autant d'hypertrophie des fessiers que le squat (Plotkin, 2023). Base étirée, complément raccourci si besoin : simple et défendable.
+
+### Comment savoir si un exercice charge bien le muscle que je vise ?
+
+Posez les trois questions : où tire la résistance, quand le segment lui est perpendiculaire, et si le muscle est long ou court à ce moment-là. Puis filmez une série : l'endroit où la répétition ralentit et où votre corps compense montre la vraie courbe. Le guide [filmer sa séance pour analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique) explique les bons angles de caméra.
+
+---
+
+## Conclusion : choisir l'outil pour l'endroit qu'il charge
+
+Aucun outil n'est supérieur en soi. Les poids libres chargent selon la gravité, la poulie selon votre réglage, la machine selon le dessin du constructeur, l'élastique selon son étirement. Votre travail : faire coïncider cet endroit avec celui où vous voulez que le muscle travaille.
+
+Ma position : partez d'un exercice qui charge le muscle étiré, complétez si besoin par un exercice qui charge la position raccourcie, réglez chaque poulie et chaque machine avant la première série, et menez vos séries près de l'échec. La meilleure courbe de résistance du monde ne compense pas un réglage raté ou une série arrêtée trop tôt.
+
+> **Faites vérifier où votre série perd la tension**
+>
+> Vous filmez votre série, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : réglage, amplitude, compensations, et les corrections à faire, selon ma méthode. Sans création de compte. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+> **Un choix d'exercices construit pour vos leviers**
+>
+> En Elite ou en Private Lab, je suis votre technique à partir de vos vidéos et de vos bilans hebdomadaires, et je sélectionne vos exercices selon votre biomécanique : segments, mobilité, douleurs, matériel. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Vous ne savez pas encore par où commencer ? Le [Discovery Scan](/offers/discovery-scan), gratuit, fait un premier point sur votre entraînement, votre récupération et vos priorités.
+
+---
+
+*ACHZOD*
+
+---
+
+## Références
+
+1. Folland J, Morris B. Variable-cam resistance training machines: do they match the angle-torque relationship in humans? *J Sports Sci.* 2008;26(2):163-169. [doi:10.1080/02640410701370663](https://doi.org/10.1080/02640410701370663) · PMID: [17885926](https://pubmed.ncbi.nlm.nih.gov/17885926/)
+2. Lopes JSS, et al. Effects of training with elastic resistance versus conventional resistance on muscular strength: a systematic review and meta-analysis. *SAGE Open Med.* 2019;7:2050312119831116. [doi:10.1177/2050312119831116](https://doi.org/10.1177/2050312119831116) · PMID: [30815258](https://pubmed.ncbi.nlm.nih.gov/30815258/)
+3. Larsen S, et al. Dumbbell versus cable lateral raises for lateral deltoid hypertrophy: an experimental study. *Front Physiol.* 2025;16:1611468. [doi:10.3389/fphys.2025.1611468](https://doi.org/10.3389/fphys.2025.1611468) · PMID: [40692697](https://pubmed.ncbi.nlm.nih.gov/40692697/)
+4. Sato S, et al. Elbow joint angles in elbow flexor unilateral resistance exercise training determine its effects on muscle strength and thickness of trained and non-trained arms. *Front Physiol.* 2021;12:734509. [doi:10.3389/fphys.2021.734509](https://doi.org/10.3389/fphys.2021.734509) · PMID: [34616309](https://pubmed.ncbi.nlm.nih.gov/34616309/)
+5. Kassiano W, et al. Which ROMs lead to Rome? A systematic review of the effects of range of motion on muscle hypertrophy. *J Strength Cond Res.* 2023;37(5):1135-1144. [doi:10.1519/JSC.0000000000004415](https://doi.org/10.1519/JSC.0000000000004415) · PMID: [36662126](https://pubmed.ncbi.nlm.nih.gov/36662126/)
+6. Wolf M, et al. Lengthened partial repetitions elicit similar muscular adaptations as full range of motion repetitions during resistance training in trained individuals. *PeerJ.* 2025;13:e18904. [doi:10.7717/peerj.18904](https://doi.org/10.7717/peerj.18904) · PMID: [39959841](https://pubmed.ncbi.nlm.nih.gov/39959841/)
+7. Ackland DC, Pak P, Richardson M, Pandy MG. Moment arms of the muscles crossing the anatomical shoulder. *J Anat.* 2008;213(4):383-390. [doi:10.1111/j.1469-7580.2008.00965.x](https://doi.org/10.1111/j.1469-7580.2008.00965.x) · PMID: [18691376](https://pubmed.ncbi.nlm.nih.gov/18691376/)
+8. Kubo K, Ikebukuro T, Yata H. Effects of squat training with different depths on lower limb muscle volumes. *Eur J Appl Physiol.* 2019;119(9):1933-1942. [doi:10.1007/s00421-019-04181-y](https://doi.org/10.1007/s00421-019-04181-y) · PMID: [31230110](https://pubmed.ncbi.nlm.nih.gov/31230110/)
+9. Plotkin DL, et al. Hip thrust and back squat training elicit similar gluteus muscle hypertrophy and transfer similarly to the deadlift. *Front Physiol.* 2023;14:1279170. [doi:10.3389/fphys.2023.1279170](https://doi.org/10.3389/fphys.2023.1279170) · PMID: [37877099](https://pubmed.ncbi.nlm.nih.gov/37877099/)
+`,
+  },
+  {  id: "155",
+    slug: "morphologie-bras-de-levier-adapter-exercices",
+    title: "Morphologie et musculation : adapter vos exercices à vos bras de levier",
+    seoTitle: "Morphologie et bras de levier : vos exercices | APEXLABS",
+    excerpt: "Votre squelette décide d'une partie de votre technique. Squat, soulevé de terre, développé couché : comment adapter les exercices à vos bras de levier.",
+    metaDescription: "Fémurs longs, bras longs, torse court : comment votre morphologie change le squat, le soulevé de terre et le développé couché, et comment adapter.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "20 min",
+    image: "/images/blog/morphologie-bras-de-levier-adapter-exercices/morphologie-bras-de-levier-hero.webp",
+    content: `# Morphologie et musculation : adapter vos exercices à vos bras de levier
+
+## Introduction : la technique « parfaite » n'existe pas, votre squelette décide
+
+Vous avez copié la technique de squat d'un pratiquant que vous admirez : pieds à largeur d'épaules, buste droit, genoux qui ne dépassent pas les orteils. Chez lui, ça marche. Chez vous, le buste plonge, le bas du dos se fait sentir et les cuisses travaillent à peine. Vous en concluez que vous manquez de mobilité ou de gainage. La vraie raison est souvent plus simple : **vous n'avez pas les mêmes os que lui**.
+
+En musculation, la morphologie regroupe la longueur de vos segments (fémurs, tibias, bras, torse), la forme de vos articulations et votre mobilité. Ces paramètres changent les **bras de levier**, donc le moment de force que chaque articulation doit produire pour une même charge. Deux personnes qui squattent 100 kg ne font pas le même exercice si l'une a des fémurs longs et l'autre des fémurs courts.
+
+Voici comment la longueur de vos segments change les bras de levier au squat, au soulevé de terre et au développé couché, quels réglages tester selon votre profil, quelles variantes choisir et comment vérifier le résultat sur vidéo.
+
+> **L'essentiel en 30 secondes**
+>
+> - Le moment de force à une articulation = la charge × le **bras de levier** (la distance horizontale entre la ligne de la charge et l'articulation). Changer la longueur d'un segment change ce bras de levier.
+> - Au squat, pour garder la barre au-dessus du milieu du pied, des **fémurs longs imposent un buste plus penché**. Dans mon modèle simplifié, le bras de levier à la hanche passe de 23 à 35 cm pour la même profondeur.
+> - Empêcher les genoux d'avancer fait passer le couple à la hanche d'environ **28 à 303 N·m** (Fry, 2003, 7 hommes). La règle « genoux derrière les orteils » déplace la contrainte vers la hanche et le dos.
+> - La **mobilité de cheville** a pesé plus que les proportions sur l'inclinaison du buste dans la seule étude qui a testé les deux (Fuglsang, 2017, 11 hommes).
+> - Au soulevé de terre, le sumo réduit de **10 %** le moment au niveau de L4-L5 par rapport au conventionnel chez des powerlifteurs (Cholewicki, 1991).
+> - Pas de technique universelle, mais des principes universels : la charge au-dessus du milieu du pied, un dos neutre, une amplitude qui étire le muscle visé, une position reproductible.
+
+---
+
+## Bras de levier et moment de force : la mécanique qui décide de tout
+
+### La formule qui explique la plupart des débats de salle
+
+Une articulation est un pivot. La charge tire vers le bas. Le **moment de force** que vos muscles doivent produire autour de ce pivot vaut :
+
+**moment = force × bras de levier**
+
+Le bras de levier est la distance **horizontale** entre la verticale de la charge et le centre de l'articulation. Ce n'est pas la longueur du segment. Une barre de 100 kg à 30 cm de votre hanche demande un moment d'environ 294 N·m. À 20 cm, elle en demande 196. Même charge, un tiers de travail en moins pour les extenseurs de la hanche.
+
+Votre morphologie fixe une partie de ces distances, la technique en règle une autre, le choix de l'exercice règle le reste.
+
+### Bras de levier externe et interne
+
+Le bras de levier externe sépare la charge de l'articulation : il dépend de vos os, de votre position et de l'exercice. Le bras de levier interne sépare le tendon du centre de l'articulation : il dépend de votre anatomie, et il est invisible mais pèse lourd. Baxter et Piazza (2014) ont mesuré par IRM le bras de levier du tendon d'Achille chez **20 jeunes hommes**. Il expliquait **32 à 49 %** de la variation de force des mollets, au moins autant que le volume musculaire, et il n'était pas lié à la taille des sujets. Comparer vos charges à celles d'un autre a donc peu de sens.
+
+Pour la théorie complète (moments, courbes de résistance, longueur musculaire), lisez le [guide de la biomécanique en musculation](/blog/biomecanique-musculation-guide-complet), le pilier de cette série. Une précaution au passage : les études d'électromyographie (EMG) qui concluent qu'« avec des fémurs longs, le quadriceps s'active moins » sont à lire avec recul. L'amplitude d'un signal EMG de surface ne mesure ni la force d'un muscle ni sa croissance future (Vigotsky, 2017). Les moments articulaires et les études d'hypertrophie à long terme pèsent plus lourd.
+
+---
+
+## Le squat selon la morphologie : fémurs longs, torse court et chevilles raides
+
+![Schéma comparant deux squats à la parallèle : avec des fémurs courts et un torse long, le buste est incliné à 25° et le bras de levier de la charge à la hanche est de 23 cm ; avec des fémurs longs et un torse court, le buste est incliné à 49° et le bras de levier à la hanche est de 35 cm](/images/blog/morphologie-bras-de-levier-adapter-exercices/morphologie-squat-femurs-schema.webp)
+
+### Pourquoi le buste penche avec des fémurs longs
+
+Pour rester en équilibre, la barre doit descendre et remonter **à la verticale du milieu du pied**. En bas du squat, vos hanches reculent, d'autant plus que le fémur est long. Pour ramener la barre au-dessus du pied, il reste deux solutions : avancer les genoux (le tibia s'incline) ou pencher le buste. Si la cheville bloque le genou, c'est le buste qui paie.
+
+Dans le schéma, le tibia, son inclinaison et la profondeur sont identiques. Seules les proportions changent :
+
+- **fémurs courts, torse long** : buste à environ 25° de la verticale, bras de levier à la hanche de 23 cm
+- **fémurs longs, torse court** : buste à environ 49°, bras de levier à la hanche de 35 cm
+
+Le bras de levier au genou reste de 17 cm. Le pratiquant aux fémurs longs fait donc un squat **beaucoup plus dominant hanche** : fessiers, adducteurs et érecteurs du rachis travaillent davantage. C'est un modèle géométrique simplifié, mais la conclusion tient : **un buste penché n'est pas une faute en soi**, c'est souvent la seule solution mécanique.
+
+### Ce que disent les études
+
+- **Demers et al. (2018)**, **32 jeunes adultes** en squat sans charge : un fémur long par rapport au tibia était associé à des angles de cheville et de genou plus grands. Conclusion pratique des auteurs : les personnes aux cuisses longues ou à la flexion dorsale limitée gagnent souvent à **écarter les pieds**.
+- **Fuglsang et al. (2017)**, **11 hommes** à environ 75 % de leur maximum : la **mobilité de cheville** était liée à un buste plus droit, alors que les rapports de longueur des segments n'étaient **pas significativement liés** à l'inclinaison du buste.
+- **Kim et al. (2015)**, **101 personnes** : chez les hommes, la flexion dorsale genou fléchi et la flexion de hanche expliquaient **43,5 %** de la variation de profondeur de squat.
+
+Ma lecture : les proportions fixent le point de départ, la cheville décide souvent de ce que vous en faites. Les échantillons sont petits et souvent testés sans charge lourde, donc prudence sur les chiffres.
+
+### La règle « genoux derrière les orteils » : un faux ami
+
+**Fry et al. (2003)** ont fait squatter **7 hommes entraînés** à la parallèle, avec une charge égale à leur poids de corps, avec ou sans une barrière qui empêchait les genoux de dépasser les orteils.
+
+- **Genoux libres** : couple au genou d'environ 150 N·m, à la hanche d'environ 28 N·m
+- **Genoux bloqués** : couple au genou d'environ 117 N·m, à la hanche d'environ **303 N·m**
+
+Bloquer les genoux réduit la contrainte au genou d'environ 22 %, mais multiplie celle de la hanche par plus de dix et penche le buste. Avec des fémurs longs, cette règle est encore plus pénalisante. Si vos genoux vous inquiètent, lisez l'article sur [les squats et les genoux](/blog/squats-mauvais-genoux-mythe).
+
+### Les réglages selon votre profil
+
+**Fémurs longs, torse court**
+
+- **Écartez les pieds** et ouvrez les pointes (souvent entre 20 et 40°) : les fémurs partent sur les côtés et les hanches reculent moins.
+- **Surélevez les talons** de 1 à 2,5 cm. Chez **14 hommes entraînés**, une cale de 2,5 cm a réduit la flexion du buste et le moment à la hanche (Charlton, 2017). Elle n'a pas changé l'angle entre le tronc et le bassin : elle ne corrige pas une bascule du bassin en bas.
+- **Essayez la barre haute ou le squat avant** pour cibler le quadriceps : la charge passe devant, le buste se redresse.
+
+**Fémurs courts, torse long** : vous êtes avantagé pour un squat droit et profond. Votre piège est de descendre trop vite et de rebondir sans contrôle.
+
+**Chevilles raides** : talonnettes en priorité, travail de flexion dorsale genou fléchi (fente genou vers le mur, 30 à 60 secondes), et squat à la presse ou hack squat pour le quadriceps.
+
+La largeur d'appui et l'ouverture des pieds changent la répartition des moments entre hanche et genou. Lorenzetti et al. (2018), sur **21 débutants et 21 pratiquants expérimentés**, déconseillent les positions extrêmes (pieds serrés avec pointes très ouvertes, appui très large avec pointes droites), où ces moments étaient les plus élevés. Les erreurs d'exécution du squat sont détaillées dans l'article sur [les erreurs de squat et leurs corrections](/blog/squat-erreurs-execution-corrections).
+
+> **Votre squat est-il adapté à votre morphologie ?**
+>
+> Avec FormCheck, vous filmez votre série, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : position de la barre par rapport au pied, inclinaison du buste, profondeur, trajectoire, et les réglages à tester selon vos proportions. Le rapport suit ma grille d'analyse, construite sur mon expertise en biomécanique. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €.
+>
+> [Faire analyser ma technique avec FormCheck](/offers/formcheck)
+
+---
+
+## Le soulevé de terre : la longueur des bras change le départ
+
+![Schéma comparant deux positions de départ au soulevé de terre : avec des bras courts, le buste est à 60° de la verticale, les hanches à 50 cm du sol et le bras de levier à la hanche à 45 cm ; avec des bras longs, le buste est à 54°, les hanches à 63 cm et le bras de levier à 42 cm](/images/blog/morphologie-bras-de-levier-adapter-exercices/morphologie-souleve-bras-schema.webp)
+
+### Pourquoi les bras longs aident
+
+Au départ du soulevé conventionnel : barre au-dessus du milieu du pied, bras verticaux, épaules légèrement devant la barre. Plus vos bras sont longs, plus vos épaules sont hautes. Vos hanches montent, votre buste se redresse et la barre se rapproche horizontalement de vos hanches.
+
+Dans le schéma, j'ai seulement allongé les bras de 18 cm. Le buste passe de 60° à 54°, les hanches montent de 13 cm et le bras de levier à la hanche baisse d'environ 7 %. Avec des bras courts et des jambes longues, le départ ressemble à un good morning lesté : le dos supporte un plus grand bras de levier et la technique devient fragile en fin de série. Ce n'est pas dangereux par nature (lisez l'article sur [les risques réels du soulevé de terre](/blog/souleve-terre-dangereux)), mais ça déplace le travail vers les érecteurs du rachis.
+
+### Conventionnel ou sumo : ce que disent les données
+
+**Escamilla et al. (2000)** ont filmé en 3D **12 lifteurs en sumo et 12 en conventionnel** en championnat national :
+
+- buste et cuisses **5 à 10° plus verticaux** en sumo
+- appui de **70 cm contre 32 cm**, pieds ouverts à **42° contre 14°**
+- distance verticale parcourue par la barre et travail mécanique **25 à 40 % plus élevés en conventionnel**
+- moments à la hanche **pas significativement différents**
+
+**Cholewicki et al. (1991)**, sur **57 powerlifteurs**, ont estimé que le sumo réduisait de **10 %** le moment à L4-L5 et de **8 %** le cisaillement.
+
+En pratique :
+
+- **bras longs, torse court** : le conventionnel est souvent naturel
+- **bras courts, torse long, fémurs longs** : le sumo ou le semi-sumo rapproche les hanches de la barre, si vos hanches acceptent l'appui large
+- **hanches raides en abduction** : la trap bar, qui centre la charge sur votre ligne de gravité
+
+Le sumo n'est pas un raccourci : il demande plus de quadriceps, d'adducteurs et de mobilité de hanche. Le soulevé roumain part du haut et dépend beaucoup moins de la longueur des bras : c'est souvent la meilleure option hypertrophie pour les ischio-jambiers et les fessiers. Les erreurs de ces trois variantes sont dans l'article sur [les erreurs au soulevé de terre](/blog/souleve-de-terre-erreurs-execution).
+
+---
+
+## Le développé couché : bras longs, cage thoracique et amplitude
+
+La barre part bras tendus et descend jusqu'à la poitrine. La distance dépend de la longueur de vos bras et de l'épaisseur de votre cage thoracique. Bras longs et torse plat : plus d'amplitude, plus de travail par répétition, un pectoral plus étiré en bas. Bras courts et cage épaisse : amplitude courte, avantage en force.
+
+Les données restent maigres : chez **36 hommes**, la masse corporelle était le facteur le plus lié à la charge maximale, et la longueur des bras n'y était que modérément associée (Caruso, 2012). Rien qui permette de prédire votre développé avec un mètre ruban.
+
+**Bras longs** : prise un peu plus large (sans perdre des avant-bras verticaux en bas), arc modéré avec omoplates serrées et poitrine haute, et un arrêt d'une seconde sur la poitrine pour ne pas compenser l'amplitude par un rebond.
+
+**Bras courts, cage thoracique épaisse** : la barre touche la poitrine avant que le pectoral ne soit vraiment allongé. Pour l'hypertrophie, ajoutez un exercice qui l'étire davantage (haltères, écarté à la poulie).
+
+**Épaules larges ou sensibles** : coudes à environ 45 à 70° du tronc plutôt qu'à 90°, ou haltères en prise neutre.
+
+Le fonctionnement du pectoral est détaillé dans le [guide scientifique des pectoraux](/blog/pectoraux-guide-scientifique), et les erreurs qui font mal aux épaules dans l'article sur [le développé couché et les épaules](/blog/developpe-couche-erreurs-epaules).
+
+---
+
+## Choisir ses exercices quand la morphologie résiste
+
+![Grille d'adaptation par profil : fémurs longs, bras longs, bras courts et chevilles raides, avec pour chacun les réglages au squat, au soulevé de terre et au développé couché](/images/blog/morphologie-bras-de-levier-adapter-exercices/morphologie-grille-adaptations-schema.webp)
+
+### Garder la fonction, changer l'outil
+
+Le squat arrière, le soulevé conventionnel et le développé à la barre sont des outils. Pour l'hypertrophie, ce qui compte est de charger le muscle visé sur une grande amplitude, notamment en position étirée, avec une progression mesurable.
+
+- **Maeo et al. (2021)** : chez **20 adultes** pendant 12 semaines, le leg curl assis (ischio-jambiers étirés à la hanche) a donné **+14 %** de volume contre **+9 %** pour le leg curl couché.
+- **Kubo et al. (2019)** : chez **17 hommes** pendant 10 semaines, le squat complet a fait progresser les fessiers de **6,7 %** contre **2,2 %** pour le demi-squat. Le quadriceps a progressé de façon comparable (4,9 % contre 4,6 %).
+
+Si vos fémurs longs vous empêchent de descendre au squat arrière sans arrondir le bas du dos, la question n'est pas « comment forcer le squat », mais « quel exercice charge mes cuisses et mes fessiers en position étirée ». Ce raisonnement est développé dans l'article sur [l'amplitude de mouvement et la croissance](/blog/amplitude-mouvement-croissance).
+
+### Substitutions par profil
+
+- **Fémurs longs, objectif quadriceps** : hack squat, presse avec les pieds bas, squat avant, fente bulgare.
+- **Fémurs longs, objectif fessiers** : squat large, hip thrust, fente arrière buste incliné (voir [squat ou hip thrust pour les fessiers](/blog/squats-vs-hip-thrust-fessiers)).
+- **Bras courts, dos sensible au soulevé** : trap bar, soulevé surélevé (barre sur des cales de 5 à 10 cm), soulevé roumain.
+- **Bras longs, épaules sensibles au développé** : haltères en prise neutre, machine convergente, écarté à la poulie.
+
+Choisir un exercice selon sa façon de charger le muscle sur l'amplitude, c'est le sujet de l'article sur [la courbe de résistance et le choix des exercices](/blog/courbe-de-resistance-choisir-exercices).
+
+### Ce que la morphologie n'explique pas
+
+La morphologie est devenue une excuse à la mode. Elle n'explique pas un dos qui s'arrondit sous charge, des genoux qui rentrent à la montée, une amplitude qui raccourcit au fil de la série, ni une stagnation de plusieurs mois (lisez [pourquoi vous stagnez en musculation](/blog/stagnation-musculation-pourquoi-vous-stagnez)). La structure du bassin varie aussi, avec des différences normales selon le sexe et des variations de la cavité de la hanche (Lewis, 2017). Elle peut limiter la profondeur ou imposer un appui plus large. Mais une position qui fait mal n'est pas un réglage à forcer : en cas de douleur persistante, consultez un professionnel de santé.
+
+> **Une programmation construite pour votre squelette, pas pour celui d'un autre**
+>
+> Dans le suivi Elite ou Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires. Le programme et le choix des exercices s'adaptent à votre biomécanique : longueur de vos segments, mobilité, douleurs éventuelles. Vous me posez vos questions sur WhatsApp (Elite : du lundi au vendredi, de 9 h à 19 h ; Private Lab : 7 j/7, de 6 h à minuit).
+>
+> [Découvrir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Découvrir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## Les erreurs d'adaptation les plus fréquentes
+
+### 1. Forcer un buste vertical avec des fémurs longs
+
+- **Ce qui se voit** : la barre part derrière le milieu du pied, les talons s'allègent, le pratiquant bascule en arrière en bas.
+- **Pourquoi** : « dos droit » a été compris comme « dos vertical », ce qui est mécaniquement impossible avec des fémurs longs sans chevilles exceptionnelles.
+- **Ce que ça coûte** : équilibre instable, profondeur et charge réduites, donc moins de stimulus.
+- **Correction** : consigne « dos neutre » et « la barre reste au-dessus du milieu du pied ». Pieds plus écartés, talons surélevés.
+- **Vérification vidéo** : de profil, caméra à hauteur de hanche, à 3 ou 4 mètres. La barre reste sur la verticale du milieu du pied.
+
+### 2. Copier l'appui d'un autre
+
+- **Ce qui se voit** : genoux qui partent hors de l'axe des pieds, gêne à la hanche, bassin qui bascule en bas.
+- **Ce que ça coûte** : profondeur limitée et moments élevés au genou dans les positions extrêmes (Lorenzetti, 2018).
+- **Correction** : testez à vide trois largeurs et trois ouvertures de pieds, gardez celle qui vous laisse descendre le plus bas avec un bassin stable. Indice : « genoux dans l'axe des orteils ».
+- **Vérification vidéo** : de face pour les genoux, de profil pour le bassin.
+
+### 3. Utiliser le sumo pour raccourcir l'amplitude
+
+- **Ce qui se voit** : appui très large, barre qui monte de quelques centimètres, record qui ne se retrouve nulle part.
+- **Pourquoi** : le sumo réduit la distance parcourue par la barre (Escamilla, 2000), utile en compétition, pas comme objectif d'hypertrophie.
+- **Ce que ça coûte** : moins de travail pour les ischio-jambiers et les érecteurs.
+- **Correction** : gardez le style qui place vos hanches le plus près de la barre avec un dos neutre, et ajoutez un soulevé roumain.
+- **Vérification vidéo** : de profil, comparez l'angle du buste au départ dans les deux styles.
+
+### 4. Allonger l'amplitude au développé à tout prix
+
+- **Ce qui se voit** : coudes très bas aux haltères, épaules qui roulent vers l'avant en bas.
+- **Ce que ça coûte** : contrainte sur l'avant de l'épaule sans gain de stimulus au-delà d'un étirement net du pectoral.
+- **Correction** : descendez jusqu'à cet étirement, omoplates serrées. Indice : « poitrine haute, épaules dans la poche arrière ».
+- **Vérification vidéo** : de profil, l'avant de l'épaule ne passe pas devant la ligne de la poitrine.
+
+### 5. Changer de variante chaque semaine
+
+- **Ce qui se voit** : un programme qui change sans arrêt « pour trouver l'exercice qui convient ».
+- **Ce que ça coûte** : aucune [surcharge progressive](/blog/surcharge-progressive-guide) mesurable.
+- **Correction** : testez une variante 4 à 6 semaines. Gardez-la si la charge progresse, si le muscle visé fatigue en premier et si aucune articulation ne proteste.
+- **Vérification vidéo** : filmez la même série au début et à la fin du bloc, sous le même angle (méthode complète dans [filmer sa séance pour analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique)).
+
+---
+
+## Tableau récapitulatif : erreur → correction
+
+| Profil ou erreur | Ce qui se voit | Correction | Repère vidéo |
+|---|---|---|---|
+| Fémurs longs, buste forcé à la verticale | Barre derrière le milieu du pied, perte d'équilibre | Pieds plus écartés, talons surélevés, consigne « dos neutre » | Profil : barre sur la verticale du milieu du pied |
+| Chevilles raides au squat | Talons qui décollent, buste qui plonge | Talonnettes de 1 à 2,5 cm, mobilité de cheville, hack squat | Profil : talons au sol, angle du tibia en bas |
+| Appui copié | Genoux hors de l'axe, bascule du bassin | Tester 3 largeurs et 3 ouvertures à vide | Face : genoux dans l'axe ; profil : bassin stable |
+| Bras courts au soulevé | Hanches basses, buste très incliné | Sumo, semi-sumo ou trap bar selon la hanche | Profil : dos neutre du sol au verrouillage |
+| Sumo pour réduire l'amplitude | Barre qui monte peu | Style qui garde le dos neutre, plus un soulevé roumain | Profil : angle du buste au départ |
+| Bras longs au développé | Amplitude très longue, rebond sur la poitrine | Prise un peu plus large, arc modéré, pause d'une seconde | Profil : contact barre-poitrine |
+| Épaules qui roulent en bas du développé | Avant de l'épaule devant la poitrine | Omoplates serrées, descente jusqu'à l'étirement net | Profil : position de l'épaule en bas |
+| Variante changée chaque semaine | Aucune progression | Garder une variante 4 à 6 semaines, noter les charges | Même angle au début et à la fin du bloc |
+
+---
+
+## FAQ : morphologie et bras de levier en musculation
+
+### Comment savoir si j'ai des fémurs longs ?
+
+Faites un squat sans charge, pieds à largeur d'épaules, talons au sol, bras tendus devant vous. Si vous devez pencher fortement le buste pour ne pas tomber en arrière alors que vos chevilles sont mobiles, vos fémurs sont probablement longs par rapport à votre torse. Le comportement en squat suffit pour choisir les réglages.
+
+### Un buste penché au squat est-il dangereux pour le dos ?
+
+Pas en soi. Il augmente le bras de levier à la hanche et le travail des érecteurs du rachis, mais ce n'est pas une faute si le dos reste neutre et que la barre reste au-dessus du milieu du pied. Le problème, c'est un dos qui s'arrondit sous charge ou un buste qui plonge à la montée. En cas de douleur persistante, consultez un professionnel de santé.
+
+### Faut-il faire du sumo avec des fémurs longs ?
+
+C'est souvent un bon choix, parce que le sumo redresse le buste et rapproche les hanches de la barre (Escamilla, 2000). Mais il demande une hanche qui accepte un appui large. Sinon, la trap bar ou le semi-sumo sont de bons compromis. Gardez le style où votre dos reste neutre du sol au verrouillage.
+
+### Les genoux peuvent-ils dépasser les orteils au squat ?
+
+Oui. Les empêcher d'avancer réduit le couple au genou d'environ 22 %, mais multiplie celui de la hanche par plus de dix (Fry, 2003). Pour la plupart des gens, et surtout avec des fémurs longs, des genoux qui avancent dans l'axe des pieds sont la solution la plus équilibrée.
+
+### Peut-on changer sa morphologie avec la musculation ?
+
+Pas les os : la longueur des segments et l'insertion des tendons sont fixées à l'âge adulte. La mobilité, oui : flexion dorsale de cheville et mobilité de hanche se travaillent, et elles pèsent parfois plus que les proportions (Fuglsang, 2017). Vous pouvez aussi modifier l'apparence de vos proportions en développant certains muscles en priorité.
+
+### Existe-t-il une morphologie idéale pour la musculation ?
+
+Pour la force, selon l'exercice : bras courts et torse épais au développé, bras longs au soulevé, fémurs courts au squat. Pour l'hypertrophie, beaucoup moins : un muscle grossit s'il est chargé sur une bonne amplitude avec une progression régulière. Il suffit de choisir les exercices qui le permettent avec votre squelette.
+
+---
+
+## Conclusion : des principes universels, une technique individuelle
+
+La technique « standard » a été décrite sur des corps moyens. Le vôtre ne l'est probablement pas. Des fémurs longs penchent le buste au squat, des bras courts compliquent le départ du soulevé, des bras longs allongent l'amplitude au développé. Ce ne sont pas des défauts à corriger, ce sont des contraintes mécaniques à intégrer.
+
+Les principes, eux, ne bougent pas : la charge au-dessus du milieu du pied, un dos neutre, une amplitude qui étire le muscle visé, une exécution reproductible et une progression mesurée. Le reste (appui, talons, style de soulevé, prise, variantes) se règle sur votre squelette et se vérifie sur vidéo.
+
+> **Faites lire votre technique par une grille biomécanique**
+>
+> Avec FormCheck, vous envoyez la vidéo de votre série et vous recevez sous 3 heures un rapport d'analyse biomécanique : vos erreurs, ce qui relève de votre morphologie et ce qui relève de l'exécution, et les corrections pour la séance suivante. Ma méthode d'analyse, appliquée à votre vidéo et non à une technique théorique. À partir de 9,90 € l'analyse (pack de 3 à 24,90 €, pack de 6 à 44,90 €).
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+> **Un programme construit autour de vos proportions**
+>
+> En coaching Elite ou Private Lab, je suis votre technique semaine après semaine à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des exercices à vos segments, à votre mobilité et à vos éventuelles douleurs. Réponses sur WhatsApp : du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Voir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Voir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Vous préférez d'abord faire le point sur votre entraînement et vos priorités ? Le [Discovery Scan](/offers/discovery-scan) est gratuit.
+
+---
+
+## Références
+
+1. Fry AC, Smith JC, Schilling BK. Effect of knee position on hip and knee torques during the barbell squat. *J Strength Cond Res.* 2003;17(4):629-633. [doi:10.1519/1533-4287(2003)017<0629:eokpoh>2.0.co;2](https://doi.org/10.1519/1533-4287(2003)017%3C0629:eokpoh%3E2.0.co;2) (PMID 14636100)
+2. Fuglsang EI, Telling AS, Sørensen H. Effect of ankle mobility and segment ratios on trunk lean in the barbell back squat. *J Strength Cond Res.* 2017;31(11):3024-3033. [doi:10.1519/JSC.0000000000001872](https://doi.org/10.1519/JSC.0000000000001872)
+3. Demers E, Pendenza J, Radevich V, Preuss R. The effect of stance width and anthropometrics on joint range of motion in the lower extremities during a back squat. *Int J Exerc Sci.* 2018;11(1):764-775. [PMID 29997725](https://pubmed.ncbi.nlm.nih.gov/29997725/)
+4. Kim SH, Kwon OY, Park KN, Jeon IC, Weon JH. Lower extremity strength and the range of motion in relation to squat depth. *J Hum Kinet.* 2015;45:59-69. [doi:10.1515/hukin-2015-0007](https://doi.org/10.1515/hukin-2015-0007)
+5. Charlton JM, Hammond CA, Cochrane CK, Hatfield GL, Hunt MA. The effects of a heel wedge on hip, pelvis and trunk biomechanics during squatting in resistance trained individuals. *J Strength Cond Res.* 2017;31(6):1678-1687. [doi:10.1519/JSC.0000000000001655](https://doi.org/10.1519/JSC.0000000000001655)
+6. Lorenzetti S, Ostermann M, Zeidler F, et al. How to squat? Effects of various stance widths, foot placement angles and level of experience on knee, hip and trunk motion and loading. *BMC Sports Sci Med Rehabil.* 2018;10:14. [doi:10.1186/s13102-018-0103-7](https://doi.org/10.1186/s13102-018-0103-7)
+7. Escamilla RF, Francisco AC, Fleisig GS, et al. A three-dimensional biomechanical analysis of sumo and conventional style deadlifts. *Med Sci Sports Exerc.* 2000;32(7):1265-1275. [doi:10.1097/00005768-200007000-00013](https://doi.org/10.1097/00005768-200007000-00013)
+8. Cholewicki J, McGill SM, Norman RW. Lumbar spine loads during the lifting of extremely heavy weights. *Med Sci Sports Exerc.* 1991;23(10):1179-1186. [PMID 1758295](https://pubmed.ncbi.nlm.nih.gov/1758295/)
+9. Caruso JF, Taylor ST, Lutz BM, et al. Anthropometry as a predictor of bench press performance done at different loads. *J Strength Cond Res.* 2012;26(9):2460-2467. [doi:10.1519/JSC.0b013e31823c44bb](https://doi.org/10.1519/JSC.0b013e31823c44bb)
+10. Baxter JR, Piazza SJ. Plantar flexor moment arm and muscle volume predict torque-generating capacity in young men. *J Appl Physiol.* 2014;116(5):538-544. [doi:10.1152/japplphysiol.01140.2013](https://doi.org/10.1152/japplphysiol.01140.2013)
+11. Maeo S, Huang M, Wu Y, et al. Greater hamstrings muscle hypertrophy but similar damage protection after training at long versus short muscle lengths. *Med Sci Sports Exerc.* 2021;53(4):825-837. [doi:10.1249/MSS.0000000000002523](https://doi.org/10.1249/MSS.0000000000002523)
+12. Kubo K, Ikebukuro T, Yata H. Effects of squat training with different depths on lower limb muscle volumes. *Eur J Appl Physiol.* 2019;119(9):1933-1942. [doi:10.1007/s00421-019-04181-y](https://doi.org/10.1007/s00421-019-04181-y)
+13. Vigotsky AD, Halperin I, Lehman GJ, Trajano GS, Vieira TM. Interpreting signal amplitudes in surface electromyography studies in sport and rehabilitation sciences. *Front Physiol.* 2017;8:985. [doi:10.3389/fphys.2017.00985](https://doi.org/10.3389/fphys.2017.00985)
+14. Lewis CL, Laudicina NM, Khuu A, Loverro KL. The human pelvis: variation in structure and function during gait. *Anat Rec (Hoboken).* 2017;300(4):633-642. [doi:10.1002/ar.23552](https://doi.org/10.1002/ar.23552)
+
+*Cet article est informatif et ne remplace pas un avis médical. En cas de douleur persistante pendant ou après l'entraînement, consultez un professionnel de santé.*
+`,
+  },
+  {  id: "156",
+    slug: "triche-elan-rebond-execution-musculation",
+    title: "Triche en musculation : élan, rebond et amplitude partielle, quand ça vole le stimulus",
+    seoTitle: "Triche en musculation : élan et rebond | APEXLABS",
+    excerpt: "Élan, rebond, amplitude qui raccourcit, descente qui tombe : ce que la triche en musculation retire au muscle visé, quand une triche contrôlée est utile, et comment la repérer sur vidéo.",
+    metaDescription: "Élan, rebond, amplitude partielle : quand la triche en musculation vole le stimulus, quand elle est utile, comment la repérer sur vidéo. Études à l'appui.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "16 min",
+    image: "/images/blog/triche-elan-rebond-execution-musculation/triche-elan-rebond-hero.webp",
+    content: `# Triche en musculation : élan, rebond et amplitude partielle, quand ça vole le stimulus
+
+## Introduction : la charge monte, mais qui l'a montée ?
+
+Sur le carnet, la progression est belle : 16 kg au curl il y a deux mois, 20 kg aujourd'hui. Sur la vidéo, le buste part en arrière dès la première répétition, les coudes remontent et l'haltère traverse la zone difficile sur sa vitesse. Le biceps a fait la moitié du travail, l'inertie le reste.
+
+La **triche en musculation** désigne toute force qui déplace la charge sans venir du muscle que vous voulez faire grossir : l'élan donné par un autre segment, le rebond sur la poitrine ou en bas d'un squat, l'amplitude qui raccourcit sans que vous le décidiez, la descente qui tombe au lieu d'être freinée. Elle n'est pas toujours une faute. Utilisée en fin de série, de façon délibérée et mesurée, elle peut même prolonger le travail du muscle visé. Subie dès la première répétition, elle vole le stimulus et fausse votre suivi de progression.
+
+Voici ce que l'élan et le rebond font à la tension du muscle, ce que disent les études, où placer la limite entre triche utile et triche subie, et comment la repérer sur vidéo.
+
+> **L'essentiel en 30 secondes**
+>
+> - Lancer la charge au départ permet de la laisser **ralentir dans la zone dure** : le muscle visé y produit moins de force que le poids soulevé.
+> - Le bonus élastique du rebond **diminue de moitié en 0,85 seconde** de pause au développé couché (Wilson, 1991, 12 pratiquants à 95 % du maximum).
+> - Sans pause entre descente et montée, l'erreur de mesure de la force est **38 à 58 % plus élevée** (Pallarés, 2014).
+> - L'amplitude complète donne plus de force et d'hypertrophie des jambes que l'amplitude partielle (Pallarés, 2021, 16 études). Les partielles qui marchent sont **choisies et placées en position étirée**.
+> - Un élan **modéré** peut augmenter le couple demandé au muscle visé, un élan excessif le réduit (Arandjelović, 2013, simulation).
+> - La triche est acceptable **après** les répétitions strictes, si le muscle visé reste chargé et si aucune articulation ne prend le relais.
+
+---
+
+## Ce que la triche en musculation change : la tension, pas les kilos
+
+### Un muscle ne grossit pas pour la charge inscrite sur l'haltère
+
+Le stimulus dépend de la tension produite par le muscle, de l'amplitude et de la proximité de l'échec. Si un autre segment ou l'inertie assure une partie du mouvement, cette tension baisse, même si le carnet affiche plus.
+
+Pour déplacer une charge de masse m avec une accélération a, la force nécessaire vaut **m × (g + a)**. Tant que la charge accélère vers le haut, il faut plus de force que son poids. Quand elle ralentit, il en faut moins.
+
+Prenons un curl avec un haltère de 15 kg :
+
+- **à vitesse constante**, la main doit produire environ 147 N, le poids de l'haltère
+- **lancé par un coup de reins**, avec une accélération de 2 m/s² au départ, il faut 177 N pendant cette phase, fournis en grande partie par les hanches et le dos
+- **dans la zone dure**, la charge ralentit sur sa lancée, par exemple à 3 m/s² : la main ne produit plus qu'environ 102 N
+
+Coude à 90°, avant-bras d'environ 30 cm : le couple demandé aux fléchisseurs passe d'environ 44 à 31 N·m. Modèle simplifié, mais le sens est clair : **l'élan déplace l'effort vers le début du mouvement et l'enlève là où l'exercice était censé être le plus exigeant**.
+
+![Courbe du couple demandé aux fléchisseurs du coude pendant la montée d'un curl debout : en exécution stricte, le couple culmine vers 90° de flexion ; avec un élan du buste, un pic apparaît au départ puis le couple chute dans la zone dure, ce qui représente le stimulus perdu](/images/blog/triche-elan-rebond-execution-musculation/triche-courbe-couple-curl-schema.webp)
+
+### Les quatre formes de triche
+
+1. **L'élan** : un autre segment lance la charge (buste au curl, hanches au rowing, jambes à l'élévation latérale).
+2. **Le rebond** : l'énergie élastique des tissus étirés, ou le contact avec la poitrine, le sol ou une butée, relance la montée.
+3. **L'amplitude partielle involontaire** : la répétition raccourcit au fil de la série, souvent du côté où le muscle est le plus étiré.
+4. **La descente qui tombe** : la phase excentrique n'est plus freinée, ce qui prépare souvent le rebond suivant.
+
+Elles vont souvent ensemble : la descente qui tombe produit le rebond, le rebond donne de l'élan. Le [guide complet de la biomécanique en musculation](/blog/biomecanique-musculation-guide-complet) explique les notions de moment de force et de courbe de résistance utilisées ici.
+
+---
+
+## L'élan : le coup de reins qui soulage la zone dure
+
+### Pourquoi ça arrive
+
+Chaque exercice a une zone dure, le point de blocage (*sticking point*). Au curl, elle se situe vers 90° de flexion, là où le bras de levier de la charge par rapport au coude est le plus long. C'est là que la répétition échoue et que la technique se dégrade en premier (revue de **Kompf et Arandjelović, 2016**). Si la charge est trop lourde pour la passer avec le muscle visé seul, le corps cherche de l'aide ailleurs.
+
+### Ce que ça coûte
+
+Le stimulus est perdu là où le muscle travaille le plus. Au rowing, l'élan coûte aussi au dos. **Fenwick et al. (2009)** ont comparé trois rowings chez **7 hommes** : le rowing buste penché générait la plus forte charge lombaire des trois exercices testés. Y ajouter un coup de reins à chaque répétition n'arrange rien, même si l'échantillon est minuscule et ne dit rien du risque de blessure.
+
+### Ce que dit la seule étude qui a modélisé la triche
+
+**Arandjelović (2013)** a simulé l'élévation latérale sur ordinateur, à partir d'un modèle physique, de mesures anthropométriques et de données de recrutement musculaire publiées :
+
+- un élan **modéré** (vitesse angulaire de départ d'environ 57,5° par seconde) **augmentait** le couple demandé aux muscles visés, sans augmenter la charge
+- un élan **excessif** le **diminuait**
+- une charge beaucoup plus lourde lancée avec élan réduisait le stimulus total de la série, faute de répétitions réussies
+
+C'est une simulation, sans aucune hypertrophie mesurée. Elle montre au moins que **la question n'est pas « élan ou pas élan », mais combien et à quel moment**. Une légère impulsion que le deltoïde doit ensuite freiner n'a rien à voir avec un balancement qui envoie l'haltère au-dessus de l'épaule.
+
+![Comparaison de profil entre un curl strict et un curl avec élan : à gauche, coude fixe, buste immobile et épaule à l'aplomb de la hanche ; à droite, buste incliné à 16° en arrière, hanches poussées vers l'avant et coude qui avance](/images/blog/triche-elan-rebond-execution-musculation/triche-curl-strict-elan-schema.webp)
+
+### Corriger et vérifier
+
+Une seule correction règle la cause : **baisser la charge** jusqu'à ce que les premières répétitions soient strictes. Test : une pause d'une seconde dans la zone dure. Sur vidéo, de profil, à hauteur de hanche : l'épaule reste à l'aplomb de la hanche et la charge n'accélère pas brusquement au départ.
+
+---
+
+## Le rebond : l'énergie élastique qui fait le travail à la place du muscle
+
+### Ce que la cinématique a mesuré
+
+Un muscle et son tendon étirés sous charge puis raccourcis aussitôt restituent une partie de l'énergie stockée : c'est le cycle étirement-détente. Utile en sprint, il aide en musculation la charge à repartir sans que le muscle produise toute la force.
+
+**Wilson et al. (1991)** ont fait développer **12 pratiquants expérimentés** à **95 % de leur maximum**, avec rebond, sans descente, ou avec des pauses de durées variables sur la poitrine. Le bonus dû à l'étirement diminuait selon une courbe exponentielle de **demi-vie 0,85 seconde** : la moitié après 0,85 s, environ 20 % après 2 s.
+
+**Elliott et al. (1989)**, en cinématographie 3D sur **10 powerlifteurs de haut niveau** au développé couché, proposent une lecture du point de blocage : une transition où la force baisse, entre une accélération aidée par l'énergie élastique et une zone mécaniquement plus favorable. Le rebond aide le bas, puis s'éteint avant la zone la plus dure.
+
+![Courbe de décroissance du bonus élastique en fonction de la durée de la pause sur la poitrine au développé couché : 100 % avec rebond, 50 % après 0,85 seconde de pause et environ 20 % après 2 secondes](/images/blog/triche-elan-rebond-execution-musculation/triche-rebond-pause-schema.webp)
+
+### Le rebond acceptable et le rebond qui coûte
+
+Au squat, enchaîner descente et montée avec un bas contrôlé est une exécution normale. Le problème commence quand le rebond devient **passif** :
+
+- **au développé couché**, la barre tombe et rebondit sur la cage thoracique : le pectoral n'inverse plus le mouvement seul
+- **au squat**, la descente s'accélère et le bassin rebondit en bas, souvent en perdant la position du bas du dos (voir [les erreurs de squat](/blog/squat-erreurs-execution-corrections))
+- **au soulevé de terre**, les disques rebondissent au sol et la barre repart avant que le dos ait repris sa position (voir [les erreurs au soulevé de terre](/blog/souleve-de-terre-erreurs-execution))
+
+Le rebond passif retire du stimulus dans la position où le muscle est le plus étiré, celle qui semble la plus intéressante pour l'hypertrophie. Pour le développé, l'article sur [le développé couché et les épaules](/blog/developpe-couche-erreurs-epaules) détaille aussi ce que le rebond fait à l'avant de l'épaule.
+
+> **Votre série est-elle propre jusqu'à la dernière répétition ?**
+>
+> Avec FormCheck, vous filmez votre série, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : à partir de quelle répétition l'élan apparaît, si la charge rebondit en bas, si l'amplitude raccourcit, et les corrections à appliquer dès la séance suivante. Le rapport suit ma grille d'analyse, construite sur mon expertise en biomécanique. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €, sans création de compte.
+>
+> [Faire analyser ma série avec FormCheck](/offers/formcheck)
+
+### Une pause pour savoir si vous progressez vraiment
+
+**Pallarés et al. (2014)** ont testé **17 athlètes entraînés** au développé et au squat, avec et sans pause de 2 secondes en bas. Avec la pause, la mesure variait moins d'un essai à l'autre (coefficient de variation de 2,9 % contre 4,1 % au développé, 2,9 % contre 3,9 % au squat). Sans pause, l'erreur était **37,9 % plus élevée au développé et 57,5 % au squat**.
+
+Si votre développé « progresse » de 5 kg en deux semaines, demandez-vous avec quelle part de rebond. Une répétition avec une courte pause est un repère plus fiable pour mesurer votre [surcharge progressive](/blog/surcharge-progressive-guide).
+
+---
+
+## L'amplitude partielle involontaire : la triche que personne ne voit
+
+### Ce qui se voit
+
+Les trois premières répétitions descendent à la parallèle, les suivantes s'arrêtent 10 cm plus haut. Au développé, la barre ne touche plus la poitrine ; au tirage, les bras ne se tendent plus. Le carnet note le même nombre de répétitions, mais l'exercice a changé.
+
+### Pourquoi ça arrive
+
+La fatigue arrive d'abord là où l'exercice est le plus dur, souvent en position étirée : en bas du squat, du développé ou du soulevé roumain. Le corps raccourcit l'amplitude de ce côté. Une cheville ou une épaule raide peut aussi jouer.
+
+### Ce que ça coûte
+
+Pour le bas du corps, les données sont claires :
+
+- **Pallarés et al. (2021)**, méta-analyse de **16 études** : l'amplitude complète a produit de meilleurs gains de force (taille d'effet 0,56) et une hypertrophie des membres inférieurs plus importante (taille d'effet 0,88) que l'amplitude partielle.
+- **Schoenfeld et Grgic (2020)**, revue de **6 études** et **135 participants** (dont 8 femmes) : avantage de l'amplitude complète pour le bas du corps ; pour le haut du corps, les données sont limitées et contradictoires.
+
+Mais toutes les amplitudes partielles ne se valent pas :
+
+- **Pedrosa et al. (2022)**, **45 femmes non entraînées**, extension de jambe : la partie initiale de l'amplitude (genou fléchi de 100° à 65°, quadriceps étiré) a produit, à plusieurs niveaux de la cuisse, une hypertrophie régionale plus marquée que l'amplitude complète ou que la partie finale.
+- **Kassiano et al. (2023)**, **42 jeunes femmes**, 8 semaines de travail des mollets : la partie initiale (mollet étiré) a donné **+15,2 %** d'épaisseur du gastrocnémien médial, contre **+6,7 %** en amplitude complète et **+3,4 %** en partie finale.
+
+Ces deux études portent sur des femmes et sur un seul exercice chacune. Elles convergent pourtant avec les travaux sur la longueur musculaire : **une partielle choisie en position étirée peut fonctionner, une partielle subie qui supprime la position étirée est la pire version**. Or la partielle involontaire supprime presque toujours le bas du mouvement, donc la position étirée. Le raisonnement complet sur ce sujet est dans l'article sur [l'amplitude de mouvement et la croissance musculaire](/blog/amplitude-mouvement-croissance).
+
+### Comment le corriger et le vérifier
+
+- **Fixez un repère physique** (box au squat, contact barre-poitrine, bras tendus au tirage) : la répétition qui ne l'atteint pas ne compte pas.
+- **Arrêtez la série** quand l'amplitude raccourcit, ou finissez délibérément par des partielles en position étirée.
+- **Sur vidéo**, de profil, comparez la première et la dernière répétition au même repère.
+
+---
+
+## Le tempo : la descente qui tombe prépare le rebond
+
+### Ce que disent les méta-analyses
+
+**Schoenfeld et al. (2015)** ont réuni **8 études** menées jusqu'à l'échec : l'hypertrophie était comparable pour des répétitions de **0,5 à 8 secondes**. Seules les répétitions volontairement très lentes, au-delà de 10 secondes, semblaient moins efficaces, avec trop peu d'études pour conclure. La revue de **Wilk et al. (2021)** souligne que les données sur le tempo restent contradictoires et que l'effet de la durée de chaque phase sur les adaptations à long terme n'a pas été évalué directement.
+
+Inutile de compter quatre secondes à chaque descente (j'ai démonté cette obsession dans [l'article sur la lenteur et la prise de muscle](/blog/temps-sous-tension-mythe)). Mais le tempo garde un rôle ici : **une descente contrôlée empêche la charge de tomber, donc empêche le rebond passif**.
+
+### La règle pratique
+
+- **La descente est freinée** : vous pourriez l'arrêter à tout moment.
+- **Le bas est tenu** une fraction de seconde, sans choc.
+- **La montée est aussi rapide que possible**, trajectoire propre. Monter vite n'est pas tricher ; l'élan venu d'ailleurs, si.
+
+Chez **22 jeunes hommes** entraînés 8 semaines au squat, arrêter les séries à 40 % de perte de vitesse plutôt qu'à 20 % a donné plus d'hypertrophie du vaste latéral et du vaste intermédiaire, à gains de force comparables (**Pareja-Blanco, 2017**). Les répétitions lentes et dures de fin de série comptent : ce sont celles que l'élan et le rebond vident de leur valeur.
+
+---
+
+## Quand la triche contrôlée est acceptable, et même utile
+
+### Les quatre critères
+
+La triche est un outil, à quatre conditions :
+
+1. **Elle arrive après les répétitions strictes** : série propre jusqu'à 1 ou 2 répétitions de l'échec, puis 1 à 3 répétitions légèrement aidées. Dès la première répétition, ce n'est plus une technique : la charge est trop lourde.
+2. **Le muscle visé reste chargé** : l'élan passe le point dur, mais le biceps ou le deltoïde freine encore la descente.
+3. **Aucune articulation ne prend le relais sous contrainte.** Un léger mouvement du buste au curl, oui. Un coup de reins au soulevé de terre ou un rebond sur le sternum, non.
+4. **Elle est notée à part** : « 10 strictes + 2 avec élan » n'est pas « 12 répétitions ». Sinon, votre surcharge progressive devient fictive.
+
+### Où elle a sa place
+
+- **Curl et élévations latérales**, en fin de série, avec une impulsion modérée.
+- **Tractions**, avec un léger élan des jambes après l'échec strict, descente freinée.
+- **« Lever en triche, descendre en strict »** : un peu d'élan pour monter une charge que le muscle freine encore seul à la descente.
+
+### Où elle n'a pas sa place
+
+- **Soulevé de terre, squat et rowing lourds** : l'élan passe par le bas du dos.
+- **Développé couché et dips** avec rebond passif : l'épaule encaisse le choc en position étirée.
+- **Toute série où une douleur apparaît.** Dans ce cas, arrêtez. Si la douleur persiste, consultez un professionnel de santé. L'article sur [les douleurs en musculation et la technique](/blog/douleurs-musculation-technique-epaule-genou-dos) détaille les signaux d'alerte.
+
+Un point à garder en tête : la méta-analyse de **Refalo et al. (2023)**, sur **15 études**, ne trouve **pas d'avantage net** à aller jusqu'à l'échec musculaire momentané par rapport à des séries arrêtées un peu avant (taille d'effet 0,12, non significative). Les répétitions en triche au-delà de l'échec ne sont donc pas indispensables, et elles ne compensent jamais des répétitions strictes bâclées. Pour savoir si la limite de l'effort est en cause dans vos résultats, lisez aussi l'article sur [l'entraînement jusqu'à l'échec](/blog/entrainement-echec-necessaire).
+
+> **Une technique corrigée semaine après semaine**
+>
+> Dans le suivi Elite ou Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires : je repère où l'élan et le rebond s'installent, je décide où une triche contrôlée a sa place et où elle n'en a aucune, et j'adapte le programme et le choix des exercices à votre biomécanique (longueur de vos segments, mobilité, douleurs éventuelles). Vous me posez vos questions sur WhatsApp (Elite : du lundi au vendredi, de 9 h à 19 h ; Private Lab : 7 j/7, de 6 h à minuit).
+>
+> [Découvrir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Découvrir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## Les erreurs d'élan les plus fréquentes, exercice par exercice
+
+Le rebond et l'amplitude qui raccourcit sont traités plus haut. Voici les trois exercices où l'élan s'installe le plus souvent.
+
+### 1. Le curl lancé par le buste
+
+- **Ce qui se voit** : buste en arrière dès la première répétition, coudes qui avancent, haltère qui accélère au départ.
+- **Pourquoi** : la charge dépasse ce que les fléchisseurs du coude produisent vers 90°.
+- **Ce que ça coûte** : le couple chute dans la zone dure, le dos et les épaules prennent le relais.
+- **Correction** : charge plus légère, curl dos au mur ou sur banc incliné. Indice : « coudes collés, poitrine fixe ».
+- **Vérification vidéo** : de profil, l'épaule reste à l'aplomb de la hanche et le coude ne quitte pas le flanc.
+
+### 2. L'élévation latérale balancée
+
+- **Ce qui se voit** : genoux qui fléchissent, impulsion, haltères au-dessus de l'épaule qui retombent sans frein.
+- **Pourquoi** : le deltoïde latéral agit avec un petit bras de levier interne contre une charge tenue au bout du bras ; il cède vite.
+- **Ce que ça coûte** : trapèzes et jambes font le travail, la descente n'est plus freinée.
+- **Correction** : version assise ou à la poulie, montée jusqu'à l'horizontale, descente freinée. Indice : « les mains s'éloignent, elles ne montent pas ».
+- **Vérification vidéo** : de face, les épaules ne remontent pas vers les oreilles et les genoux restent immobiles.
+
+### 3. Le rowing arraché par les hanches
+
+- **Ce qui se voit** : buste qui se redresse de 20 à 30° à chaque répétition, barre arrachée jusqu'au ventre.
+- **Pourquoi** : la charge est trop lourde pour le grand dorsal et le haut du dos.
+- **Ce que ça coûte** : moins de stimulus pour le dos, et un coup de reins sur l'exercice déjà le plus exigeant pour les lombaires des trois rowings testés par Fenwick (2009).
+- **Correction** : rowing poitrine appuyée, ou pause d'une seconde barre au ventre. Détails dans l'article sur [les erreurs au tirage et au rowing](/blog/tirage-rowing-dos-erreurs-execution).
+- **Vérification vidéo** : de profil, l'angle du buste ne varie pas de plus de quelques degrés entre le bas et le haut.
+
+---
+
+## Tableau récapitulatif : erreur → correction
+
+| Erreur | Ce qui se voit | Correction | Repère vidéo |
+|---|---|---|---|
+| Curl lancé par le buste | Buste en arrière, coudes qui avancent | Charge plus légère, curl dos au mur ou sur banc incliné | Profil : épaule à l'aplomb de la hanche |
+| Élévation latérale balancée | Genoux qui fléchissent, descente non freinée | Version assise ou à la poulie, descente freinée | Face : épaules basses, genoux immobiles |
+| Rowing arraché | Buste qui se redresse à chaque répétition | Rowing poitrine appuyée, pause barre au ventre | Profil : angle du buste stable |
+| Développé couché rebondi | Barre qui s'enfonce et repart sur le choc | Contact léger, pause d'une demi-seconde à une seconde | Profil : arrêt visible sur la poitrine |
+| Soulevé de terre rebondi au sol | Disques qui rebondissent, dos qui ne se replace pas | Poser la barre et reprendre la position à chaque répétition | Profil : même position de départ à chaque répétition |
+| Amplitude qui raccourcit | Profondeur ou contact perdus en fin de série | Repère physique, arrêt de la série ou partielles choisies en position étirée | Profil : première et dernière répétition au même repère |
+| Triche notée comme répétition normale | Progression sur le carnet, pas sur la vidéo | Noter séparément répétitions strictes et répétitions aidées | Même angle de caméra d'une séance à l'autre |
+
+---
+
+## Comment repérer la triche sur votre vidéo
+
+Filmez la série entière, de profil, à hauteur de hanche (de face pour les élévations latérales), et comparez la première et la dernière répétition. Trois signes trahissent la triche : un segment censé rester fixe qui bouge, une accélération brusque au départ de la montée, un point bas qui change d'une répétition à l'autre. La méthode complète est dans l'article sur [filmer sa séance pour analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique).
+
+---
+
+## FAQ : triche, élan et rebond en musculation
+
+### La triche en musculation fait-elle perdre du muscle ?
+
+Elle ne fait pas perdre de muscle, mais elle peut en faire gagner moins. Si l'élan ou le rebond assure une partie du mouvement dès les premières répétitions, la tension dans le muscle visé baisse, surtout dans la zone dure et en position étirée. En fin de série, après des répétitions strictes, son coût est faible.
+
+### Faut-il faire une pause en bas du développé couché ?
+
+Pour mesurer votre progression et pour travailler le pectoral en position étirée, une courte pause est utile. Le bonus élastique diminue de moitié en 0,85 seconde (Wilson, 1991), et la pause rend la mesure de force plus fiable (Pallarés, 2014). L'essentiel est d'éviter le rebond sur la cage thoracique.
+
+### Le rebond en bas du squat est-il dangereux ?
+
+Enchaîner la descente et la montée avec un bas contrôlé n'est pas un problème : c'est un cycle étirement-détente normal. Le rebond devient risqué quand la descente s'accélère et que le bas du dos perd sa position en bas, surtout sous charge lourde. Une mécanique défavorable n'est pas un diagnostic : en cas de douleur persistante, consultez un professionnel de santé.
+
+### Les répétitions partielles sont-elles de la triche ?
+
+Pas si elles sont choisies. Plusieurs études montrent qu'une amplitude partielle placée en position étirée peut donner autant, voire plus, d'hypertrophie régionale que l'amplitude complète (Pedrosa, 2022 ; Kassiano, 2023). La triche, c'est la partielle subie, qui raccourcit au fil de la série et supprime justement la position étirée.
+
+### Comment savoir si ma charge est trop lourde ?
+
+Si l'élan, le rebond ou la perte d'amplitude apparaissent dès les premières répétitions, la charge est trop lourde pour l'exercice. Test simple : une pause d'une seconde dans la zone dure. Si vous ne la tenez pas sur les premières répétitions, baissez la charge.
+
+### Faut-il ralentir toutes ses répétitions pour éviter la triche ?
+
+Non. Les répétitions de 0,5 à 8 secondes donnent une hypertrophie comparable (Schoenfeld, 2015). Il suffit de freiner la descente, de ne pas rebondir en bas et de monter le plus vite possible avec une trajectoire propre.
+
+---
+
+## Conclusion : tricher est un choix, pas un réflexe
+
+L'élan, le rebond et l'amplitude qui raccourcit sortent le travail du muscle visé, dans la zone dure ou en position étirée, là où l'exercice devait être le plus exigeant. Et ils faussent votre carnet.
+
+La triche contrôlée a sa place : en fin de série, sur des exercices sûrs, avec une impulsion modérée, une descente freinée et des répétitions aidées notées à part. Le reste, c'est une charge trop lourde déguisée en progression. La vidéo tranche en quelques secondes.
+
+> **Faites lire votre série par une grille biomécanique**
+>
+> Avec FormCheck, vous envoyez la vidéo de votre série et vous recevez sous 3 heures un rapport d'analyse biomécanique : où l'élan prend le relais, les rebonds, l'amplitude qui raccourcit, et les corrections pour la séance suivante. Ma méthode d'analyse, appliquée à votre vidéo. À partir de 9,90 € l'analyse (pack de 3 à 24,90 €, pack de 6 à 44,90 €), sans création de compte.
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+> **Un suivi qui corrige l'exécution autant que le programme**
+>
+> En coaching Elite ou Private Lab, je suis votre technique semaine après semaine à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des exercices à vos segments, à votre mobilité et à vos éventuelles douleurs. Réponses sur WhatsApp : du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Voir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Voir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Vous préférez d'abord faire le point sur votre entraînement et vos priorités ? Le [Discovery Scan](/offers/discovery-scan) est gratuit.
+
+*ACHZOD*
+
+---
+
+## Références
+
+1. Arandjelović O. Does cheating pay: the role of externally supplied momentum on muscular force in resistance exercise. *Eur J Appl Physiol.* 2013;113(1):135-145. [doi:10.1007/s00421-012-2420-y](https://doi.org/10.1007/s00421-012-2420-y) (PMID 22615008)
+2. Kompf J, Arandjelović O. Understanding and overcoming the sticking point in resistance exercise. *Sports Med.* 2016;46(6):751-762. [doi:10.1007/s40279-015-0460-2](https://doi.org/10.1007/s40279-015-0460-2) (PMID 26758462)
+3. Fenwick CM, Brown SH, McGill SM. Comparison of different rowing exercises: trunk muscle activation and lumbar spine motion, load, and stiffness. *J Strength Cond Res.* 2009;23(5):1408-1417. [doi:10.1519/JSC.0b013e3181b07334](https://doi.org/10.1519/JSC.0b013e3181b07334) (PMID 19620925)
+4. Wilson GJ, Elliott BC, Wood GA. The effect on performance of imposing a delay during a stretch-shorten cycle movement. *Med Sci Sports Exerc.* 1991;23(3):364-370. [PMID 2020276](https://pubmed.ncbi.nlm.nih.gov/2020276/)
+5. Elliott BC, Wilson GJ, Kerr GK. A biomechanical analysis of the sticking region in the bench press. *Med Sci Sports Exerc.* 1989;21(4):450-462. [PMID 2779404](https://pubmed.ncbi.nlm.nih.gov/2779404/)
+6. Pallarés JG, Sánchez-Medina L, Pérez CE, De La Cruz-Sánchez E, Mora-Rodriguez R. Imposing a pause between the eccentric and concentric phases increases the reliability of isoinertial strength assessments. *J Sports Sci.* 2014;32(12):1165-1175. [doi:10.1080/02640414.2014.889844](https://doi.org/10.1080/02640414.2014.889844) (PMID 24575723)
+7. Pallarés JG, Hernández-Belmonte A, Martínez-Cava A, Vetrovsky T, Steffl M, Courel-Ibáñez J. Effects of range of motion on resistance training adaptations: a systematic review and meta-analysis. *Scand J Med Sci Sports.* 2021;31(10):1866-1881. [doi:10.1111/sms.14006](https://doi.org/10.1111/sms.14006) (PMID 34170576)
+8. Schoenfeld BJ, Grgic J. Effects of range of motion on muscle development during resistance training interventions: a systematic review. *SAGE Open Med.* 2020;8:2050312120901559. [doi:10.1177/2050312120901559](https://doi.org/10.1177/2050312120901559) (PMID 32030125)
+9. Pedrosa GF, Lima FV, Schoenfeld BJ, et al. Partial range of motion training elicits favorable improvements in muscular adaptations when carried out at long muscle lengths. *Eur J Sport Sci.* 2022;22(8):1250-1260. [doi:10.1080/17461391.2021.1927199](https://doi.org/10.1080/17461391.2021.1927199) (PMID 33977835)
+10. Kassiano W, Costa B, Kunevaliki G, et al. Greater gastrocnemius muscle hypertrophy after partial range of motion training performed at long muscle lengths. *J Strength Cond Res.* 2023;37(9):1746-1753. [doi:10.1519/JSC.0000000000004460](https://doi.org/10.1519/JSC.0000000000004460) (PMID 37015016)
+11. Schoenfeld BJ, Ogborn DI, Krieger JW. Effect of repetition duration during resistance training on muscle hypertrophy: a systematic review and meta-analysis. *Sports Med.* 2015;45(4):577-585. [doi:10.1007/s40279-015-0304-0](https://doi.org/10.1007/s40279-015-0304-0) (PMID 25601394)
+12. Wilk M, Zajac A, Tufano JJ. The influence of movement tempo during resistance training on muscular strength and hypertrophy responses: a review. *Sports Med.* 2021;51(8):1629-1650. [doi:10.1007/s40279-021-01465-2](https://doi.org/10.1007/s40279-021-01465-2) (PMID 34043184)
+13. Pareja-Blanco F, Rodríguez-Rosell D, Sánchez-Medina L, et al. Effects of velocity loss during resistance training on athletic performance, strength gains and muscle adaptations. *Scand J Med Sci Sports.* 2017;27(7):724-735. [doi:10.1111/sms.12678](https://doi.org/10.1111/sms.12678) (PMID 27038416)
+14. Refalo MC, Helms ER, Trexler ET, Hamilton DL, Fyfe JJ. Influence of resistance training proximity-to-failure on skeletal muscle hypertrophy: a systematic review with meta-analysis. *Sports Med.* 2023;53(3):649-665. [doi:10.1007/s40279-022-01784-y](https://doi.org/10.1007/s40279-022-01784-y) (PMID 36334240)
+
+*Cet article est informatif et ne remplace pas un avis médical. En cas de douleur persistante pendant ou après l'entraînement, consultez un professionnel de santé.*
+`,
+  },
+  {  id: "157",
+    slug: "douleurs-musculation-technique-epaule-genou-dos",
+    title: "Douleurs en musculation : épaule, genou, dos, les erreurs techniques souvent en cause et comment les corriger",
+    seoTitle: "Douleurs en musculation : épaule, genou, dos | APEXLABS",
+    excerpt: "Épaule au développé couché, genou au squat, bas du dos au soulevé de terre : les erreurs d'exécution le plus souvent associées aux douleurs, leurs corrections, les alternatives d'exercices, une échelle de douleur pour savoir quand adapter et les signaux d'alerte qui imposent de consulter.",
+    metaDescription: "Douleurs en musculation à l'épaule, au genou ou au dos : les erreurs techniques en cause, leurs corrections, les alternatives et les signaux d'alerte.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "17 min",
+    image: "/images/blog/douleurs-musculation-technique-epaule-genou-dos/douleurs-musculation-hero.webp",
+    content: `# Douleurs en musculation : épaule, genou, dos, les erreurs techniques souvent en cause et comment les corriger
+
+## Introduction : la douleur n'est pas une fatalité du sport, c'est une information
+
+Une gêne à l'avant de l'épaule à chaque développé couché. Un genou qui tire en sortie de squat. Un bas du dos raide après le soulevé de terre. Beaucoup de pratiquants finissent par considérer ces douleurs en musculation comme le prix à payer. C'est une erreur de lecture : dans la plupart des cas que je vois, la douleur se répète sur un exercice précis, à un angle précis, et diminue quand la position change.
+
+La technique n'explique pas tout. La charge, le volume, le sommeil ou un antécédent de blessure pèsent aussi. Mais c'est le facteur que vous contrôlez à chaque séance, et c'est souvent lui qui décide **où** la contrainte se concentre.
+
+Voici les erreurs d'exécution le plus souvent associées aux douleurs d'épaule, de genou et de bas du dos, leurs corrections et les alternatives d'exercices, en commençant par les signaux qui imposent d'arrêter. Aucun diagnostic ici : quand la douleur persiste, c'est un médecin ou un kinésithérapeute qu'il faut voir.
+
+> **L'essentiel en 30 secondes**
+>
+> - L'épaule, le bas du dos et le genou sont les zones les plus souvent blessées dans les sports de force (revue de **20 études**, Keogh et Winwood, 2017). L'épaule représente jusqu'à **36 %** des blessures liées à la musculation (Kolber, 2010).
+> - Au développé couché, une prise étroite (moins de **1,5 fois** la largeur des épaules) et des omoplates serrées réduisent les forces de cisaillement dans l'épaule et le travail de la coiffe (Noteboom, 2024).
+> - Les élévations latérales et le rowing menton **au-dessus de 90°** sont associés aux signes de conflit sous-acromial chez les pratiquants (Kolber, 2014).
+> - Au squat, ce n'est pas la profondeur qui menace le genou, c'est le genou qui s'effondre vers l'intérieur et la perte de contrôle.
+> - Au soulevé de terre, une barre qui s'éloigne de quelques centimètres allonge le bras de levier sur le bas du dos à charge égale.
+> - Une douleur qui reste modérée, redescend après la séance et ne grimpe pas d'une semaine à l'autre se gère. Les signaux d'alerte listés plus bas imposent d'arrêter et de consulter.
+
+---
+
+## Douleurs en musculation : ce que disent vraiment les études
+
+### Un sport peu blessant, avec trois zones fragiles
+
+Dans la revue systématique de **Keogh et Winwood (2017)**, 20 études sur les sports de force, le culturisme affiche les taux de blessure les plus bas : **0,24 à 1 blessure pour 1 000 heures**, contre 4,5 à 6,1 pour le strongman. La musculation n'est pas un sport dangereux. Mais l'épaule, le bas du dos, le genou, le coude et le poignet reviennent dans presque toutes les études, surtout sous forme d'élongations, de tendinopathies et d'entorses. Limite : seules 4 études sur 20 étaient prospectives.
+
+Pour l'épaule, la revue de **Kolber et al. (2010)** chiffre la part à **36 %** au maximum des blessures liées à la musculation, avec deux familles de facteurs : les déséquilibres articulaires et musculaires, et le manque d'attention portée à la technique.
+
+### La technique décide où va la contrainte
+
+Le principe, détaillé dans le [guide de la biomécanique en musculation](/blog/biomecanique-musculation-guide-complet), tient en une ligne : **moment = force × bras de levier**. Quand la barre s'éloigne de vos hanches au soulevé ou que vos coudes s'ouvrent à 90° au développé, vous ne soulevez pas plus lourd, vous déplacez la contrainte vers une structure qui la supporte moins bien, des centaines de fois par mois.
+
+Deux nuances. Douleur ne veut pas dire lésion : elle dépend aussi de la fatigue, du stress et du sommeil. Et une technique propre réduit une partie du risque, elle ne l'annule pas.
+
+---
+
+## Les signaux d'alerte : quand arrêter et consulter
+
+Avant toute correction technique, écartez ce qui n'a rien à faire dans une salle de sport. Le cadre international de **Finucane et al. (2020)** sur les signaux d'alerte de pathologie rachidienne grave rappelle que ces situations sont rares mais doivent être repérées tôt, et que la plupart de ces signaux, pris isolément, ont une faible valeur diagnostique : c'est au professionnel de santé de les interpréter, pas à votre coach.
+
+Arrêtez l'exercice et consultez rapidement un médecin si vous constatez :
+
+- **dos** : perte de sensibilité au niveau du périnée, troubles urinaires ou intestinaux nouveaux, faiblesse qui progresse dans une jambe, douleur qui descend sous le genou avec fourmillements, fièvre, perte de poids inexpliquée, douleur nocturne qui ne se calme dans aucune position ;
+- **genou** : gonflement rapide, genou qui se bloque ou se dérobe, claquement suivi d'une douleur vive, appui impossible ;
+- **épaule** : épaule qui sort ou semble sortir, perte de force brutale, déformation visible, douleur nocturne qui vous réveille ;
+- **partout** : douleur après un choc, douleur qui augmente malgré la baisse de charge, douleur qui dure plus de quelques semaines.
+
+Dans ces cas, il n'y a pas de réglage à chercher, il y a un examen à faire.
+
+---
+
+## Lire votre douleur pendant la séance
+
+![Échelle de douleur de 0 à 10 en trois zones : de 0 à 2 l'entraînement continue, de 3 à 5 il s'adapte, à partir de 6 l'exercice s'arrête, avec les trois règles de la zone jaune](/images/blog/douleurs-musculation-technique-epaule-genou-dos/douleurs-echelle-douleur-schema.webp)
+
+### Le modèle de surveillance de la douleur
+
+En dehors des signaux d'alerte, l'arrêt total n'est pas forcément la meilleure option. Dans l'essai randomisé de **Silbernagel et al. (2007)**, 38 patients atteints de tendinopathie d'Achille ont suivi le même renforcement : la moitié a continué à courir et sauter en surveillant sa douleur, l'autre moitié a arrêté 6 semaines. À 12 mois, les deux groupes avaient progressé de façon comparable, sans effet négatif à continuer. La méta-analyse de **Smith et al. (2017)** (7 essais, 385 participants souffrant de douleurs chroniques) montre même un petit avantage à court terme quand une douleur modérée est acceptée pendant l'exercice. Ce sont des tendons de patients, pas des épaules de pratiquants, mais la logique se transpose.
+
+### Les trois règles à appliquer
+
+Notez votre douleur de 0 (aucune) à 10 (la pire imaginable), pendant la série puis le lendemain matin.
+
+- **De 0 à 2** : vous continuez normalement.
+- **De 3 à 5** : vous adaptez (charge, amplitude ou variante), à trois conditions : la douleur redescend avant la fin de la séance, elle est revenue à son niveau habituel le lendemain matin, et elle ne grimpe pas d'une semaine à l'autre.
+- **À partir de 6** : vous arrêtez l'exercice, et vous consultez si cela se répète.
+
+Si une seule condition saute, la variante ou la charge ne vous convient pas encore. C'est une donnée, pas un échec.
+
+---
+
+## Douleur à l'épaule en musculation : les erreurs les plus fréquentes
+
+![Schéma vu de dessus du développé couché : à gauche, coudes à 90° du buste, prise d'environ deux largeurs d'épaules et omoplates relâchées ; à droite, coudes entre 45 et 70°, prise d'environ 1,5 largeur d'épaules et omoplates serrées et basses](/images/blog/douleurs-musculation-technique-epaule-genou-dos/douleurs-epaule-developpe-couche-schema.webp)
+
+### Erreur 1 : le développé couché coudes ouverts, prise large, omoplates relâchées
+
+**Ce que vous voyez.** Coudes à 90° du buste, barre qui descend vers le haut des pectoraux, épaules qui remontent vers les oreilles en bas.
+
+**Pourquoi ça arrive.** Une prise large raccourcit l'amplitude et donne l'impression de pousser plus lourd. Les omoplates se relâchent avec la fatigue, surtout sans mise en place solide.
+
+**Ce que ça coûte.** **Noteboom et al. (2024)** ont mesuré 21 variantes de développé couché chez 10 athlètes de force, avec barre instrumentée et modèle musculo-squelettique. Une prise inférieure à 1,5 fois la largeur des épaules diminue la compression acromio-claviculaire. Prise étroite et omoplates serrées diminuent le cisaillement dans l'articulation gléno-humérale et le travail de la coiffe des rotateurs. Limites : 10 sujets, forces estimées par modèle, aucun suivi de blessure.
+
+**La correction.** Prise autour de 1,5 fois la largeur des épaules, omoplates serrées et tirées vers le bas avant de décrocher la barre, coudes entre 45 et 70° du buste à la descente, contact bas sur les pectoraux, et « cassez la barre en deux ». Détails dans [le développé couché et les épaules](/blog/developpe-couche-erreurs-epaules).
+
+**La vérification vidéo.** Depuis les pieds du banc, en légère plongée : en bas, les bras restent nettement sous l'horizontale par rapport au buste.
+
+> **Vous ne savez pas laquelle de ces erreurs vous concerne ?**
+>
+> Avec FormCheck, vous filmez votre série, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : vos erreurs d'exécution, ce qui les provoque et les corrections à faire, établis selon ma grille d'analyse. Le rapport ne remplace pas un avis médical. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €, sans création de compte.
+>
+> [Faire analyser ma technique avec FormCheck](/offers/formcheck)
+
+### Erreur 2 : élévations latérales et rowing menton au-dessus de 90°
+
+**Ce que vous voyez.** Haltères qui dépassent la ligne des épaules, ou barre de rowing menton tirée jusqu'au menton, coudes très hauts.
+
+**Ce que ça coûte.** Chez 77 hommes dont 46 pratiquants, **Kolber et al. (2014)** ont trouvé des signes cliniques de conflit sous-acromial nettement plus fréquents chez les pratiquants, associés aux élévations latérales et au rowing menton **au-delà de 90°**. Le renforcement des rotateurs externes était associé à moins de signes. Étude transversale : une association, pas une preuve de cause.
+
+**La correction.** Arrêt à hauteur d'épaule, bras légèrement en avant du buste, pouce neutre. Au rowing menton, prise plus large et coudes qui s'arrêtent à hauteur d'épaule, ou élévations à la poulie à la place.
+
+**La vérification vidéo.** De face, à hauteur d'épaule : le coude reste sous la ligne des épaules.
+
+### Erreur 3 : les exercices derrière la nuque
+
+**Ce que vous voyez.** Tirage vertical ou développé militaire barre derrière la tête, épaules en rotation externe maximale avec le bras écarté, la position « high five ».
+
+**Ce que ça coûte.** Chez 159 hommes dont 123 pratiquants (**Kolber, 2013**), l'hyperlaxité antérieure et les tests d'appréhension positifs étaient plus fréquents chez les pratiquants, et associés à ces exercices derrière la nuque. Association transversale, là aussi.
+
+**La correction.** Barre devant le visage. Vous ne perdez presque rien en stimulus et vous sortez l'épaule de sa position la plus exposée.
+
+### Le terrain : rotateurs externes et trapèze inférieur
+
+Chez 55 pratiquants, ceux qui avaient des signes de conflit présentaient moins de rotation active et des rotateurs externes et un trapèze inférieur plus faibles (**Kolber, 2017**). Beaucoup de développés et peu de travail de rotation externe nourrissent ce déséquilibre : ajoutez des rotations externes à la poulie et des extensions en Y, et équilibrez poussée et tirage. Les erreurs de [tirage et de rowing](/blog/tirage-rowing-dos-erreurs-execution) comptent ici autant que celles du développé.
+
+---
+
+## Douleur au genou en musculation : ce qui charge vraiment l'articulation
+
+![Schéma de face du squat : à gauche, les genoux passent à l'intérieur de la ligne hanche-deuxième orteil ; à droite, les genoux restent au-dessus du deuxième orteil, flèches jaunes vers l'extérieur](/images/blog/douleurs-musculation-technique-epaule-genou-dos/douleurs-genou-squat-valgus-schema.webp)
+
+### Erreur 4 : le genou qui s'effondre vers l'intérieur
+
+**Ce que vous voyez.** Au squat, à la presse ou en fente, les genoux rentrent, surtout à la remontée et en fin de série.
+
+**Pourquoi ça arrive.** Chevilles raides, contrôle de hanche insuffisant ou charge trop lourde. Selon **Powers (2010)**, un mauvais contrôle de la hanche, du bassin et du tronc modifie la cinématique du genou et intervient dans les douleurs fémoro-patellaires. C'est un commentaire clinique, au niveau de preuve le plus bas : un cadre de raisonnement, pas une démonstration.
+
+**Ce que ça coûte.** La contrainte glisse vers la face interne du genou et l'articulation fémoro-patellaire, et les fessiers travaillent moins.
+
+**La correction.** Indice verbal : « écartez le sol avec les pieds ». Baissez la charge jusqu'à ce que la trajectoire reste propre, travaillez la cheville si elle limite, ajoutez fente bulgare et step-up. Un léger mouvement vers l'intérieur à la remontée est fréquent : c'est l'effondrement marqué et répété qui pose problème.
+
+**La vérification vidéo.** De face, à hauteur de hanche : ligne hanche, genou, deuxième orteil. Détails dans [les erreurs d'exécution au squat](/blog/squat-erreurs-execution-corrections).
+
+### Erreur 5 : avoir peur de la profondeur et bloquer les genoux
+
+Première idée reçue : le squat profond userait les genoux. La revue de **Hartmann et al. (2013)** (plus de 164 articles) conclut l'inverse : la compression derrière la rotule culmine autour de **90°** de flexion puis diminue au-delà, et ce sont plutôt les demi-squats et quarts de squat très chargés qui favoriseraient des changements dégénératifs. Chez des genoux sains, les forces de cisaillement restent faibles à modérées sur toute l'amplitude (**Escamilla, 2001**). Le sujet est développé dans [squats et genoux, le mythe](/blog/squats-mauvais-genoux-mythe).
+
+Seconde idée reçue : les genoux ne doivent jamais dépasser les orteils. Les bloquer fait baisser le moment au genou de 150 à 117 N·m, mais fait passer celui de la hanche de 28 à **303 N·m** (**Fry, 2003**). Vous soulagez un peu le genou et chargez fortement la hanche et le bas du dos.
+
+**La correction.** Descendez aussi bas que votre mobilité le permet, dos neutre et talons au sol. Une douleur à l'avant du genou autour de 90° vient plus souvent de la charge, du volume ou de la vitesse que de la profondeur.
+
+### Erreur 6 : le rebond et la perte de contrôle en bas
+
+**Ce que vous voyez.** Une descente en chute libre, un rebond sec au point bas, des talons qui décollent.
+
+**Ce que ça coûte.** Les forces de compression sont maximales près du point bas (Escamilla, 2001). Y arriver sans contrôle ajoute un pic que vos tendons encaissent à chaque répétition. Le rebond a sa place dans un entraînement maîtrisé (voir [triche, élan et rebond](/blog/triche-elan-rebond-execution-musculation)), pas quand le genou fait déjà mal.
+
+**La correction.** Une descente contrôlée d'environ deux secondes, une courte pause au point bas sur les séries d'apprentissage, des talons surélevés de quelques centimètres si la cheville limite.
+
+> **Coaching Elite ou Private Lab : votre technique corrigée semaine après semaine**
+>
+> En Coaching Elite ou en Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des exercices à votre biomécanique : longueur de vos segments, mobilité, zones douloureuses. Quand un exercice vous fait mal, il est remplacé ou modifié, pas ignoré. Je réponds sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, et 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Découvrir le Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Découvrir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## Douleur au bas du dos en musculation : bras de levier et fatigue
+
+![Schéma de profil du soulevé de terre : à gauche, barre devant les orteils et dos arrondi avec un long bras de levier ; à droite, barre au-dessus du milieu du pied, au contact des tibias, dos neutre et bras de levier plus court](/images/blog/douleurs-musculation-technique-epaule-genou-dos/douleurs-dos-souleve-bras-de-levier-schema.webp)
+
+### Erreur 7 : la barre qui s'éloigne du corps
+
+**Ce que vous voyez.** La barre part devant les orteils, passe loin des tibias et des cuisses, le buste s'incline pour compenser.
+
+**Pourquoi ça arrive.** Barre trop en avant au départ, grands dorsaux qui ne la verrouillent pas contre le corps, hanches qui montent trop vite.
+
+**Ce que ça coûte.** Chaque centimètre d'écart horizontal allonge le bras de levier. 100 kg à 30 cm de l'axe demandent 50 % de moment de plus que 100 kg à 20 cm, et ce sont les extenseurs du dos et la colonne lombaire qui paient la différence.
+
+**La correction.** Barre au-dessus du milieu du pied, tibias au contact, « poussez le sol » et « serrez les aisselles ». Détails dans [les erreurs d'exécution au soulevé de terre](/blog/souleve-de-terre-erreurs-execution).
+
+**La vérification vidéo.** Strictement de profil, à hauteur de hanche : trajectoire quasi verticale au-dessus du milieu du pied.
+
+### Erreur 8 : l'arrondi du dos qui augmente au fil de la série
+
+La recherche est plus nuancée que les avertissements de salle. La méta-analyse de **Saraceni et al. (2020)**, sur des preuves de faible qualité, ne montre pas qu'une flexion lombaire plus marquée en soulevant soit un facteur de risque de lombalgie : 9 études sur 11 ne trouvent aucune différence entre personnes avec et sans douleur. À l'opposé, **Callaghan et McGill (2001)** ont provoqué des hernies discales sur des colonnes de porc avec des dizaines de milliers de cycles de flexion et d'extension sous compression. Ce modèle est très loin d'une série de 8, mais il pointe la combinaison flexion répétée, charge élevée et fatigue.
+
+Ma position : un dos légèrement arrondi et **stable** toute la série n'est pas un drame. Un dos qui s'arrondit un peu plus à chaque répétition signale une charge ou un volume qui dépasse votre capacité du jour.
+
+**La correction.** Arrêtez la série quand la position du dos change, pas quand la barre ne monte plus, et gardez une ou deux répétitions en réserve sur les mouvements lourds. Pour la question de fond, lisez [le soulevé de terre est-il dangereux ?](/blog/souleve-terre-dangereux).
+
+### Erreur 9 : l'hyperextension en haut et la cambrure excessive
+
+**Ce que vous voyez.** En haut du soulevé, le buste part en arrière. Au développé militaire debout, le bas du dos se creuse pour pousser.
+
+**Ce que ça coûte.** Une partie de la charge passe des muscles aux structures osseuses et articulaires de l'arrière des lombaires, sans aucun gain de stimulus.
+
+**La correction.** Fessiers serrés et côtes basses : vous finissez droit, pas penché en arrière. Au militaire, gainage serré, ou version assise dossier légèrement incliné.
+
+---
+
+## Tableau erreur → correction : épaule, genou, dos
+
+| Zone | Ce que vous voyez | Ce que ça charge | Correction | Repère vidéo |
+|---|---|---|---|---|
+| Épaule | Développé couché coudes à 90°, prise très large | Compression acromio-claviculaire, cisaillement gléno-huméral | Prise autour de 1,5 largeur d'épaules, coudes entre 45 et 70°, omoplates serrées | De face, angle bras-buste en bas |
+| Épaule | Élévations latérales ou rowing menton au-dessus de 90° | Espace sous-acromial | Arrêt à hauteur d'épaule, bras dans le plan de l'omoplate | De face, coude sous la ligne des épaules |
+| Épaule | Tirage ou développé derrière la nuque | Avant de l'articulation (position « high five ») | Barre devant le visage | De profil, position de la barre |
+| Genou | Genoux qui rentrent à la remontée | Face interne du genou, fémoro-patellaire | « Écartez le sol », charge réduite, travail unilatéral | De face, ligne hanche, genou, 2e orteil |
+| Genou | Descente en chute libre, rebond, talons qui décollent | Pic de force au point bas, tendons | Descente contrôlée, pause, talons surélevés | De profil, vitesse et talons |
+| Dos | Barre loin du corps au soulevé | Bras de levier lombaire allongé | Barre au-dessus du milieu du pied, tibias au contact | De profil, trajectoire verticale |
+| Dos | Arrondi qui augmente au fil de la série | Colonne fatiguée sous charge | Arrêter la série quand la position change | De profil, comparer 1re et dernière répétition |
+| Dos | Buste en arrière en haut, cambrure au militaire | Structures postérieures lombaires | Fessiers serrés, côtes basses, gainage | De profil, alignement épaule-hanche-cheville en haut |
+
+---
+
+## Adapter plutôt que supprimer : les alternatives d'exercices
+
+Une douleur à un exercice ne veut pas dire qu'il faut arrêter de travailler la zone. **Fees et al. (1998)** décrivent cette logique chez l'athlète blessé : modifier la prise, l'écartement des mains, la trajectoire et les positions de départ et d'arrivée pour garder un entraînement productif sans douleur. Vous gardez la fonction, vous changez la variante.
+
+- **Épaule** : développé aux haltères prise neutre, amplitude réduite avec arrêt au-dessus du torse, pompes, élévations latérales à la poulie arrêtées à hauteur d'épaule.
+- **Genou** : box squat à une hauteur indolore puis descendue progressivement, squat goblet, fente arrière plutôt qu'avant, presse à amplitude limitée.
+- **Bas du dos** : soulevé à la barre hexagonale ou depuis des blocs, hip thrust, rowing poitrine appuyée, squat goblet ou squat avant.
+
+Le bon choix dépend aussi de vos leviers (voir [morphologie et bras de levier](/blog/morphologie-bras-de-levier-adapter-exercices)) et du profil de résistance de l'exercice (voir [choisir ses exercices selon la courbe de résistance](/blog/courbe-de-resistance-choisir-exercices)). Réintroduisez ensuite l'exercice initial à charge basse, en suivant l'échelle de douleur, puis augmentez selon la [surcharge progressive](/blog/surcharge-progressive-guide).
+
+---
+
+## Comment vérifier votre technique sur vidéo
+
+Vous sentez un genou qui tire, vous ne voyez pas qu'il rentre de 5 cm à la neuvième répétition. Une vidéo bien cadrée suffit souvent : selon **Schurr et al. (2017)**, l'analyse 2D concorde bien avec la capture 3D de profil (écarts moyens inférieurs à 3° à la hanche et au genou), beaucoup moins bien de face au genou, où il faut chercher une tendance nette plutôt que quelques degrés.
+
+Filmez de profil pour la barre et le dos, de face pour les genoux, caméra fixe à hauteur de la zone observée, toute la série, et comparez la première et la dernière répétition. Le protocole complet est dans [filmer sa séance et analyser sa technique](/blog/filmer-sa-seance-analyser-sa-technique).
+
+---
+
+## FAQ : douleurs et technique en musculation
+
+### Faut-il arrêter la musculation quand on a mal à l'épaule ?
+
+Pas forcément. Hors signaux d'alerte, une douleur modérée qui redescend après la séance permet souvent de continuer en adaptant : prise plus serrée, haltères prise neutre, amplitude réduite. Si elle persiste plus de quelques semaines ou s'aggrave, consultez un médecin ou un kinésithérapeute.
+
+### Le squat est-il mauvais pour les genoux ?
+
+Non, chez des genoux sains et avec une technique contrôlée. Selon Hartmann (2013), le squat profond n'augmente pas le risque pour les tissus passifs. Ce qui charge mal le genou, c'est plutôt l'effondrement vers l'intérieur, le rebond incontrôlé et une charge qui augmente trop vite.
+
+### Pourquoi j'ai mal au bas du dos après le soulevé de terre ?
+
+Le plus souvent : barre trop loin du corps, dos qui s'arrondit au fil de la série, hyperextension en haut. Une raideur le lendemain est banale. Une douleur qui descend dans la jambe, des fourmillements, une faiblesse ou des troubles urinaires demandent un avis médical rapide.
+
+### Une douleur pendant l'exercice est-elle toujours un mauvais signe ?
+
+Non. Une douleur modérée, qui redescend après la séance et ne grimpe pas d'une semaine à l'autre, n'empêche pas de progresser (Silbernagel, 2007 ; Smith, 2017). Une douleur vive, qui monte pendant la série ou empire le lendemain, signale une charge ou une variante inadaptée.
+
+### Comment savoir si ma technique est en cause ?
+
+Trois indices : la douleur apparaît sur un exercice précis, à un angle précis, et diminue quand vous changez de prise, d'amplitude ou de variante. Si elle est présente au repos ou la nuit, la technique n'est probablement pas la seule explication.
+
+### Quand faut-il consulter un professionnel de santé ?
+
+Immédiatement devant un signal d'alerte (perte de sensibilité, faiblesse qui progresse, troubles urinaires, genou qui gonfle ou se dérobe, douleur après un choc, fièvre), et rapidement si une douleur dure plus de quelques semaines ou s'aggrave malgré une baisse de charge. Un coach corrige un mouvement, il ne pose pas de diagnostic.
+
+---
+
+## Ce qu'il faut retenir
+
+Les douleurs en musculation ont rarement une cause unique, mais souvent une adresse : un exercice, un angle, une erreur qui se répète. Coudes ouverts, prise large et élévations au-dessus de 90° pour l'épaule. Effondrement vers l'intérieur et perte de contrôle en bas pour le genou, bien plus que la profondeur. Barre qui s'éloigne, arrondi qui s'aggrave et cambrure finale pour le dos.
+
+La méthode : écarter les signaux d'alerte, lire votre douleur sur l'échelle de 0 à 10, corriger l'exécution ou changer de variante, puis réintroduire progressivement. Si la douleur persiste malgré tout, c'est un professionnel de santé qu'il faut voir, pas un nouveau réglage.
+
+> **Votre technique analysée sous 3 heures avec FormCheck**
+>
+> Filmez votre série, envoyez-la, et recevez sous 3 heures un rapport d'analyse biomécanique avec vos erreurs et les corrections à faire, selon ma méthode. À partir de 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 €, sans création de compte.
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+> **Un suivi qui protège vos articulations dans la durée**
+>
+> En Coaching Elite ou en Private Lab, je suis votre technique à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des exercices à vos leviers, à votre mobilité et à vos douleurs. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Vous voulez d'abord faire le point sur votre entraînement et votre récupération ? Le [Discovery Scan](/offers/discovery-scan), gratuit, vous donne une première lecture de vos priorités.
+
+---
+
+## Références
+
+1. Keogh JW, Winwood PW. The epidemiology of injuries across the weight-training sports. *Sports Med.* 2017;47(3):479-501. [doi:10.1007/s40279-016-0575-0](https://doi.org/10.1007/s40279-016-0575-0)
+2. Kolber MJ, Beekhuizen KS, Cheng MS, Hellman MA. Shoulder injuries attributed to resistance training: a brief review. *J Strength Cond Res.* 2010;24(6):1696-1704. [doi:10.1519/JSC.0b013e3181dc4330](https://doi.org/10.1519/JSC.0b013e3181dc4330)
+3. Finucane LM, et al. International framework for red flags for potential serious spinal pathologies. *J Orthop Sports Phys Ther.* 2020;50(7):350-372. [doi:10.2519/jospt.2020.9971](https://doi.org/10.2519/jospt.2020.9971)
+4. Silbernagel KG, Thomeé R, Eriksson BI, Karlsson J. Continued sports activity, using a pain-monitoring model, during rehabilitation in patients with Achilles tendinopathy: a randomized controlled study. *Am J Sports Med.* 2007;35(6):897-906. [doi:10.1177/0363546506298279](https://doi.org/10.1177/0363546506298279)
+5. Smith BE, et al. Should exercises be painful in the management of chronic musculoskeletal pain? A systematic review and meta-analysis. *Br J Sports Med.* 2017;51(23):1679-1687. [doi:10.1136/bjsports-2016-097383](https://doi.org/10.1136/bjsports-2016-097383)
+6. Noteboom L, Belli I, Hoozemans MJM, Seth A, Veeger HEJ, Van Der Helm FCT. Effects of bench press technique variations on musculoskeletal shoulder loads and potential injury risk. *Front Physiol.* 2024;15:1393235. [doi:10.3389/fphys.2024.1393235](https://doi.org/10.3389/fphys.2024.1393235)
+7. Kolber MJ, Cheatham SW, Salamh PA, Hanney WJ. Characteristics of shoulder impingement in the recreational weight-training population. *J Strength Cond Res.* 2014;28(4):1081-1089. [doi:10.1519/JSC.0000000000000250](https://doi.org/10.1519/JSC.0000000000000250)
+8. Kolber MJ, Corrao M, Hanney WJ. Characteristics of anterior shoulder instability and hyperlaxity in the weight-training population. *J Strength Cond Res.* 2013;27(5):1333-1339. [doi:10.1519/JSC.0b013e318269f776](https://doi.org/10.1519/JSC.0b013e318269f776)
+9. Kolber MJ, et al. Shoulder joint and muscle characteristics among weight-training participants with and without impingement syndrome. *J Strength Cond Res.* 2017;31(4):1024-1032. [doi:10.1519/JSC.0000000000001554](https://doi.org/10.1519/JSC.0000000000001554)
+10. Powers CM. The influence of abnormal hip mechanics on knee injury: a biomechanical perspective. *J Orthop Sports Phys Ther.* 2010;40(2):42-51. [doi:10.2519/jospt.2010.3337](https://doi.org/10.2519/jospt.2010.3337)
+11. Hartmann H, Wirth K, Klusemann M. Analysis of the load on the knee joint and vertebral column with changes in squatting depth and weight load. *Sports Med.* 2013;43(10):993-1008. [doi:10.1007/s40279-013-0073-6](https://doi.org/10.1007/s40279-013-0073-6)
+12. Escamilla RF. Knee biomechanics of the dynamic squat exercise. *Med Sci Sports Exerc.* 2001;33(1):127-141. [doi:10.1097/00005768-200101000-00020](https://doi.org/10.1097/00005768-200101000-00020)
+13. Fry AC, Smith JC, Schilling BK. Effect of knee position on hip and knee torques during the barbell squat. *J Strength Cond Res.* 2003;17(4):629-633. PMID: [14636100](https://pubmed.ncbi.nlm.nih.gov/14636100/)
+14. Saraceni N, et al. To flex or not to flex? Is there a relationship between lumbar spine flexion during lifting and low back pain? A systematic review with meta-analysis. *J Orthop Sports Phys Ther.* 2020;50(3):121-130. [doi:10.2519/jospt.2020.9218](https://doi.org/10.2519/jospt.2020.9218)
+15. Callaghan JP, McGill SM. Intervertebral disc herniation: studies on a porcine model exposed to highly repetitive flexion/extension motion with compressive force. *Clin Biomech (Bristol).* 2001;16(1):28-37. [doi:10.1016/s0268-0033(00)00063-2](https://doi.org/10.1016/s0268-0033(00)00063-2)
+16. Fees M, Decker T, Snyder-Mackler L, Axe MJ. Upper extremity weight-training modifications for the injured athlete: a clinical perspective. *Am J Sports Med.* 1998;26(5):732-742. [doi:10.1177/03635465980260052301](https://doi.org/10.1177/03635465980260052301)
+17. Schurr SA, Marshall AN, Resch JE, Saliba SA. Two-dimensional video analysis is comparable to 3D motion capture in lower extremity movement assessment. *Int J Sports Phys Ther.* 2017;12(2):163-172. PMID: [28515970](https://pubmed.ncbi.nlm.nih.gov/28515970/)
+
+*Cet article est informatif et ne remplace pas un avis médical. En cas de douleur persistante, consultez un professionnel de santé.*
+`,
+  },
+  {  id: "158",
+    slug: "filmer-sa-seance-analyser-sa-technique",
+    title: "Filmer sa séance pour analyser sa technique : angles, cadrage et ce qu'il faut regarder",
+    seoTitle: "Filmer sa séance : analyser sa technique | APEXLABS",
+    excerpt: "Profil strict, hauteur de hanche, 3 à 4 m, toute la série la plus lourde : comment filmer sa séance correctement, ce qu'il faut regarder sur le squat, le soulevé de terre, le développé couché et le rowing, et les erreurs de lecture qui font corriger ce qui n'a pas besoin de l'être.",
+    metaDescription: "Filmer sa séance pour analyser sa technique : angle, hauteur et distance du téléphone, série à filmer, repères à lire au squat, au soulevé, au développé.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "16 min",
+    image: "/images/blog/filmer-sa-seance-analyser-sa-technique/filmer-sa-seance-hero.webp",
+    content: `# Filmer sa séance pour analyser sa technique : angles, cadrage et ce qu'il faut regarder
+
+## Introduction : la sensation ment, la caméra beaucoup moins
+
+Vous êtes persuadé de descendre sous la parallèle au squat. Vous filmez la série, vous arrêtez l'image sur la dernière répétition, et le pli de la hanche reste 5 cm au-dessus du genou. Ou vous sentez la barre « collée aux jambes » au soulevé de terre, alors qu'elle passe à trois doigts des tibias dès que les disques quittent le sol. Sous une charge lourde, votre attention part sur l'effort, pas sur la position de votre bassin.
+
+Filmer sa séance pour analyser sa technique est le moyen le plus simple de combler ce décalage. Encore faut-il filmer correctement. Un téléphone placé de trois quarts fausse les angles d'une dizaine de degrés. Une contre-plongée fait paraître un squat plus profond qu'il ne l'est. Une seule répétition filmée ne dit rien de ce qui se passe quand la fatigue arrive. Et une vidéo bien tournée ne sert à rien si vous ne savez pas quoi regarder.
+
+Voici le placement exact du téléphone, la série à filmer, les repères à observer exercice par exercice, et les erreurs de lecture qui font corriger ce qui n'a pas besoin de l'être.
+
+> **L'essentiel en 30 secondes**
+>
+> - **Profil strict à 90°**, téléphone posé à **hauteur de hanche**, à **3 ou 4 m**, objectif à l'horizontale : c'est la prise de vue de base pour la profondeur, l'angle du buste et la trajectoire de barre.
+> - **De face** pour la symétrie et les genoux, avec prudence : la vidéo 2D lit mal le plan frontal (corrélation de **0,31** avec la capture 3D pour le genou de face, contre **0,51 à 0,93** de profil, Schurr, 2017).
+> - Un téléphone **tourné de 45°** fait lire une cuisse inclinée à 45° comme une cuisse à **environ 55°** : le squat paraît moins profond qu'il ne l'est.
+> - Filmez **toute la série la plus difficile**, installation comprise, et comparez **la première et la dernière répétition**.
+> - Regarder sa vidéo ne suffit pas : la vidéo **associée à une analyse guidée** améliore la technique durablement, la vidéo seule beaucoup moins (Souissi, 2021).
+> - Une correction à la fois, puis une nouvelle vidéo dans les mêmes conditions.
+
+---
+
+## Pourquoi filmer sa séance change la façon de corriger sa technique
+
+### Ce que vous sentez n'est pas ce que vous faites
+
+Votre perception de la position de vos segments est fiable à faible charge. Elle l'est beaucoup moins sous une barre lourde, en fin de série. Résultat : beaucoup de pratiquants ajoutent une consigne sans savoir si l'erreur visée existe. La vidéo donne une mesure extérieure et rejouable. Vous pouvez la ralentir, l'arrêter au point bas, comparer deux répétitions. Une impression devient un angle, une distance, une trajectoire.
+
+### Ce que disent les études sur le retour vidéo
+
+- **Souissi et al. (2021)** ont suivi 35 jeunes haltérophiles (au moins 3 mois de pratique) pendant 6 séances à distance. Le groupe qui recevait sa vidéo avec une analyse guidée et des consignes ciblées a amélioré plusieurs paramètres de l'arraché, dont le déplacement horizontal de la barre, et les a **conservés une semaine plus tard**. Le groupe « vidéo seule » n'a progressé que sur deux paramètres, **sans les conserver**.
+- **Dallinga et al. (2017)**, sur 59 sportifs : le retour vidéo a amélioré la réception de saut chez les hommes, pas chez les femmes, pour qui les auteurs suggèrent d'ajouter un retour verbal.
+
+Les échantillons sont petits et ce ne sont pas des pratiquants de musculation adultes. Le message tient quand même : **la vidéo est un outil de mesure, pas une correction**. Elle devient utile quand quelqu'un sait quoi y chercher et le traduit en une consigne précise.
+
+### Ce que la vidéo ne montre pas
+
+La vidéo montre des positions, pas l'effort. Dans l'étude d'**Emanuel et al. (2022)**, 259 coachs certifiés regardaient des séries de squats et de curls menées jusqu'à l'échec et devaient estimer les répétitions en réserve. À un tiers de la série, ils se trompaient en moyenne de **4,8 répétitions**, à 90 % de la série de **1,2 répétition**, et l'expérience n'y changeait presque rien. Les pratiquants ne font pas beaucoup mieux sur eux-mêmes : environ une répétition de sous-estimation en moyenne, avec une forte variabilité, selon la méta-analyse de **Halperin et al. (2022)** (12 études, 414 participants).
+
+Filmez donc pour juger la **mécanique**. Pour l'intensité, notez charges, répétitions et vitesse de la dernière répétition, et lisez l'article sur l'[entraînement jusqu'à l'échec](/blog/entrainement-echec-necessaire).
+
+---
+
+## Le matériel : un téléphone et un support suffisent
+
+- **Un support** : petit trépied à pieds souples, pince fixée sur le rack, ou téléphone calé contre un disque sur un banc. Jamais tenu à la main par un partenaire : chaque mouvement change l'angle.
+- **L'objectif principal (x1)** : l'ultra grand-angle (0,5) déforme les bords et courbe les lignes droites, le zoom numérique dégrade l'image. Ajustez le cadre en déplaçant le téléphone.
+- **60 images par seconde** au minimum. Le ralenti à 120 ou 240 images par seconde aide sur les mouvements rapides (départ d'un soulevé, rebond au développé), si la lumière suffit.
+- **Le mode paysage** pour les vues de profil, afin que barre, disques et pieds restent dans le cadre.
+
+Marquez au sol, avec un ruban adhésif, l'emplacement du trépied et celui de vos pieds. Vos vidéos de deux séances deviennent comparables.
+
+---
+
+## Où placer la caméra pour filmer sa séance : angle, hauteur, distance
+
+![Schéma du placement du téléphone pour filmer un squat ou un soulevé de terre : vue de dessus avec le profil comme plan principal à 3 ou 4 m, la vue de face pour la symétrie et les genoux, et le trois quarts à éviter ; vue de côté avec le téléphone à hauteur de hanche et l'objectif à l'horizontale](/images/blog/filmer-sa-seance-analyser-sa-technique/filmer-placement-camera-schema.webp)
+
+### Le profil strict : le plan principal
+
+Profondeur, angle du buste, trajectoire de barre, coudes au développé, extension de hanche au soulevé : presque tout se lit de profil, parce que ces mouvements se déroulent dans le **plan sagittal**, celui qui coupe le corps en une moitié gauche et une moitié droite. L'axe de l'objectif doit être **perpendiculaire** à ce plan. Repère simple : les deux disques se superposent à l'écran.
+
+C'est aussi là que la vidéo 2D est la plus fiable. **Schurr et al. (2017)** ont filmé 26 adultes pendant un squat sur une jambe, simultanément avec des caméras classiques et un système de capture 3D. De profil, les corrélations entre les deux méthodes allaient de **0,51 à 0,93**, avec des écarts moyens de 1 à 3°. De face, la corrélation au genou tombait à **0,31**.
+
+### La vue de face : utile, à lire avec prudence
+
+Elle sert à repérer une asymétrie (bassin qui se décale en remontant, une main qui pousse plus que l'autre) et la trajectoire des genoux. Mais une rotation de cuisse peut ressembler à un genou qui rentre. Utilisez-la pour repérer un mouvement net et répété, pas pour mesurer un angle.
+
+### Le trois quarts : la prise à éviter pour mesurer
+
+C'est l'angle le plus utilisé parce qu'il est flatteur. Les segments y sont raccourcis par la perspective, différemment selon leur orientation, et les angles lus sur l'écran ne sont plus les angles réels.
+
+![Comparaison d'une même cuisse inclinée à 45 degrés : filmée de profil strict l'angle lu est 45 degrés, filmée avec le téléphone tourné de 45 degrés l'angle lu est d'environ 55 degrés, soit une erreur d'environ 10 degrés qui fait croire à un squat moins profond](/images/blog/filmer-sa-seance-analyser-sa-technique/filmer-erreur-angle-camera-schema.webp)
+
+Une cuisse inclinée à 45° sous l'horizontale, filmée par un téléphone tourné de 45°, apparaît inclinée à **environ 55°** : la composante horizontale du segment est raccourcie, la verticale ne l'est pas. Dix degrés d'erreur, c'est la différence entre un squat à la parallèle et un squat qui semble trop haut. Vous corrigeriez une profondeur déjà correcte.
+
+**Puig-Diví et al. (2019)** ont testé la mesure d'angles sur vidéo selon quatre angles de prise de vue (90°, 75°, 60° et 45°). Avec une correction de perspective par calibration, la mesure restait exploitable jusqu'à 45°, mais les auteurs recommandent **90°** pour des résultats optimaux.
+
+### La hauteur : à l'articulation principale, objectif horizontal
+
+- **hauteur de hanche** pour le squat, le soulevé de terre, le hip thrust et le rowing
+- **hauteur de la barre en position basse** pour le développé couché
+- **hauteur d'épaule** pour le développé militaire et les élévations latérales
+
+Une plongée (téléphone haut, incliné vers le bas) fait paraître les hanches plus hautes et le squat moins profond. Une contre-plongée (téléphone au sol, incliné vers le haut) fait l'inverse.
+
+### La distance : 3 à 4 m
+
+Trop près, la perspective déforme : ce qui est proche de l'objectif paraît plus grand. À 3 ou 4 m, avec l'objectif principal, le corps entier tient dans le cadre et la déformation devient négligeable. Dans une salle exiguë, reculez plutôt que de passer en grand-angle.
+
+> **Vous savez filmer ? Faites analyser votre série par FormCheck**
+>
+> Vous filmez votre série en suivant ces repères, vous l'envoyez, et vous recevez sous 3 heures un rapport d'analyse biomécanique : les erreurs repérées, leur cause mécanique et les corrections à appliquer, établis selon ma grille d'analyse. Paiement sécurisé par Stripe, sans création de compte, rapport accessible par lien magique. 9,90 € l'analyse, pack de 3 à 24,90 €, pack de 6 à 44,90 € pour suivre vos progrès sur plusieurs séances.
+>
+> [Faire analyser ma vidéo avec FormCheck](/offers/formcheck)
+
+---
+
+## Cadrage, lumière et répétabilité
+
+Le cadre contient **le corps entier, la barre, les disques et les pieds**, du début à la fin de la série. Sans les pieds, impossible de juger la barre par rapport au milieu du pied.
+
+- **La lumière devant vous.** Une fenêtre ou un néon dans votre dos transforme la vidéo en silhouette noire.
+- **Des vêtements près du corps**, qui contrastent avec le fond. Un short ample masque le pli de la hanche, un sweat large cache la forme du dos.
+- **Un fond dégagé**, sans partenaire qui passe devant l'objectif au point bas.
+- **Les mêmes conditions à chaque fois** : endroit, distance, hauteur, angle. C'est ce qui rend deux vidéos comparables.
+
+---
+
+## Quelle série filmer, et combien de répétitions
+
+### La série qui compte
+
+À 50 % de votre charge de travail, presque tout le monde a une technique correcte. Les erreurs apparaissent avec la charge et la fatigue. Filmez **votre série la plus lourde ou la dernière**, celle qui se termine proche de l'échec.
+
+### Toute la série, installation comprise
+
+Lancez l'enregistrement avant de vous placer sous la barre. Barre mal placée sur le dos, prise trop large au développé, pieds trop en arrière au soulevé : une bonne partie des erreurs se voit avant la première répétition.
+
+### La première et la dernière répétition
+
+C'est la comparaison la plus utile de l'analyse. La première montre votre technique « intention », la dernière votre technique « réalité ». Regardez ce qui se dégrade : profondeur qui diminue, buste qui s'incline, barre qui s'éloigne, descente qui accélère, rebond qui apparaît. Une erreur présente dès la première répétition relève du réglage ou de la mobilité. Une erreur qui n'apparaît qu'à la fin relève de la charge, de la fatigue ou du gainage.
+
+---
+
+## Ce qu'il faut regarder sur la vidéo, exercice par exercice
+
+### Squat
+
+**Caméra** : profil strict à hauteur de hanche, plus une série de face pour les genoux.
+
+![Trajectoire de barre au squat vue de profil : à viser, la barre monte et descend à la verticale du milieu du pied ; à éviter, la barre part vers l'avant en descente, l'écart avec le milieu du pied crée un bras de levier, le buste plonge et le dos compense](/images/blog/filmer-sa-seance-analyser-sa-technique/filmer-trajectoire-barre-schema.webp)
+
+- **Trajectoire de barre** : suivez le centre du disque. Il doit rester à peu près à la verticale du milieu du pied. Une dérive de quelques centimètres est normale. Une dérive qui grandit sur les dernières répétitions ajoute du bras de levier sur la hanche et le bas du dos.
+- **Profondeur** : à l'arrêt sur image au point bas, comparez la hauteur du pli de la hanche à celle du dessus du genou, sur la première et la dernière répétition.
+- **Angle du buste** : à peu près constant. Si les hanches remontent avant la barre, le buste bascule à la sortie du trou.
+- **Talons** : ils ne décollent pas. Un talon qui se soulève signe le plus souvent un manque de flexion de cheville.
+- **De face, les genoux** : ils suivent la direction des pieds. Un genou qui rentre franchement et à chaque répétition est à travailler. Un bref mouvement vers l'intérieur au point dur, qui se corrige aussitôt, est fréquent chez des pratiquants sans douleur.
+
+Les corrections sont dans l'article [squat : les erreurs d'exécution et leurs corrections](/blog/squat-erreurs-execution-corrections). Et un buste incliné n'est pas forcément une faute : avec des fémurs longs, c'est de la géométrie (voir [morphologie et bras de levier](/blog/morphologie-bras-de-levier-adapter-exercices)).
+
+### Soulevé de terre
+
+**Caméra** : profil strict à hauteur de hanche, barre au sol et haut du mouvement dans le cadre.
+
+- **Départ** : barre au-dessus du milieu du pied, épaules légèrement en avant de la barre.
+- **Montée** : la barre reste au contact ou presque des jambes. Chaque centimètre d'écart allonge le bras de levier sur le bas du dos. Au squat, Fry (2003) a mesuré l'effet d'un simple déplacement : 28 N·m à la hanche genoux libres, 303 N·m genoux bloqués.
+- **Hanches et épaules** : elles montent ensemble. Des hanches qui montent seules transforment le soulevé en good morning.
+- **Dos** : regardez s'il change de forme pendant la montée. Un dos stable, même légèrement arrondi en haut, ne raconte pas la même chose qu'un bas du dos qui s'enroule au fil des répétitions.
+- **Haut** : hanches verrouillées, sans hyperextension lombaire.
+
+Détails dans [soulevé de terre : les erreurs d'exécution](/blog/souleve-de-terre-erreurs-execution).
+
+### Développé couché
+
+**Caméra** : profil à hauteur de la barre en position basse, et une prise depuis les pieds du banc, dans l'axe, légèrement surélevée, pour les coudes et la symétrie.
+
+- **Trajectoire** : la barre touche le bas des pectoraux et remonte légèrement en arrière vers l'aplomb des épaules, en J aplati.
+- **Contact** : toujours au même endroit, sans rebond. Au ralenti, un rebond se voit : la barre s'enfonce puis repart plus vite.
+- **Coudes** : vus depuis les pieds, ils ne s'ouvrent pas à 90° du buste.
+- **Omoplates et fessiers** : épaules serrées contre le banc, fessiers qui ne décollent pas en fin de série.
+
+Voir [développé couché : les erreurs qui font mal aux épaules](/blog/developpe-couche-erreurs-epaules).
+
+### Tirage et rowing
+
+**Caméra** : profil, hauteur de hanche pour le rowing, de poitrine pour le tirage vertical.
+
+- **Élan** : au rowing, le buste reste à peu près fixe. S'il se redresse à chaque répétition, hanches et lombaires tirent la charge.
+- **Omoplates** : elles s'écartent en étirement et se rapprochent en fin de tirage. Si les épaules ne bougent pas, les bras font le travail.
+- **Coudes** : vers les hanches pour le grand dorsal, plus écartés pour le haut du dos.
+- **Amplitude** : bras tendus en haut du tirage vertical, ou demi-amplitude ?
+
+Voir [tirage et rowing : les erreurs d'exécution pour le dos](/blog/tirage-rowing-dos-erreurs-execution).
+
+### Exercices d'isolation
+
+Curl, extensions triceps, élévations latérales, leg curl : profil, à hauteur de l'articulation qui travaille. Une seule question : **le segment qui devrait rester fixe reste-t-il fixe ?** Le coude au curl, le buste aux élévations, le bassin au leg curl. S'il bouge, l'élan prend le relais au point le plus dur et le muscle ciblé perd la tension (voir [triche, élan, rebond](/blog/triche-elan-rebond-execution-musculation)). Vérifiez aussi que la partie où le muscle est étiré reste dans l'amplitude (voir l'article sur l'[amplitude de mouvement](/blog/amplitude-mouvement-croissance)).
+
+> **Coaching Elite ou Private Lab : vos vidéos lues et corrigées au fil des semaines**
+>
+> Dans le suivi Elite ou Private Lab, je corrige votre technique au fil des semaines à partir de vos vidéos et de vos bilans hebdomadaires. J'adapte le programme et le choix des exercices à votre biomécanique : longueur de vos segments, mobilité, douleurs éventuelles. Une question entre deux séances, une vidéo à vérifier ? Je réponds sur WhatsApp, du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Découvrir le coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Découvrir le Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+---
+
+## Analyser sa vidéo : la méthode en cinq passages
+
+1. **Vitesse normale, sans s'arrêter** : une impression générale. La série est-elle fluide, la vitesse chute-t-elle à la fin ?
+2. **Ralenti, un seul repère** : la barre. Où part-elle par rapport au milieu du pied, et quand ?
+3. **Arrêt sur image aux positions clés** : point bas, point le plus dur, fin du mouvement.
+4. **Première contre dernière répétition**, côte à côte si possible.
+5. **Comparaison avec la vidéo précédente**, filmée dans les mêmes conditions : le seul moyen de savoir si une correction a tenu.
+
+---
+
+## Les erreurs de lecture les plus fréquentes
+
+Une vidéo mal lue donne une certitude à une erreur.
+
+**Juger un angle de trois quarts ou en contre-plongée.** Ce sont les deux premières causes de fausse alerte sur la profondeur et l'angle du buste. Pour lire un angle, refilmez de profil strict, objectif horizontal.
+
+**Prendre sa morphologie pour une faute.** Un buste très incliné avec des fémurs longs, une faible amplitude au développé avec des bras courts : ce sont des conséquences des longueurs de segments. Le repère qui ne dépend pas de la morphologie, c'est la barre au-dessus du milieu du pied. Copier l'angle de buste d'un pratiquant aux leviers différents vous fait corriger ce qui n'a pas à l'être.
+
+**Paniquer devant un léger arrondi ou un genou qui bouge.** La méta-analyse de **Saraceni et al. (2020)** ne trouve pas de lien démontré entre la flexion lombaire en soulevant et la lombalgie, avec un niveau de preuve faible. La revue de **Hartmann et al. (2013)** conclut que le squat profond, appris et chargé progressivement, ne présente pas de risque particulier pour un genou sain (voir [squats et genoux](/blog/squats-mauvais-genoux-mythe)). Ce qui compte, c'est un changement de forme net au fil des répétitions, ou une douleur.
+
+**Juger une seule répétition.** Elle peut être la meilleure ou la pire de la série. Ce qui compte, c'est ce qui se répète et ce qui évolue avec la fatigue.
+
+**Tout corriger en même temps.** Quatre défauts, quatre consignes, et la série suivante est pire. Choisissez le défaut qui coûte le plus, souvent la trajectoire de barre ou la profondeur, corrigez-le, refilmez.
+
+### Tableau récapitulatif : erreur → correction
+
+| Erreur de tournage ou de lecture | Ce que ça fausse | Correction | Repère pour vérifier |
+|---|---|---|---|
+| Téléphone de trois quarts | Angles faux d'environ 10° à 45° de rotation | Profil strict, objectif perpendiculaire au mouvement | Les deux disques se superposent |
+| Contre-plongée ou plongée | Profondeur surestimée ou sous-estimée | Objectif horizontal, à hauteur de l'articulation principale | Le sol forme une ligne horizontale |
+| Téléphone trop près ou en grand-angle | Perspective déformée, bords courbés | 3 à 4 m, objectif principal x1 | Les montants du rack restent droits |
+| Une seule répétition filmée | Erreurs de fatigue invisibles | Toute la série la plus lourde, installation comprise | Première et dernière répétition comparées |
+| Contre-jour, vêtements amples | Pli de hanche et dos illisibles | Lumière face à vous, tenue près du corps | Ligne du dos nette à l'arrêt sur image |
+| Morphologie prise pour une faute | Corrections inutiles | Juger la barre par rapport au milieu du pied | Barre à la verticale du milieu du pied |
+| Quatre corrections à la fois | Technique plus instable | Une correction prioritaire, puis refilmer | Même angle et même distance qu'avant |
+| Vidéo utilisée pour juger l'effort | Intensité mal estimée | Noter charge, répétitions, vitesse de la dernière | Sans objet |
+
+---
+
+## Que faire de ce que vous voyez
+
+Pour chaque défaut retenu, quatre questions :
+
+- **Quand apparaît-il ?** Dès la première répétition (réglage, mobilité) ou à la fin (charge, fatigue, gainage) ?
+- **Quelle cause mécanique ?** Cheville peu mobile, barre mal placée, charge trop lourde pour la portion la plus dure, prise inadaptée à vos leviers ?
+- **Quelle consigne simple ?** Un indice verbal court (« barre contre les jambes », « coudes sous la barre »), un réglage (talonnettes, écartement, largeur de prise), une baisse de charge de 10 à 20 % ou une autre variante.
+- **Comment vérifier ?** En refilmant dans les mêmes conditions une à deux semaines plus tard.
+
+La charge peut baisser le temps que la correction s'installe : vous reconstruisez la progression sur une exécution qui charge les bons muscles (voir la [surcharge progressive](/blog/surcharge-progressive-guide)). Et une vidéo ne pose pas de diagnostic. Une douleur qui persiste, s'aggrave, irradie ou s'accompagne de fourmillements relève d'un professionnel de santé. L'article [douleurs en musculation : épaule, genou, dos](/blog/douleurs-musculation-technique-epaule-genou-dos) liste les signaux d'alerte.
+
+---
+
+## FAQ : filmer sa séance et analyser sa technique
+
+### Sous quel angle filmer un squat ?
+
+De profil strict, téléphone perpendiculaire à la direction de votre regard, à hauteur de hanche, à 3 ou 4 m, objectif horizontal. C'est l'angle qui permet de lire la profondeur, l'angle du buste et la trajectoire de barre. Ajoutez une vidéo de face pour la symétrie et les genoux.
+
+### Pourquoi ne faut-il pas filmer de trois quarts ?
+
+Parce que la perspective raccourcit les segments différemment selon leur orientation. Avec un téléphone tourné de 45°, une cuisse inclinée à 45° apparaît à environ 55°. Le squat paraît moins profond qu'il ne l'est, et vous risquez de corriger une erreur qui n'existe pas.
+
+### Combien de répétitions faut-il filmer ?
+
+Toute la série, installation comprise, de préférence la plus lourde ou la dernière de l'exercice. Les erreurs apparaissent avec la charge et la fatigue, et la comparaison entre la première et la dernière répétition est le passage le plus utile de l'analyse.
+
+### Peut-on analyser sa technique seul avec une vidéo ?
+
+En partie. Avec les bons angles et une grille de lecture, vous repérerez les erreurs visibles : profondeur, trajectoire, élan. Les études montrent toutefois que le retour vidéo est plus efficace accompagné d'une analyse guidée et de consignes précises.
+
+### La vidéo permet-elle de savoir si une série était assez dure ?
+
+Pas vraiment. Des coachs certifiés qui regardaient des séries menées à l'échec se trompaient en moyenne de près de 5 répétitions en début de série, et d'un peu plus d'une en fin de série (Emanuel, 2022). Filmez pour la mécanique, notez charges, répétitions et vitesse pour l'intensité.
+
+### À quelle fréquence faut-il se filmer ?
+
+Une série filmée par semaine sur chaque exercice principal suffit. Après une correction, refilmez une à deux semaines plus tard pour vérifier qu'elle a tenu.
+
+---
+
+## Conclusion : mesurer avant de corriger
+
+Une bonne vidéo de technique tient en quelques règles : profil strict, hauteur de l'articulation principale, 3 à 4 m, objectif horizontal, corps entier dans le cadre, toute la série la plus lourde. Le reste est une question de lecture et de patience : une correction à la fois.
+
+Ma position : filmez vos exercices principaux chaque semaine, dans les mêmes conditions, et ne changez jamais votre technique sur la foi d'une sensation ou d'une vidéo de trois quarts. Une erreur mesurée se corrige en quelques séances. Une erreur supposée vous fait parfois remplacer une bonne technique par une mauvaise.
+
+> **Faites lire votre vidéo par FormCheck**
+>
+> Filmez votre série de profil en suivant ces repères, envoyez-la, et recevez sous 3 heures un rapport d'analyse biomécanique avec vos erreurs, leur cause et les corrections à faire, selon ma méthode. Pas de compte à créer : paiement par Stripe, rapport accessible par lien magique. 9,90 € l'analyse, 24,90 € le pack de 3, 44,90 € le pack de 6, pour comparer vos vidéos avant et après correction.
+>
+> [Envoyer ma vidéo à FormCheck](/offers/formcheck)
+
+> **Une technique suivie dans la durée, avec un programme adapté à vos leviers**
+>
+> En Elite ou en Private Lab, je suis votre technique à partir de vos vidéos et de vos bilans hebdomadaires, et j'adapte le programme et le choix des exercices à votre biomécanique : segments, mobilité, douleurs. Réponses sur WhatsApp du lundi au vendredi de 9 h à 19 h en Elite, 7 j/7 de 6 h à minuit en Private Lab.
+>
+> [Coaching Elite](https://www.achzodcoaching.com/coaching-elite) · [Private Lab](https://www.achzodcoaching.com/coaching-achzod-private-lab)
+
+Pour la mécanique derrière chaque repère, lisez le [guide complet de la biomécanique en musculation](/blog/biomecanique-musculation-guide-complet). Et pour un premier point sur votre entraînement, votre récupération et vos priorités, le [Discovery Scan](/offers/discovery-scan) est gratuit.
+
+*ACHZOD*
+
+---
+
+## Références
+
+1. Schurr SA, Marshall AN, Resch JE, Saliba SA. Two-dimensional video analysis is comparable to 3D motion capture in lower extremity movement assessment. *Int J Sports Phys Ther.* 2017;12(2):163-172. PMID: [28515970](https://pubmed.ncbi.nlm.nih.gov/28515970/)
+2. Puig-Diví A, et al. Validity and reliability of the Kinovea program in obtaining angles and distances using coordinates in 4 perspectives. *PLoS One.* 2019;14(6):e0216448. [doi:10.1371/journal.pone.0216448](https://doi.org/10.1371/journal.pone.0216448)
+3. Souissi MA, et al. Distance motor learning during the COVID-19 induced confinement: video feedback with a pedagogical activity improves the snatch technique in young athletes. *Int J Environ Res Public Health.* 2021;18(6):3069. [doi:10.3390/ijerph18063069](https://doi.org/10.3390/ijerph18063069)
+4. Dallinga J, et al. Innovative video feedback on jump landing improves landing technique in males. *Int J Sports Med.* 2017;38(2):150-158. [doi:10.1055/s-0042-106298](https://doi.org/10.1055/s-0042-106298)
+5. Emanuel A, Har-Nir I, Obolski U, Halperin I. Seeing effort: assessing coaches' prediction of the number of repetitions in reserve before task-failure. *Sports Med Open.* 2022;8(1):132. [doi:10.1186/s40798-022-00526-8](https://doi.org/10.1186/s40798-022-00526-8)
+6. Halperin I, et al. Accuracy in predicting repetitions to task failure in resistance exercise: a scoping review and exploratory meta-analysis. *Sports Med.* 2022;52(2):377-390. [doi:10.1007/s40279-021-01559-x](https://doi.org/10.1007/s40279-021-01559-x)
+7. Fry AC, Smith JC, Schilling BK. Effect of knee position on hip and knee torques during the barbell squat. *J Strength Cond Res.* 2003;17(4):629-633. PMID: [14636100](https://pubmed.ncbi.nlm.nih.gov/14636100/)
+8. Saraceni N, et al. To flex or not to flex? Is there a relationship between lumbar spine flexion during lifting and low back pain? A systematic review with meta-analysis. *J Orthop Sports Phys Ther.* 2020;50(3):121-130. [doi:10.2519/jospt.2020.9218](https://doi.org/10.2519/jospt.2020.9218)
+9. Hartmann H, Wirth K, Klusemann M. Analysis of the load on the knee joint and vertebral column with changes in squatting depth and weight load. *Sports Med.* 2013;43(10):993-1008. [doi:10.1007/s40279-013-0073-6](https://doi.org/10.1007/s40279-013-0073-6)
+
+*Cet article est informatif et ne remplace pas un avis médical. En cas de douleur persistante, consultez un professionnel de santé.*
+`,
+  },
   {  id: "136",
     slug: "urolithine-a-mitophagie-muscle-longevite",
     title: "Urolithine A : mitophagie, muscle et longévité, ce que la science montre vraiment",
