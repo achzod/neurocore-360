@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { trackBeginCheckout, trackAddPaymentInfo, trackPurchase, trackDiscoveryScanLead, getMetaAttribution } from "@/lib/analytics";
+import { trackBeginCheckout, trackAddPaymentInfo, trackPurchase, trackDiscoveryScanLead, trackDiscoveryFunnelStep, getMetaAttribution } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -479,6 +479,8 @@ const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
       const selectedPrice = selectedPlanInfo ? Number(selectedPlanInfo.priceLabel.replace(/[^0-9]/g, "")) || 0 : 0;
 
       if (selectedPlan === "gratuit") {
+        // GA4 funnel: free Discovery Scan submitted and audit created.
+        try { trackDiscoveryFunnelStep('discovery_complete'); } catch {}
         try { trackDiscoveryScanLead(data?.auditId || 'free'); } catch {}
         toast({
           title: "Audit créé avec succès !",

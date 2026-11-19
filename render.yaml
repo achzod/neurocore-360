@@ -15,6 +15,11 @@ services:
         value: production
       - key: PORT
         value: 5000
+      # Mémoire du conteneur (Standard = 2 Go). Sert aux seuils RSS des crons et
+      # du watchdog (server/memoryBudget.ts). Le heap V8 est fixé à 1536 Mo dans
+      # le script start de package.json.
+      - key: RENDER_MEMORY_LIMIT_MB
+        value: 2048
       - key: GEMINI_MODEL
         value: gemini-2.0-flash-exp
       - key: SMTP_HOST

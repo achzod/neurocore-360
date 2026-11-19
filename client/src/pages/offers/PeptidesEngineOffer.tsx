@@ -333,7 +333,7 @@ const STEPS = [
     step: "03",
     icon: Mail,
     title: "Tu recois tout par email",
-    desc: "Rapport complet + codes Blood Analysis + liens directs source + guides injection et securite.",
+    desc: "Rapport complet, codes Blood Analysis, liste de courses, guides d'injection et de sécurité.",
     time: "Email direct",
   },
 ];
@@ -402,7 +402,7 @@ const OBJECTIVES = [
   {
     icon: Flame,
     title: "Fat Loss",
-    peptides: "Tesamorelin, AOD-9604, Semaglutide",
+    peptides: "Tesamorelin, AOD-9604",
     detail: "Lipolyse ciblee, reduction graisse viscerale, preservation musculaire.",
   },
   {
@@ -509,139 +509,6 @@ function CTAButton({ children, href = "/peptides-engine", large = false }: { chi
 }
 
 // ============================================================================
-// PRICE COMPARISON
-// ============================================================================
-
-const PRICE_TABLE = [
-  { name: "BPC-157 (5mg)", reseller: "45-80€", source: "$9.65", sourceEur: "~9€", savings: "80-88%", tag: "Recovery" },
-  { name: "TB-500 (5mg)", reseller: "50-90€", source: "$10.37", sourceEur: "~10€", savings: "80-89%", tag: "Recovery" },
-  { name: "GHK-Cu (50mg)", reseller: "60-120€", source: "$7.64", sourceEur: "~7€", savings: "88-94%", tag: "Skin" },
-  { name: "Ipamorelin (5mg)", reseller: "40-70€", source: "$8.92", sourceEur: "~8€", savings: "80-89%", tag: "GH" },
-  { name: "CJC-1295 (2mg)", reseller: "50-85€", source: "$18.02", sourceEur: "~17€", savings: "66-80%", tag: "GH" },
-  { name: "Retatrutide (10mg)", reseller: "150-300€", source: "$13.65", sourceEur: "~13€", savings: "91-96%", tag: "GLP-1" },
-  { name: "Semaglutide (5mg)", reseller: "80-200€", source: "$5.64", sourceEur: "~5€", savings: "94-97%", tag: "GLP-1" },
-  { name: "Tirzepatide (10mg)", reseller: "100-250€", source: "$9.65", sourceEur: "~9€", savings: "91-96%", tag: "GLP-1" },
-];
-
-function PriceComparison() {
-  return (
-    <section className="py-24 px-6">
-      <div className="mx-auto max-w-5xl">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-14 text-center"
-        >
-          <SectionLabel>La verite sur les prix</SectionLabel>
-          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">
-            Ce que tu paies ailleurs vs via ma source
-          </h2>
-          <p className="mt-4 text-[#6E6E73] max-w-2xl mx-auto">
-            Prix reels compares. Revendeurs FR/EU vs source directe laboratoire avec COA (Certificat d'Analyse) par lot.
-          </p>
-        </motion.div>
-
-        {/* Per-peptide comparison table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="rounded-2xl border border-[#D2D2D7] bg-[#F5F5F7] overflow-hidden mb-6"
-        >
-          {/* Header */}
-          <div className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-[#D2D2D7] bg-white/5">
-            <span className="text-xs font-mono uppercase tracking-wider text-[#86868B]">Peptide</span>
-            <span className="text-xs font-mono uppercase tracking-wider text-[#86868B] text-center">Revendeur FR/EU</span>
-            <span className="text-xs font-mono uppercase tracking-wider text-center" style={{ color: PRIMARY }}>Ma source</span>
-            <span className="text-xs font-mono uppercase tracking-wider text-right" style={{ color: PRIMARY }}>Economie</span>
-          </div>
-
-          {/* Rows */}
-          {PRICE_TABLE.map((row, i) => (
-            <motion.div
-              key={row.name}
-              initial={{ opacity: 0, x: -10 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              className={`grid grid-cols-4 gap-4 px-6 py-4 items-center ${i < PRICE_TABLE.length - 1 ? "border-b border-[#E5E5EA]" : ""}`}
-            >
-              <div>
-                <span className="text-sm font-medium text-[#1D1D1F]">{row.name}</span>
-                <span className="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-[#86868B]">{row.tag}</span>
-              </div>
-              <span className="text-sm text-[#86868B] text-center line-through">{row.reseller}</span>
-              <span className="text-sm font-bold text-center" style={{ color: PRIMARY }}>{row.sourceEur}</span>
-              <div className="text-right">
-                <span className="text-sm font-bold text-emerald-400">-{row.savings}</span>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Cycle cost comparison */}
-        <div className="grid gap-4 md:grid-cols-2 mb-6">
-          <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="rounded-2xl border border-[#D2D2D7] bg-[#F5F5F7] p-8"
-          >
-            <p className="mb-1 font-mono text-xs uppercase tracking-wider text-[#86868B]">Revendeur classique</p>
-            <p className="mb-2 text-4xl font-bold text-[#86868B]">1 200€<span className="text-lg font-normal">/cycle</span></p>
-            <p className="text-sm text-[#A1A1A6]">3 peptides × 8 vials × 50€ en moyenne</p>
-            <ul className="mt-4 space-y-2">
-              {["Prix gonfles x3-x10", "Pas de COA", "Aucune personnalisation"].map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-[#86868B]">
-                  <span className="text-red-500 mt-0.5">✕</span> {item}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="relative rounded-2xl border bg-[#F5F5F7] p-8"
-            style={{ borderColor: PRIMARY }}
-          >
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold" style={{ backgroundColor: PRIMARY, color: "#fff" }}>
-              Via ton protocole
-            </div>
-            <p className="mb-1 font-mono text-xs uppercase tracking-wider" style={{ color: PRIMARY }}>Ma source (dans ton protocole)</p>
-            <p className="mb-2 text-4xl font-bold text-[#1D1D1F]">~280€<span className="text-lg font-normal text-[#6E6E73]">/cycle</span></p>
-            <p className="text-sm text-[#6E6E73]">3 peptides × 8 vials × ~$12 direct labo</p>
-            <ul className="mt-4 space-y-2">
-              {["Prix direct laboratoire", "COA par lot, labo tiers", "Protocole personnalise"].map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-[#1D1D1F]">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: PRIMARY }} /> {item}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="rounded-xl border px-8 py-5 text-center"
-          style={{ borderColor: `${PRIMARY}40`, backgroundColor: `${PRIMARY}08` }}
-        >
-          <p className="text-lg text-[#1D1D1F]">
-            Tu economises{" "}
-            <span className="font-black text-2xl" style={{ color: PRIMARY }}>920€</span>{" "}
-            des le 1er cycle. Et chaque cycle apres. Le protocole se rembourse en <span className="font-bold" style={{ color: PRIMARY }}>une seule commande</span>.
-          </p>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
 // ANIMATED FEATURE CARDS ,  components adapted from peptides-ref/src/App.tsx
 // ============================================================================
 
@@ -713,7 +580,7 @@ const ArsenalAnimation = () => {
   const peptides = [
     { name: "BPC-157", x: 20, y: 20, color: "#06b6d4", val: "100%" },
     { name: "TB-500", x: 80, y: 20, color: "#ef4444", val: "98%" },
-    { name: "RETATRUTIDE", x: 20, y: 80, color: "#eab308", val: "99%" },
+    { name: "IPAMORELIN", x: 20, y: 80, color: "#eab308", val: "99%" },
     { name: "GHK-CU", x: 80, y: 80, color: "#22c55e", val: "95%" },
   ];
 
@@ -780,8 +647,8 @@ const SourcingAnimation = () => {
     <AnimationWrapper title="Sourcing" value="99.9%" status="Pureté HPLC" color="green"
       extraUI={
         <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-md border border-green-500/30 rounded p-2 flex flex-col items-end">
-          <span className="text-[10px] text-green-400 font-mono uppercase">Statut Fournisseur</span>
-          <span className="text-sm font-bold text-[#1D1D1F]">VÉRIFIÉ ACHZOD</span>
+          <span className="text-[10px] text-green-400 font-mono uppercase">Contrôle</span>
+          <span className="text-sm font-bold text-[#1D1D1F]">COA + BILAN</span>
         </div>
       }
     >
@@ -799,7 +666,7 @@ const SourcingAnimation = () => {
         {/* Verified Node (Green) */}
         <motion.circle cx="75" cy="35" r="4" fill="rgba(34,197,94,0.2)" stroke="#22c55e" strokeWidth="1" animate={{ scale: [1, 1.5, 1] }} transition={{ duration: 2, repeat: Infinity }} />
         <circle cx="75" cy="35" r="2" fill="#22c55e" className="drop-shadow-[0_0_10px_#22c55e]" />
-        <text x="75" y="28" fill="#22c55e" fontSize="3" textAnchor="middle" className="font-mono font-bold">LABO PRIVÉ</text>
+        <text x="75" y="28" fill="#22c55e" fontSize="3" textAnchor="middle" className="font-mono font-bold">COA VÉRIFIÉ</text>
 
         {/* User Node */}
         <circle cx="25" cy="75" r="3" fill="#fff" />
@@ -943,7 +810,7 @@ const FEATURE_CARDS = [
     id: "arsenal",
     title: "L'ARSENAL CHIMIQUE",
     description:
-      "BPC-157 et TB-500 pour reparer tes tissus a une vitesse surhumaine. Retatrutide pour une fonte adipeuse extreme sans perte musculaire. GHK-Cu pour inverser le vieillissement cellulaire. Je te donne acces aux molecules les plus puissantes du marche.",
+      "BPC-157 et TB-500 pour la récupération des tissus. GHK-Cu pour la peau et le collagène. Je garde uniquement les molécules justifiées par ton profil, avec des dosages ajustés à ton poids.",
     icon: Network,
     animation: ArsenalAnimation,
     color: "cyan" as const,
@@ -951,9 +818,9 @@ const FEATURE_CARDS = [
   },
   {
     id: "sourcing",
-    title: "SOURCING UNDERGROUND",
+    title: "CONTRÔLE ET SUIVI",
     description:
-      "Le marche est rempli de fakes et de sous-dosages dangereux. Ne te fais plus arnaquer. Je te donne l'acces direct a mes fournisseurs prives, testes par spectrometrie de masse (HPLC). Economise des centaines d'euros en achetant a la source avec une purete garantie a 99%.",
+      "Le marché est rempli de produits sous-dosés. Je t'apprends à lire un certificat d'analyse et je te donne les signaux d'alerte à surveiller. Avec les Blood Analyses incluses, tu mesures l'effet réel sur tes marqueurs. Tu ne devines plus.",
     icon: ShieldCheck,
     animation: SourcingAnimation,
     color: "green" as const,
@@ -1092,12 +959,12 @@ function COASection() {
           viewport={{ once: true }}
           className="text-center mb-10"
         >
-          <p className="text-xs font-mono uppercase tracking-[0.3em] text-green-500 mb-3">Transparence totale</p>
+          <p className="text-xs font-mono uppercase tracking-[0.3em] text-green-500 mb-3">Contrôle qualité</p>
           <h2 className="text-2xl md:text-3xl font-black text-[#1D1D1F] mb-3">
-            Chaque lot est teste par un labo independant
+            Tu sais vérifier ce que tu utilises
           </h2>
           <p className="text-[#6E6E73] text-sm max-w-xl mx-auto">
-            Les fournisseurs references doivent fournir les documents d'analyse disponibles pour chaque lot. La source exacte et ses documents sont reveles uniquement dans le rapport achete.
+            Je t'explique comment lire un certificat d'analyse et quoi contrôler sur chaque lot avant de commencer.
           </p>
         </motion.div>
 
@@ -1113,8 +980,8 @@ function COASection() {
               <ShieldCheck className="w-8 h-8 text-green-500" />
             </div>
             <div className="text-center">
-              <p className="text-[#1D1D1F] font-bold mb-1">Source protegee</p>
-              <p className="text-[#86868B] text-xs">Identite du fournisseur disponible exclusivement apres achat</p>
+              <p className="text-[#1D1D1F] font-bold mb-1">Lecture du COA</p>
+              <p className="text-[#86868B] text-xs">Pureté, dosage réel, date du test : ce qu'il faut vérifier</p>
             </div>
           </motion.div>
 
@@ -1401,7 +1268,7 @@ function ScarcityGuarantee() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
-                  <span>Commande via la source revelee dans ton rapport</span>
+                  <span>Reçois ton protocole et ta liste de courses</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
@@ -1747,7 +1614,7 @@ const PRICING_TIERS = [
     features: [
       { label: "Protocole personnalisé sur-mesure", included: true },
       { label: "Guide de reconstitution + calendrier injection", included: true },
-      { label: "Accès source directe (-60 à -90% vs revendeurs)", included: true },
+      { label: "Liste de courses et guides injection et sécurité", included: true },
       { label: "Crédit déduction coaching 199€ (valable 8 sem)", included: true },
       { label: "Bilan sanguin baseline", included: false },
       { label: "Bilan sanguin mi-cycle", included: false },
@@ -1768,7 +1635,7 @@ const PRICING_TIERS = [
     features: [
       { label: "Protocole personnalisé sur-mesure", included: true },
       { label: "Guide de reconstitution + calendrier injection", included: true },
-      { label: "Accès source directe (-60 à -90% vs revendeurs)", included: true },
+      { label: "Liste de courses et guides injection et sécurité", included: true },
       { label: "Crédit déduction coaching 299€ (valable 8 sem)", included: true },
       { label: "1 Bilan sanguin (baseline OU mi-cycle, au choix)", included: true },
       { label: "Support écrit 30 jours post-livraison", included: true },
@@ -1789,7 +1656,7 @@ const PRICING_TIERS = [
     features: [
       { label: "Protocole personnalisé sur-mesure", included: true },
       { label: "Guide de reconstitution + calendrier injection", included: true },
-      { label: "Accès source directe (-60 à -90% vs revendeurs)", included: true },
+      { label: "Liste de courses et guides injection et sécurité", included: true },
       { label: "Crédit déduction coaching 399€ (valable 8 sem)", included: true },
       { label: "Bilan sanguin baseline (avant cycle)", included: true },
       { label: "Bilan sanguin mi-cycle (semaine 4 à 6)", included: true },
@@ -2200,7 +2067,7 @@ function Hero() {
           className="text-4xl font-bold leading-tight text-[#1D1D1F] md:text-6xl lg:text-7xl"
         >
           Ton protocole peptides.{" "}
-          <span style={{ color: PRIMARY }}>Ta source secrete.</span>
+          <span style={{ color: PRIMARY }}>Calculé et suivi.</span>
         </motion.h1>
 
         <motion.a
@@ -2225,12 +2092,10 @@ function Hero() {
           className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[#6E6E73] md:mt-8 md:text-xl"
         >
           <span className="md:hidden">
-            Réponds à 35 questions. Reçois ton protocole personnalisé : dosages exacts, reconstitution, calendrier hebdo et accès à la source, jusqu'à{" "}
-            <span className="font-semibold text-[#1D1D1F]">60-90% moins chère.</span>
+            Réponds à 35 questions. Je construis ton protocole : dosages ajustés à ton poids, guide de reconstitution et calendrier hebdo.
           </span>
           <span className="hidden md:inline">
-            Réponds à 35 questions. Reçois un protocole personnalisé avec dosages exacts, guide de reconstitution calculé, calendrier hebdo, et accès direct à la source où les peptides coûtent{" "}
-            <span className="font-semibold text-[#1D1D1F]">60-90% moins cher</span> que partout ailleurs.
+            Réponds à 35 questions. Je construis ton protocole avec des dosages ajustés à ton poids, un guide de reconstitution calculé et un calendrier hebdo. Jusqu'à 2 Blood Analyses sont incluses pour suivre tes marqueurs.
           </span>
         </motion.p>
 
@@ -2330,7 +2195,7 @@ function Hero() {
             "Protocole rédigé manuellement",
             "Jusqu'à 2 bilans sanguins inclus",
             "Support écrit jusqu'à 90 jours",
-            "Source directe -60 à -90%",
+            "Montant déduit du coaching",
           ].map((t) => (
             <div key={t} className="flex items-center gap-2 text-xs text-[#86868B]">
               <CheckCircle2 className="h-3.5 w-3.5" style={{ color: PRIMARY }} />
@@ -2381,7 +2246,6 @@ export default function PeptidesEngineOffer() {
         <Hero />
         <PricingTiers />
         <CoachingDeduction />
-        <PriceComparison />
         <DeliverablesSection />
         <AnimatedFeaturesSection />
         <COASection />

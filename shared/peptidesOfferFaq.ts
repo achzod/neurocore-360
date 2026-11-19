@@ -6,11 +6,11 @@ export type PeptidesOfferFaqEntry = {
 export const PEPTIDES_OFFER_FAQ: readonly PeptidesOfferFaqEntry[] = [
   {
     question: "Pourquoi 399€ ?",
-    answer: "Le contenu varie selon le tier. Solo (199€) : le protocole personnalise + l'acces source. Coached (299€) : tout Solo + 1 bilan sanguin + 30 jours de support ecrit. Tracked (399€) : tout Coached + 1 bilan supplementaire + 90 jours de support + 1 reecriture si evolution. Et dans les 3 tiers, le montant paye est integralement deduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 semaines (crédit valable 8 semaines).",
+    answer: "Le contenu varie selon le tier. Solo (199€) : le protocole personnalisé, le guide de reconstitution et le calendrier hebdo. Coached (299€) : tout Solo + 1 bilan sanguin + 30 jours de support ecrit. Tracked (399€) : tout Coached + 1 bilan supplementaire + 90 jours de support + 1 reecriture si evolution. Et dans les 3 tiers, le montant paye est integralement deduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 semaines (crédit valable 8 semaines).",
   },
   {
-    question: "C'est quoi la source premium ?",
-    answer: "Un marketplace avec 74 peptides a prix laboratoire, 13 fournisseurs certifies COA, testes par labo independant. Les prix sont 60-90% moins chers que les revendeurs classiques que tu trouves sur Google. C'est la source que j'utilise personnellement depuis plusieurs annees.",
+    question: "Comment je vérifie la qualité de ce que j'utilise ?",
+    answer: "Je t'explique comment lire un certificat d'analyse (COA) : pureté, dosage réel, date du test. Ton rapport liste les signaux d'alerte à surveiller. Selon la formule, jusqu'à 2 Blood Analyses sont incluses pour mesurer l'effet réel sur tes marqueurs.",
   },
   {
     question: "C'est legal ?",
@@ -42,6 +42,6 @@ export const PEPTIDES_OFFER_FAQ: readonly PeptidesOfferFaqEntry[] = [
   },
   {
     question: "Je peux revenir pour un autre cycle ?",
-    answer: "Oui. Un protocole update pour un deuxieme cycle (ajustements selon tes bilans mi-cycle) sera disponible a 99€. La source premium reste accessible indefiniment via les liens de ton rapport.",
+    answer: "Oui. Un protocole update pour un deuxieme cycle (ajustements selon tes bilans mi-cycle) sera disponible a 99€.",
   },
 ];

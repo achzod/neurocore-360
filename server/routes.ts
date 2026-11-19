@@ -1,6 +1,8 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
+import { clampAdminLimit, clampAdminOffset, clampInt, ADMIN_MAX_PAGE_SIZE } from "./adminQueryLimits";
+import { shouldSkipForMemory } from "./memoryBudget";
 import { autoSendAbandonmentReminders, sendDailyReport } from "./abandonmentReminders";
 import { startMonitoring, generateMonitoringReport, checkNewConversions } from "./abandonmentMonitor";
 import { pool } from "./db";
@@ -50,7 +52,7 @@ import {
 } from "./emailService";
 import { loadDiscoveryOfferWindow } from "./discoveryOfferWindow";
 import { discoveryOfferWindowForRecipient } from "./discoveryOfferRecipient";
-import { isEmailSequenceAttempted } from "./emailSequencePolicy";
+import { collectAttemptedSequenceTypes } from "./emailSequencePolicy";
 import { kickPeptidesPreviewDeliveryQueue, startPeptidesPreviewDeliveryWorker } from "./peptidesPreviewDeliveryQueue";
 import { processPeptidesPreviewFollowups, setPeptidesPreviewFollowupEnabled, startPeptidesPreviewFollowupWorker } from "./peptidesPreviewFollowup";
 import {
@@ -164,6 +166,21 @@ import {
   validateDeliveredReportRepairOverride,
 } from "./peptidesDeliveredReportImmutability";
 import { createRateLimiter } from "./middleware/rateLimit";
+import {
+  buildRecoveryCheckoutPlan,
+  hasPaidSameProduct,
+  isRecoveryLinkValid,
+  readCheckoutRecoveryConfig,
+  runCheckoutRecoveryCycle,
+} from "./checkoutRecovery";
+import {
+  createPgCheckoutRecoveryDeps,
+  getRecoverySequenceByToken,
+  markRecoveryCheckoutCreated,
+  markRecoveryClicked,
+  rowToRecoveryOrder,
+} from "./checkoutRecoveryStore";
+import { sendCheckoutRecoveryEmail } from "./emailService";
 import {
   scrapeArticleFromUrl,
   translateArticleToFrench,
@@ -526,15 +543,22 @@ export async function registerRoutes(
     let offset = 0;
 
     for (let page = 0; page < opts.maxPages; page++) {
-      const emailsRes = await fetch(
-        `https://api.sendpulse.com/smtp/emails?limit=${opts.pageLimit}&offset=${offset}&from_date=${encodeURIComponent(opts.fromDate)}`,
-        {
-          headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      let emailsRes: Response;
+      try {
+        emailsRes = await fetch(
+          `https://api.sendpulse.com/smtp/emails?limit=${opts.pageLimit}&offset=${offset}&from_date=${encodeURIComponent(opts.fromDate)}`,
+          {
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            signal: AbortSignal.timeout(20_000),
+          }
+        );
+      } catch (fetchError) {
+        console.error(`[${opts.logPrefix}] Page fetch failed at offset ${offset}:`, fetchError instanceof Error ? fetchError.message : fetchError);
+        break;
+      }
 
       if (!emailsRes.ok) {
         const errorText = await emailsRes.text();
@@ -571,14 +595,23 @@ export async function registerRoutes(
     const errors: string[] = [];
 
     for (const chunk of chunkArray(ids, 500)) {
-      const detailsRes = await fetch("https://api.sendpulse.com/smtp/emails/info", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ emails: chunk }),
-      });
+      let detailsRes: Response;
+      try {
+        detailsRes = await fetch("https://api.sendpulse.com/smtp/emails/info", {
+          method: "POST",
+          signal: AbortSignal.timeout(20_000),
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ emails: chunk }),
+        });
+      } catch (fetchError) {
+        const message = fetchError instanceof Error ? fetchError.message : String(fetchError);
+        console.error(`[${logPrefix}] Detail batch fetch failed:`, message);
+        errors.push(message);
+        continue;
+      }
 
       if (!detailsRes.ok) {
         const errorText = await detailsRes.text();
@@ -2469,8 +2502,13 @@ export async function registerRoutes(
   app.get("/api/admin/incomplete-questionnaires", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const incomplete = await storage.getAllIncompleteProgress();
-      res.json({ success: true, questionnaires: incomplete });
+      const limit = clampAdminLimit(req.query.limit, ADMIN_MAX_PAGE_SIZE);
+      const offset = clampAdminOffset(req.query.offset);
+      const [incomplete, total] = await Promise.all([
+        storage.getAllIncompleteProgress({ limit, offset }),
+        storage.countIncompleteProgress(),
+      ]);
+      res.json({ success: true, total, limit, offset, questionnaires: incomplete });
     } catch (error) {
       console.error("Error fetching incomplete questionnaires:", error);
       res.status(500).json({ error: "Erreur serveur" });
@@ -2768,7 +2806,7 @@ export async function registerRoutes(
         return;
       }
 
-      const allAudits = await storage.getAllAudits();
+      const allAudits = await storage.getAllAuditsLight();
       const discovery = allAudits.filter((a: any) => a.type === "GRATUIT" && a.email && !a.email.includes("test") && !a.email.includes("debug") && !a.email.includes("achzodcoaching") && !a.email.includes("achkou"));
 
       // Unique emails only, skip already sent (tracked via emailTracking)
@@ -2830,7 +2868,9 @@ export async function registerRoutes(
       res.json({
         success: true,
         stats,
-        message: dryRun
+        message: stats.disabled
+          ? "Relances Discovery désactivées (DISCOVERY_ABANDON_REMINDERS_ENABLED absent), aucun envoi"
+          : dryRun
           ? `[DRY RUN] ${stats.sent} relances auraient été envoyées`
           : `${stats.sent} relances envoyées avec succès`
       });
@@ -5876,6 +5916,97 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== RELANCE PAIEMENT ABANDONNE : LIEN DE REPRISE ====================
+  // Lien envoye dans les relances (etape 1 ~1h, etape 2 ~24h). Recree un
+  // checkout du meme produit au meme montant final que la commande abandonnee,
+  // sans nouvelle remise. Si la personne a deja paye, renvoi au tableau de bord.
+  const CHECKOUT_RECOVERY_PROCESS_STARTED_AT = new Date();
+  app.get("/api/checkout/recover/:token", checkoutLimiter, async (req, res) => {
+    const baseUrl = getBaseUrl();
+    const fallback = `${baseUrl}/`;
+    try {
+      const config = readCheckoutRecoveryConfig(process.env, CHECKOUT_RECOVERY_PROCESS_STARTED_AT);
+      const sequence = await getRecoverySequenceByToken(pool, String(req.params.token || ""));
+      if (!sequence) {
+        res.redirect(302, fallback);
+        return;
+      }
+      await markRecoveryClicked(pool, sequence.id).catch((e) => console.error("[CheckoutRecovery] click tracking:", e));
+      const originalRow = (await pool.query(`SELECT * FROM orders WHERE id = $1 LIMIT 1`, [sequence.orderId])).rows[0];
+      if (!originalRow) {
+        res.redirect(302, fallback);
+        return;
+      }
+      const original = rowToRecoveryOrder(originalRow);
+      const history = (await pool.query(
+        `SELECT * FROM orders WHERE LOWER(email) = $1 ORDER BY created_at DESC LIMIT 100`,
+        [sequence.email],
+      )).rows.map(rowToRecoveryOrder);
+      if (hasPaidSameProduct(history, sequence.email, original.productType, sequence.abandonedAt)) {
+        res.redirect(302, `${baseUrl}/dashboard`);
+        return;
+      }
+      const plan = buildRecoveryCheckoutPlan(original, sequence, new Date());
+      if (!isRecoveryLinkValid(sequence, config, new Date())
+        || (original.productType === "PEPTIDES_ENGINE" && PEPTIDES_ENGINE_CHECKOUT_PAUSED)) {
+        res.redirect(302, `${baseUrl}${plan.cancelPath.replace(/\?cancelled=true$/, "")}`);
+        return;
+      }
+
+      const stripe = plan.paymentRail === "klarna" ? getStripeKlarnaClient() : await getUncachableStripeClient();
+      const session = await createCheckoutSessionWithPaymentMethodFallback(
+        stripe,
+        {
+          line_items: [plan.lineItem],
+          mode: "payment",
+          success_url: `${baseUrl}${plan.successPath}`,
+          cancel_url: `${baseUrl}${plan.cancelPath}`,
+          customer_email: plan.orderInput.email,
+          metadata: plan.sessionMetadata,
+        } as any,
+        `CHECKOUT_RECOVERY:${original.productType}:${plan.orderInput.email}`,
+        plan.paymentRail,
+      );
+
+      let newOrderId: string;
+      try {
+        const newOrder = await storage.createOrder({
+          email: plan.orderInput.email,
+          productType: plan.orderInput.productType as ProductTypeEnum,
+          amountCents: plan.orderInput.amountCents,
+          discountCents: plan.orderInput.discountCents,
+          finalAmountCents: plan.orderInput.finalAmountCents,
+          promoCode: plan.orderInput.promoCode,
+          promoCodeId: plan.orderInput.promoCodeId,
+          stripeCheckoutSessionId: session.id,
+          ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+          userAgent: req.headers["user-agent"] || null,
+          metadata: plan.orderInput.metadata,
+        });
+        newOrderId = newOrder.id;
+      } catch (orderErr) {
+        console.error("[CheckoutRecovery] order persist failed, expiring session:", orderErr);
+        await stripe.checkout.sessions.expire(session.id).catch(() => undefined);
+        res.redirect(302, `${baseUrl}${plan.cancelPath}`);
+        return;
+      }
+      await markRecoveryCheckoutCreated(pool, sequence.id, newOrderId).catch(() => undefined);
+
+      // L'ancienne session encore ouverte est fermee pour eviter un double paiement.
+      if (original.status === "pending" && original.stripeCheckoutSessionId) {
+        const originalStripe = (original.metadata as any)?.paymentRail === "klarna"
+          ? getStripeKlarnaClient()
+          : await getUncachableStripeClient();
+        await originalStripe.checkout.sessions.expire(original.stripeCheckoutSessionId).catch(() => undefined);
+      }
+
+      res.redirect(303, String(session.url || fallback));
+    } catch (error) {
+      console.error("[CheckoutRecovery] recover link error:", error);
+      res.redirect(302, fallback);
+    }
+  });
+
   // ==================== SHARED AUDIT CREATION HELPER ====================
   // Idempotent blood credit grant for paid orders. Both Stripe confirm-session
   // and the Stripe webhook can race; whichever wins marks the order as paid
@@ -6195,9 +6326,7 @@ export async function registerRoutes(
     if (paypalReconcileRunning) return;
     paypalReconcileRunning = true;
     try {
-      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
-      if (memRssMb > 440) {
-        console.warn(`[PayPal Reconcile Cron] ⚠️ Skipping , RSS ${memRssMb}MB > 440MB`);
+      if (shouldSkipForMemory("PayPal Reconcile Cron")) {
         return;
       }
       await reconcileAllPendingPaypalOrders(168);
@@ -9803,7 +9932,7 @@ export async function registerRoutes(
       const baseUrl = process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get("host")}`;
 
       // Get all completed audits with reports sent
-      const allAudits = await storage.getAllAudits();
+      const allAudits = await storage.getAllAuditsLight();
       const now = new Date();
       const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
 
@@ -10434,13 +10563,13 @@ export async function registerRoutes(
   app.get("/api/admin/orders", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const limit = Math.min(Number(req.query.limit) || 50, 1000);
-      const offset = Number(req.query.offset) || 0;
+      const limit = clampAdminLimit(req.query.limit, 50);
+      const offset = clampAdminOffset(req.query.offset);
       const status = (req.query.status as string) || undefined;
       const productType = (req.query.productType as string) || undefined;
       const email = (req.query.email as string) || undefined;
       const result = await storage.getAllOrders({ limit, offset, status: status as any, productType: productType as any, email });
-      res.json({ success: true, ...result });
+      res.json({ success: true, limit, offset, maxLimit: ADMIN_MAX_PAGE_SIZE, ...result });
     } catch (error) {
       console.error("[Admin Orders] Error listing:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -10450,41 +10579,49 @@ export async function registerRoutes(
   app.get("/api/admin/orders/stats", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
-      const { orders: allOrders } = await storage.getAllOrders({ limit: 10000 });
-      const now = Date.now();
-      const d7 = now - 7 * 86400000;
-      const d30 = now - 30 * 86400000;
-
-      const paid = allOrders.filter(o => o.status === "paid" || o.status === "refunded" || o.status === "partial_refund");
-      const totalRevenueCents = paid.reduce((s, o) => s + o.finalAmountCents, 0);
-      const totalRefundedCents = allOrders.reduce((s, o) => s + o.refundAmountCents, 0);
-
+      // Aggregated in SQL: never load the whole orders table (with JSONB metadata) in memory.
+      const statsRes = await pool.query(`
+        WITH o AS (
+          SELECT status, product_type,
+                 COALESCE(final_amount_cents, 0)::bigint AS final_cents,
+                 COALESCE(refund_amount_cents, 0)::bigint AS refund_cents,
+                 created_at,
+                 status IN ('paid', 'refunded', 'partial_refund') AS is_paid
+            FROM orders
+        )
+        SELECT
+          (SELECT COUNT(*)::int FROM o) AS total_orders,
+          (SELECT COALESCE(SUM(final_cents), 0)::bigint FROM o WHERE is_paid) AS total_revenue_cents,
+          (SELECT COALESCE(SUM(refund_cents), 0)::bigint FROM o) AS total_refunded_cents,
+          (SELECT COUNT(*)::int FROM o WHERE is_paid AND created_at >= NOW() - INTERVAL '7 days') AS last7d_count,
+          (SELECT COALESCE(SUM(final_cents), 0)::bigint FROM o WHERE is_paid AND created_at >= NOW() - INTERVAL '7 days') AS last7d_revenue,
+          (SELECT COUNT(*)::int FROM o WHERE is_paid AND created_at >= NOW() - INTERVAL '30 days') AS last30d_count,
+          (SELECT COALESCE(SUM(final_cents), 0)::bigint FROM o WHERE is_paid AND created_at >= NOW() - INTERVAL '30 days') AS last30d_revenue,
+          (SELECT COALESCE(json_object_agg(status_key, c), '{}'::json)
+             FROM (SELECT COALESCE(status, 'unknown') AS status_key, COUNT(*)::int AS c FROM o GROUP BY 1) s) AS by_status,
+          (SELECT COALESCE(json_object_agg(product_key, json_build_object('count', c, 'revenueCents', r)), '{}'::json)
+             FROM (SELECT COALESCE(product_type, 'unknown') AS product_key, COUNT(*)::int AS c, COALESCE(SUM(final_cents), 0)::bigint AS r
+                     FROM o WHERE is_paid GROUP BY 1) p) AS by_product
+      `);
+      const row = statsRes.rows[0] || {};
+      const totalRevenueCents = Number(row.total_revenue_cents || 0);
+      const totalRefundedCents = Number(row.total_refunded_cents || 0);
       const byProduct: Record<string, { count: number; revenueCents: number }> = {};
-      for (const o of paid) {
-        if (!byProduct[o.productType]) byProduct[o.productType] = { count: 0, revenueCents: 0 };
-        byProduct[o.productType].count++;
-        byProduct[o.productType].revenueCents += o.finalAmountCents;
+      for (const [key, value] of Object.entries((row.by_product || {}) as Record<string, any>)) {
+        byProduct[key] = { count: Number(value?.count || 0), revenueCents: Number(value?.revenueCents || 0) };
       }
-
-      const byStatus: Record<string, number> = {};
-      for (const o of allOrders) {
-        byStatus[o.status] = (byStatus[o.status] || 0) + 1;
-      }
-
-      const last7d = paid.filter(o => new Date(o.createdAt).getTime() >= d7);
-      const last30d = paid.filter(o => new Date(o.createdAt).getTime() >= d30);
 
       res.json({
         success: true,
         stats: {
-          totalOrders: allOrders.length,
+          totalOrders: Number(row.total_orders || 0),
           totalRevenueCents,
           totalRefundedCents,
           netRevenueCents: totalRevenueCents - totalRefundedCents,
           byProduct,
-          byStatus,
-          last7d: { count: last7d.length, revenueCents: last7d.reduce((s, o) => s + o.finalAmountCents, 0) },
-          last30d: { count: last30d.length, revenueCents: last30d.reduce((s, o) => s + o.finalAmountCents, 0) },
+          byStatus: (row.by_status || {}) as Record<string, number>,
+          last7d: { count: Number(row.last7d_count || 0), revenueCents: Number(row.last7d_revenue || 0) },
+          last30d: { count: Number(row.last30d_count || 0), revenueCents: Number(row.last30d_revenue || 0) },
         },
       });
     } catch (error) {
@@ -11698,9 +11835,7 @@ export async function registerRoutes(
           const { eq } = await import("drizzle-orm");
 
           const emailTracking = await db.select().from(emailTrackingTable).where(eq(emailTrackingTable.auditId, audit.id));
-          const trackingTypes = emailTracking
-            .filter(isEmailSequenceAttempted)
-            .map(t => t.emailType);
+          const trackingTypes = Array.from(collectAttemptedSequenceTypes(emailTracking));
 
           // GRATUIT audits: Send upsell email after 2 days
           if (audit.type === "GRATUIT" && daysSinceSent >= 2 && daysSinceSent < 30) {
@@ -12027,7 +12162,7 @@ export async function registerRoutes(
       const results: string[] = [];
 
       // Get existing audits to find a valid userId
-      const existingAudits = await storage.getAllAudits();
+      const existingAudits = await storage.getAllAuditsLight();
       const userId = existingAudits[0]?.userId || "test-user";
 
       // Create 2 GRATUIT audits (sent 3-5 days ago)
@@ -13927,63 +14062,60 @@ export async function registerRoutes(
     try {
       const { getEmailTrackingStats } = await import("./emailTracking.js");
 
-      // Get stats from our own DB (fast, reliable)
+      // Get stats from our own DB (fast, reliable) - aggregated in SQL
       const stats = await getEmailTrackingStats();
 
-      // Get pending/ready from audits
-      const allAudits = await storage.getAllAudits();
-      const pending = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED' && !a.reportSentAt).length;
-      const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY' && !a.reportSentAt).length;
+      // Pending/ready from audits: COUNT in SQL instead of loading every audit
+      // (narrative_report JSONB included) into memory.
+      const auditCounts = await pool.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE report_delivery_status = 'SCHEDULED' AND report_sent_at IS NULL)::int AS pending,
+          COUNT(*) FILTER (WHERE report_delivery_status = 'READY' AND report_sent_at IS NULL)::int AS ready
+          FROM audits
+      `);
+      const pending = Number(auditCounts.rows[0]?.pending || 0);
+      const ready = Number(auditCounts.rows[0]?.ready || 0);
 
-      // Count reports specifically (emailType = sendReportReadyEmail)
-      const { db } = await import("./db.js");
-      const { emailTracking: emailTrackingTable } = await import("../shared/drizzle-schema.js");
-      const allEmails = await db.select().from(emailTrackingTable);
-
-      const reportEmails = allEmails.filter(e =>
-        e.emailType === "sendReportReadyEmail" ||
-        (e.subject || "").toLowerCase().includes("est pret") ||
-        (e.subject || "").toLowerCase().includes("est prêt")
-      );
-
-      // Deduplicate: count unique recipients only
-      const uniqueRecipients = new Map<string, typeof reportEmails[0]>();
-      reportEmails.forEach(e => {
-        const email = (e.recipientEmail || "").toLowerCase().trim();
-        if (!uniqueRecipients.has(email)) {
-          uniqueRecipients.set(email, e);
-        }
-      });
+      // Report emails, one row per unique recipient (earliest send), aggregated in SQL.
+      const reportAgg = await pool.query(`
+        WITH report_emails AS (
+          SELECT DISTINCT ON (lower(trim(coalesce(recipient_email, ''))))
+                 audit_type, sent_at, sendpulse_status
+            FROM email_tracking
+           WHERE email_type = 'sendReportReadyEmail'
+              OR lower(coalesce(subject, '')) LIKE '%est pret%'
+              OR lower(coalesce(subject, '')) LIKE '%est prêt%'
+           ORDER BY lower(trim(coalesce(recipient_email, ''))), sent_at ASC
+        )
+        SELECT
+          COUNT(*)::int AS total_unique,
+          COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '24 hours')::int AS last24h,
+          COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '7 days')::int AS last7d,
+          COUNT(*) FILTER (WHERE sendpulse_status = 'success')::int AS delivered,
+          COUNT(*) FILTER (WHERE sendpulse_status = 'failed')::int AS failed,
+          COALESCE((SELECT json_object_agg(t, c) FROM (
+            SELECT COALESCE(NULLIF(audit_type, ''), 'GRATUIT') AS t, COUNT(*)::int AS c
+              FROM report_emails GROUP BY 1
+          ) bt), '{}'::json) AS by_type,
+          (SELECT COUNT(*)::int FROM email_tracking) AS total_tracked
+          FROM report_emails
+      `);
+      const agg = reportAgg.rows[0] || {};
 
       const byType: Record<string, number> = {
         GRATUIT: 0,
         PREMIUM: 0,
         ELITE: 0,
         BLOOD_ANALYSIS: 0,
+        ...((agg.by_type || {}) as Record<string, number>),
       };
 
-      uniqueRecipients.forEach(e => {
-        const type = e.auditType || "GRATUIT";
-        byType[type] = (byType[type] || 0) + 1;
-      });
-
-      const now = Date.now();
-      const last24h = now - 24 * 60 * 60 * 1000;
-      const last7d = now - 7 * 24 * 60 * 60 * 1000;
-
-      const uniqueArr = Array.from(uniqueRecipients.values());
-      const totalUnique = uniqueArr.length;
-
-      const last24hCount = uniqueArr.filter(e =>
-        e.sentAt && new Date(e.sentAt).getTime() >= last24h
-      ).length;
-
-      const last7dCount = uniqueArr.filter(e =>
-        e.sentAt && new Date(e.sentAt).getTime() >= last7d
-      ).length;
-
-      const delivered = uniqueArr.filter(e => e.sendpulseStatus === 'success').length;
-      const failed = uniqueArr.filter(e => e.sendpulseStatus === 'failed').length;
+      const totalUnique = Number(agg.total_unique || 0);
+      const last24hCount = Number(agg.last24h || 0);
+      const last7dCount = Number(agg.last7d || 0);
+      const delivered = Number(agg.delivered || 0);
+      const failed = Number(agg.failed || 0);
+      const allEmails = { length: Number(agg.total_tracked || 0) };
 
       res.json({
         success: true,
@@ -14821,12 +14953,14 @@ export async function registerRoutes(
       const fromDate = String(
         req.query.from_date || new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
       );
-      const pageLimit = Math.min(Math.max(Number(req.query.pageLimit) || 100, 1), 100);
-      const maxPages = Math.min(Math.max(Number(req.query.pages) || 20, 1), 100);
-      const responseLimit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
-      const dbLimit = Math.min(Math.max(Number(req.query.dbLimit) || 5000, 1), 20000);
+      // Memory caps (crash 2026-11-19): at most 10 SendPulse pages (1000 emails),
+      // 500 detail lookups, 5000 DB rows scanned, 200 rows per response bucket.
+      const pageLimit = clampInt(req.query.pageLimit, 100, 1, 100);
+      const maxPages = clampInt(req.query.pages, 5, 1, 10);
+      const responseLimit = clampAdminLimit(req.query.limit, 100);
+      const dbLimit = clampInt(req.query.dbLimit, 2000, 1, 5000);
       const detailsEnabled = String(req.query.details ?? "1") !== "0";
-      const detailLimit = Math.min(Math.max(Number(req.query.detailLimit) || pageLimit * maxPages, 1), 10000);
+      const detailLimit = clampInt(req.query.detailLimit, Math.min(pageLimit * maxPages, 500), 1, 500);
       const recipientFilter = String(req.query.recipient || req.query.email || "").trim().toLowerCase();
       const subjectFilter = String(req.query.subject || "").trim().toLowerCase();
 
@@ -14836,7 +14970,7 @@ export async function registerRoutes(
         const dbResult = await pool.query(
           `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
                   sendpulse_task_id, sendpulse_status, sendpulse_error, sent_at,
-                  opened, clicked, converted, conversion_type, metadata,
+                  opened, clicked, converted, conversion_type,
                   split_part(lower(recipient_email), '@', 2) AS domain
              FROM email_tracking
             WHERE sent_at >= $1
@@ -15035,17 +15169,21 @@ export async function registerRoutes(
       );
       const eventLimit = Math.min(Math.max(Number(req.query.eventLimit) || 100, 1), 500);
 
+      // Aggregated in SQL: the previous version loaded every promo email row
+      // of the window (up to 365 days) in memory just to count them.
       const emailsResult = await pool.query(
-        `SELECT id, email_type, recipient_email, subject, audit_id, audit_type,
-                sendpulse_status, sendpulse_error, sent_at, opened, clicked,
-                converted, conversion_type
+        `SELECT COUNT(*)::int AS total_sent,
+                COUNT(*) FILTER (WHERE sendpulse_status = 'success')::int AS accepted,
+                COUNT(*) FILTER (WHERE sendpulse_status = 'failed')::int AS failed,
+                COUNT(*) FILTER (WHERE opened IS NOT NULL)::int AS opened,
+                COUNT(*) FILTER (WHERE clicked IS NOT NULL)::int AS clicked,
+                COUNT(*) FILTER (WHERE converted IS NOT NULL)::int AS converted
            FROM email_tracking
           WHERE sent_at >= $1
             AND (
               email_type = ANY($2::text[])
               OR lower(coalesce(subject, '')) LIKE ANY($3::text[])
-            )
-          ORDER BY sent_at DESC`,
+            )`,
         [fromDate, PROMO_EMAIL_TYPES, PROMO_SUBJECT_PATTERNS]
       );
 
@@ -15070,13 +15208,13 @@ export async function registerRoutes(
         [fromDate, PROMO_EMAIL_TYPES, PROMO_SUBJECT_PATTERNS, eventLimit]
       );
 
-      const emails = emailsResult.rows;
-      const totalSent = emails.length;
-      const accepted = emails.filter((email: any) => email.sendpulse_status === "success").length;
-      const failed = emails.filter((email: any) => email.sendpulse_status === "failed").length;
-      const opened = emails.filter((email: any) => email.opened).length;
-      const clicked = emails.filter((email: any) => email.clicked).length;
-      const converted = emails.filter((email: any) => email.converted).length;
+      const emailAgg = emailsResult.rows[0] || {};
+      const totalSent = Number(emailAgg.total_sent || 0);
+      const accepted = Number(emailAgg.accepted || 0);
+      const failed = Number(emailAgg.failed || 0);
+      const opened = Number(emailAgg.opened || 0);
+      const clicked = Number(emailAgg.clicked || 0);
+      const converted = Number(emailAgg.converted || 0);
 
       const byEventType: Record<string, number> = {};
       const byUrl: Record<string, number> = {};
@@ -15127,7 +15265,7 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
 
     try {
-      const allAudits = await storage.getAllAudits();
+      const allAudits = await storage.getAllAuditsLight();
 
       const scheduled = allAudits.filter(a => a.reportDeliveryStatus === 'SCHEDULED' && !a.reportSentAt);
       const ready = allAudits.filter(a => a.reportDeliveryStatus === 'READY' && !a.reportSentAt);
@@ -16128,6 +16266,16 @@ export async function registerRoutes(
                 }
               }
 
+              // Une désinscription ou une plainte spam côté SendPulse doit aussi
+              // couper les envois marketing chez nous. Avant, elles restaient
+              // uniquement dans email_tracking et les séquences continuaient.
+              if ((eventType === 'spam' || eventType === 'unsubscribe') && normalizedEmail) {
+                await storage.unsubscribeEmail(
+                  normalizedEmail,
+                  eventType === 'spam' ? 'sendpulse_spam_complaint' : 'sendpulse_unsubscribe',
+                ).catch((unsubError: unknown) => console.error("[SendPulseWebhook] unsubscribe persist failed:", unsubError));
+              }
+
               console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail || providerTaskId}`);
               processed++;
             } catch (err) {
@@ -16722,12 +16870,9 @@ export async function registerRoutes(
     if (reviewCronRunning) return;
     reviewCronRunning = true;
     try {
-      // Memory guard , skip cycle if heap pressure is critical (prevents the
-      // 2026-04-19 SIGABRT crash). Render container is 512MB; 440MB RSS means
-      // GC can't keep up.
-      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
-      if (memRssMb > 440) {
-        console.warn(`[ReviewCron] ⚠️ Skipping cycle , RSS ${memRssMb}MB > 440MB threshold`);
+      // Memory guard , skip cycle if RSS is above 70% of the container
+      // (server/memoryBudget.ts; prevents the 2026-04-19 SIGABRT crash).
+      if (shouldSkipForMemory("ReviewCron")) {
         return;
       }
 
@@ -16946,9 +17091,7 @@ export async function registerRoutes(
     // Memory guard , Peptides generation loads a large Sonnet response (~300KB)
     // and writes it back to DB. Combined with other in-flight work it can push
     // past the 400MB heap limit. Skip the cycle if we're already near the wall.
-    const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
-    if (memRssMb > 440) {
-      console.warn(`[AutoGen] ⚠️ Skipping cycle , RSS ${memRssMb}MB > 440MB threshold`);
+    if (shouldSkipForMemory("AutoGen")) {
       return;
     }
     autoGenRunning = true;
@@ -17958,9 +18101,7 @@ export async function registerRoutes(
   // Auto-send READY/SCHEDULED reports (Discovery, Anabolic, Ultimate)
   setInterval(async () => {
     try {
-      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
-      if (memRssMb > 440) {
-        console.warn(`[AutoSend] ⚠️ Skipping cycle , RSS ${memRssMb}MB > 440MB threshold`);
+      if (shouldSkipForMemory("AutoSend")) {
         return;
       }
 
@@ -18016,9 +18157,7 @@ export async function registerRoutes(
   setInterval(async () => {
     try {
       // Memory guard
-      const memRssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
-      if (memRssMb > 440) {
-        console.warn(`[AutoSequence] ⚠️ Skipping cycle , RSS ${memRssMb}MB > 440MB threshold`);
+      if (shouldSkipForMemory("AutoSequence")) {
         return;
       }
 
@@ -18026,6 +18165,9 @@ export async function registerRoutes(
       const allAudits = await storage.getAllAuditsLight();
       const now = new Date();
       let sent = 0;
+      // Coupe-circuit : avant, seuls les succes etaient plafonnes, un quota
+      // epuise faisait echouer toute la base a chaque cycle de 30 minutes.
+      let failedThisCycle = 0;
 
       for (const audit of allAudits) {
         if (!audit.email || audit.email.includes("test") || audit.email.includes("debug") || audit.email.includes("achzodcoaching") || audit.email.includes("achkou")) continue;
@@ -18037,9 +18179,7 @@ export async function registerRoutes(
         const daysSinceSent = (now.getTime() - sentAt.getTime()) / (24 * 60 * 60 * 1000);
 
         const trackingHistory = await storage.getEmailTrackingForAudit(audit.id) || [];
-        const trackingTypes = trackingHistory
-          .filter(isEmailSequenceAttempted)
-          .map((t: any) => t.emailType);
+        const trackingTypes = Array.from(collectAttemptedSequenceTypes(trackingHistory as any[]));
 
         // GRATUIT sequences
         if (audit.type === "GRATUIT") {
@@ -18048,7 +18188,7 @@ export async function registerRoutes(
             // DISCOVERY20 window: 7 days from report_sent_at (same date as the report).
             const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
             const emailSent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
-            if (emailSent) { sent++; if (sent >= 5) break; }
+            if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
           }
           if (daysSinceSent >= 5 && daysSinceSent < 10 && !trackingTypes.includes("sendGratuitJ5Email")) {
             const hasConverted = await storage.hasUserPurchased?.(audit.email);
@@ -18056,7 +18196,7 @@ export async function registerRoutes(
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ5Email", audit.email);
               const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
               const emailSent = await sendGratuitJ5Email(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
-              if (emailSent) { sent++; if (sent >= 5) break; }
+              if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
             }
           }
           if (daysSinceSent >= 7 && daysSinceSent < 14 && !trackingTypes.includes("sendGratuitJ7Email")) {
@@ -18065,7 +18205,7 @@ export async function registerRoutes(
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendGratuitJ7Email", audit.email);
               const offerWindow = await loadDiscoveryOfferWindow(audit, (id) => storage.getAudit(id), now);
               const emailSent = await sendGratuitJ7Email(audit.email, audit.id, baseUrl, trackingRecord.id, offerWindow);
-              if (emailSent) { sent++; if (sent >= 5) break; }
+              if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
             }
           }
           if (daysSinceSent >= 14 && daysSinceSent < 30 && !trackingTypes.includes("sendDiscoveryJ14CoachingEmail")) {
@@ -18081,7 +18221,7 @@ export async function registerRoutes(
               });
               const trackingRecord = await storage.createEmailTracking(audit.id, "sendDiscoveryJ14CoachingEmail", audit.email);
               const emailSent = await sendDiscoveryJ14CoachingEmail(audit.email, audit.id, baseUrl, trackingRecord.id, recommendation);
-              if (emailSent) { sent++; if (sent >= 5) break; }
+              if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
             }
           }
           // J+30 nurture , profile-matched coaching formule at the normal price
@@ -18097,7 +18237,7 @@ export async function registerRoutes(
                   scores: (audit.scores as any) ?? null,
                 });
                 const emailSent = await sendDiscoveryJ30NurtureEmail(audit.email, audit.id, baseUrl, trackingRecord.id, recommendation);
-                if (emailSent) { sent++; if (sent >= 5) break; }
+                if (emailSent) { sent++; if (sent >= 5) break; } else if (++failedThisCycle >= 5) { console.warn("[AutoSequence] 5 echecs dans ce cycle, arret (fournisseur ou quota?)"); break; }
               } catch (e) {
                 console.error(`[AutoSequence] J30 nurture failed for ${audit.email}:`, e);
               }
@@ -18111,6 +18251,38 @@ export async function registerRoutes(
     }
   }, 30 * 60 * 1000).unref(); // Every 30 minutes
 
+  // Relance des paiements abandonnes (etape 1 ~1h, etape 2 ~24h).
+  // Coupee par defaut : CHECKOUT_RECOVERY_ENABLED=1 pour l'activer.
+  // CHECKOUT_RECOVERY_START_AT (ISO) fixe la date a partir de laquelle les
+  // checkouts sont eligibles ; sans elle, c'est le demarrage du process.
+  // Jamais plus de 7 jours en arriere : le stock historique n'est pas touche.
+  let checkoutRecoveryRunning = false;
+  setInterval(async () => {
+    const config = readCheckoutRecoveryConfig(process.env, CHECKOUT_RECOVERY_PROCESS_STARTED_AT);
+    if (!config.enabled || checkoutRecoveryRunning) return;
+    checkoutRecoveryRunning = true;
+    try {
+      if (config.startAtSource === "process_start") {
+        console.warn("[CheckoutRecovery] CHECKOUT_RECOVERY_START_AT absent, seuil = demarrage du process");
+      }
+      const deps = createPgCheckoutRecoveryDeps({
+        pool,
+        baseUrl: getBaseUrl(),
+        isUnsubscribed: (email) => storage.isEmailUnsubscribed(email),
+        createEmailTracking: (auditId, emailType, email) => storage.createEmailTracking(auditId, emailType, email),
+        sendEmail: (input) => sendCheckoutRecoveryEmail(input),
+      });
+      const result = await runCheckoutRecoveryCycle(deps, config, new Date());
+      if (result.sent || result.failed || result.stoppedPaid) {
+        console.log("[CheckoutRecovery] cycle:", result);
+      }
+    } catch (err) {
+      console.error("[CheckoutRecovery] cycle error:", err);
+    } finally {
+      checkoutRecoveryRunning = false;
+    }
+  }, 15 * 60 * 1000).unref();
+
   // Peptides Engine , cycle 2 re-order email at J+60.
   // Runs every 12h, sends at most 20 emails per cycle. Per-email dedup via
   // email_tracking (emailType = sendPeptidesCycle2ReorderEmail) so a client
@@ -18122,7 +18294,18 @@ export async function registerRoutes(
     peptidesReorderCronRunning = true;
     try {
       const baseUrl = getBaseUrl();
-      const peptidesReports = await storage.getAllBurnoutReports();
+      // Light query: only id/email/created_at of reports in the 60-120 day
+      // window. The old getAllBurnoutReports() pulled up to 100 full reports
+      // (~300 KB JSONB each) and, capped at the 100 newest, missed older ones.
+      const peptidesReportsRes = await pool.query(
+        `SELECT id, email, created_at AS "createdAt"
+           FROM burnout_reports
+          WHERE created_at >= NOW() - INTERVAL '121 days'
+            AND created_at <= NOW() - INTERVAL '59 days'
+          ORDER BY created_at DESC
+          LIMIT 500`
+      );
+      const peptidesReports = peptidesReportsRes.rows as Array<{ id: string; email: string; createdAt: Date }>;
       const now = new Date();
       let sent = 0;
 

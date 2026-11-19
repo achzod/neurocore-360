@@ -18,14 +18,23 @@ test("Consent Mode v2 is denied before tags and trackers are absent from the ini
   assert.doesNotMatch(html, /facebook\.com\/tr\?/);
 });
 
-test("analytics and Meta loaders are gated by explicit acceptance", () => {
+test("Meta Pixel and GTM are gated by explicit acceptance, GA4 runs in Consent Mode v2 advanced", () => {
   const consent = read("client/src/components/CookieConsent.tsx");
   const analytics = read("client/src/lib/analytics.ts");
+  const googleTag = read("client/src/lib/googleTag.ts");
+  const main = read("client/src/main.tsx");
   assert.match(consent, /const granted = level === "all"/);
-  assert.match(consent, /if \(granted\) \{\s*loadGoogleTags\(\);\s*loadMetaPixel\(\);/);
+  assert.match(consent, /updateGoogleConsent\(granted\);\s*if \(granted\) \{[^}]*loadGoogleTagManager\(\);[^}]*loadMetaPixel\(\);/);
   assert.match(consent, /Tout refuser/);
   assert.match(consent, /Tout accepter/);
+  // Meta Pixel events stay behind the stored "all" consent.
   assert.match(analytics, /localStorage\.getItem\('apexlabs_cookie_consent'\) === 'all'/);
+  assert.match(analytics, /function fbq\([^)]*\) \{\s*if \(hasTrackingConsent\(\) && window\.fbq\)/);
+  // gtag.js boots before React with consent denied by default, never the Pixel.
+  assert.match(main, /bootGoogleTag\(\);[\s\S]*createRoot/);
+  assert.match(googleTag, /googletagmanager\.com\/gtag\/js/);
+  assert.doesNotMatch(googleTag, /connect\.facebook\.net|fbq/);
+  assert.ok(googleTag.indexOf('"consent", "default"') < googleTag.indexOf('"config", GA_MEASUREMENT_ID'));
 });
 
 test("cookie refusal and acceptance have equal visual weight", () => {
