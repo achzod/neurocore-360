@@ -7,10 +7,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
-import { CookieConsent, hasAnalyticsConsent } from "@/components/CookieConsent";
+import { CookieConsent } from "@/components/CookieConsent";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { WhatsAppConversionHub } from "@/components/WhatsAppConversionHub";
 import { isDiscoveryQuestionnaireHref, trackDiscoveryFunnelStep } from "@/lib/analytics";
+import { canonicalUrlFor, isNoindexPath } from "@shared/indexingRules";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -149,8 +150,9 @@ function ScrollToTop() {
     const title = PAGE_TITLES[location] || "APEXLABS by Achzod";
     document.title = title;
 
-    // Track page view in GA4
-    if (typeof window !== 'undefined' && hasAnalyticsConsent() && window.gtag) {
+    // Track page view in GA4. Consent Mode v2 (advanced): sent for every
+    // visitor, cookieless until the banner is accepted.
+    if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'page_view', {
         page_path: location,
         page_title: title,
@@ -161,16 +163,29 @@ function ScrollToTop() {
       trackDiscoveryFunnelStep('discovery_landing_viewed');
     }
 
-    // Update canonical URL dynamically
+    // Update canonical URL dynamically. Flow pages (questionnaires, uploads)
+    // keep the canonical of their offer landing and stay noindex, the same as
+    // the server-rendered HTML (shared/indexingRules.ts).
+    const canonicalHref = canonicalUrlFor(location);
     const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (canonical) {
-      canonical.href = `https://apexlabs.achzodcoaching.com${location === "/" ? "" : location}`;
+      canonical.href = canonicalHref;
     }
 
     // Update og:url
     const ogUrl = document.querySelector('meta[property="og:url"]');
     if (ogUrl) {
-      ogUrl.setAttribute("content", `https://apexlabs.achzodcoaching.com${location === "/" ? "" : location}`);
+      ogUrl.setAttribute("content", canonicalHref);
+    }
+
+    const robots = document.querySelector('meta[name="robots"]');
+    if (robots && isNoindexPath(location)) {
+      robots.setAttribute("content", "noindex, follow");
+      robots.setAttribute("data-flow-noindex", "1");
+    } else if (robots?.getAttribute("data-flow-noindex") === "1") {
+      // Leaving a flow page inside the SPA: restore the indexable default.
+      robots.setAttribute("content", "index, follow");
+      robots.removeAttribute("data-flow-noindex");
     }
   }, [location]);
 

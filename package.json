@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "npm run check:secret-source && node scripts/ensure-puppeteer-chrome.cjs && tsx script/build.ts",
-    "start": "NODE_ENV=production node --max-old-space-size=400 --heapsnapshot-near-heap-limit=1 dist/index.cjs",
+    "start": "NODE_ENV=production node --max-old-space-size=1536 dist/index.cjs",
     "check": "tsc",
     "test:blog:seo-winners": "tsx scripts/test-winning-blog-seo.ts",
     "test:blog:indexation": "tsx scripts/test-blog-indexation.ts",

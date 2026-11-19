@@ -152,6 +152,7 @@ export default function AdminDashboard() {
   const [audits, setAudits] = useState<Audit[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [incompleteQuestionnaires, setIncompleteQuestionnaires] = useState<IncompleteQuestionnaire[]>([]);
+  const [incompleteTotal, setIncompleteTotal] = useState(0);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showPromoModal, setShowPromoModal] = useState(false);
@@ -310,6 +311,7 @@ export default function AdminDashboard() {
       });
       const data = await handleAdminResponse(response);
       setIncompleteQuestionnaires(data.questionnaires);
+      setIncompleteTotal(typeof data.total === "number" ? data.total : data.questionnaires.length);
     } catch (error) {
       toast({
         title: "Erreur",
@@ -889,7 +891,7 @@ export default function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="incomplete" className="gap-2">
               <UserX className="w-4 h-4" />
-              Abandons ({incompleteQuestionnaires.length})
+              Abandons ({incompleteTotal || incompleteQuestionnaires.length})
             </TabsTrigger>
             <TabsTrigger value="reviews" className="gap-2">
               <Star className="w-4 h-4" />

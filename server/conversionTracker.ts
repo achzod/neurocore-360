@@ -131,7 +131,8 @@ async function fetchMetaConversionsWithStatus(days: number): Promise<{
       `fields=spend,impressions,clicks,ctr,cpc,actions,action_values&` +
       `level=account`;
 
-    const response = await fetch(url);
+    // Bounded: a hanging Graph API call used to hold the admin request open.
+    const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
 
     if (!response.ok) {
       console.error('[ConversionTracker] Meta API error:', response.status);

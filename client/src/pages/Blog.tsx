@@ -446,8 +446,8 @@ export default function Blog() {
                   <span className="text-amber-500">PERSONNALISE</span>
                 </h2>
                 <p className="mb-6 text-base text-white/60">
-                  35 questions. Un protocole sur mesure avec dosages exacts, guide de reconstitution,
-                  calendrier hebdo et acces direct a la source ou les peptides coutent 60-90% moins cher.
+                  35 questions. Un protocole sur mesure avec des dosages ajustés à ton poids, un guide de
+                  reconstitution et un calendrier hebdo. Le montant est déduit de ton coaching.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <a href="/offers/peptides-engine" className="inline-flex items-center gap-3 px-8 py-4 bg-amber-500 text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-amber-400 transition-all rounded-sm shadow-[0_0_20px_rgba(245,158,11,0.2)]">
@@ -460,7 +460,7 @@ export default function Blog() {
                 <div className="grid grid-cols-2 gap-2 text-center">
                   {[
                     { val: "74", label: "molecules" },
-                    { val: "-90%", label: "vs revendeurs" },
+                    { val: "35", label: "questions" },
                     { val: "2", label: "blood analyses" },
                     { val: "48h", label: "livraison" },
                   ].map((s) => (

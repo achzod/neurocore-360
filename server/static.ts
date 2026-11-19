@@ -7,6 +7,7 @@ import {
   BLOG_INDEXATION_PRIORITY_SLUGS,
 } from "../client/src/data/blogSeo";
 import { PEPTIDES_OFFER_FAQ } from "../shared/peptidesOfferFaq";
+import { isNoindexPath } from "../shared/indexingRules";
 import { INTERACTIVE_FLOW_CACHE_CONTROL, resolveSsrCacheControl } from "./cachePolicy";
 
 const BASE_URL = "https://apexlabs.achzodcoaching.com";
@@ -628,31 +629,9 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
 </main></noscript>`;
   }
 
+  // Single source of truth shared with the client router (shared/indexingRules.ts).
   function isPrivateOrUtilityPath(pathname: string): boolean {
-    const p = normalizeRequestPath(pathname);
-    return [
-      /^\/ads\/discovery-scan$/,
-      /^\/apexlabs$/,
-      /^\/peptides-engine$/,
-      /^\/questionnaire$/,
-      /^\/audit-complet\/questionnaire$/,
-      /^\/audit-complet\/checkout$/,
-      /^\/dashboard(?:\/|$)/,
-      /^\/blood-dashboard(?:\/|$)/,
-      /^\/analysis(?:\/|$)/,
-      /^\/blood-report(?:\/|$)/,
-      /^\/blood-analysis\/.+/,
-      /^\/scan\/.+/,
-      /^\/anabolic\/.+/,
-      /^\/ultimate\/.+/,
-      /^\/peptides\/.+/,
-      /^\/report(?:\/|$)/,
-      /^\/auth(?:\/|$)/,
-      /^\/login$/,
-      /^\/admin(?:\/|$)/,
-      /^\/conversions(?:\/|$)/,
-      /^\/test$/,
-    ].some((pattern) => pattern.test(p));
+    return isNoindexPath(normalizeRequestPath(pathname));
   }
 
   // Hashed assets (js/css with content hash in filename) ,  long cache

@@ -572,7 +572,7 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({ theme, show, clientName })
             Ton protocole peptides sur mesure
           </p>
           <p className="text-xs" style={{ color: theme.colors.textMuted }}>
-            Dosages exacts, source -90%, jusqu'à 2 bilans sanguins inclus
+            Dosages ajustés à ton poids, jusqu'à 2 bilans sanguins inclus
           </p>
         </div>
 

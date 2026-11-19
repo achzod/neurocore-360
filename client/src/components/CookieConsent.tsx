@@ -1,41 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { trackDiscoveryFunnelStep } from "@/lib/analytics";
+import { CONSENT_KEY, updateGoogleConsent, type ConsentLevel } from "@/lib/googleTag";
 
-export const CONSENT_KEY = "apexlabs_cookie_consent";
-export type ConsentLevel = "all" | "essential";
+export { CONSENT_KEY } from "@/lib/googleTag";
+export type { ConsentLevel } from "@/lib/googleTag";
 
-const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || "G-48PCF7PPT8";
-const GOOGLE_ADS_ID = import.meta.env.VITE_GOOGLE_ADS_ID || "AW-706806863";
 const GTM_ID = import.meta.env.VITE_GTM_ID || "GTM-TTHKM83";
 const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || "1120781400174189";
 
-function updateGoogleConsent(granted: boolean) {
-  if (typeof window === "undefined" || typeof window.gtag !== "function") return;
-  const value = granted ? "granted" : "denied";
-  window.gtag("consent", "update", {
-    ad_storage: value,
-    analytics_storage: value,
-    ad_user_data: value,
-    ad_personalization: value,
-  });
-}
-
-function loadGoogleTags() {
+// GTM can carry non-Google tags, so it stays behind explicit consent. GA4 and
+// Google Ads are already loaded in Consent Mode v2 by bootGoogleTag() (main.tsx).
+function loadGoogleTagManager() {
   if (typeof document === "undefined") return;
-
-  if (!document.getElementById("google-tag-script")) {
-    const script = document.createElement("script");
-    script.id = "google-tag-script";
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_MEASUREMENT_ID)}`;
-    document.head.appendChild(script);
-  }
-
-  window.gtag?.("js", new Date());
-  window.gtag?.("config", GA_MEASUREMENT_ID, { anonymize_ip: true });
-  window.gtag?.("config", GOOGLE_ADS_ID);
-
   if (GTM_ID && !document.getElementById("google-tag-manager-script")) {
     const script = document.createElement("script");
     script.id = "google-tag-manager-script";
@@ -78,7 +54,8 @@ function applyConsent(level: ConsentLevel) {
   const granted = level === "all";
   updateGoogleConsent(granted);
   if (granted) {
-    loadGoogleTags();
+    loadGoogleTagManager();
+    // Meta Pixel only after explicit consent.
     loadMetaPixel();
   }
 }
@@ -126,9 +103,8 @@ export function CookieConsent() {
     localStorage.setItem(CONSENT_KEY, level);
     applyConsent(level);
     setVisible(false);
-    if (level === "all" && (window.location.pathname === "/offers/discovery-scan" || window.location.pathname === "/ads/discovery-scan")) {
-      trackDiscoveryFunnelStep("discovery_landing_viewed");
-    }
+    // No replay of discovery_landing_viewed here: with Consent Mode v2 the
+    // landing view was already sent (cookieless) on arrival.
   }
 
   return (
