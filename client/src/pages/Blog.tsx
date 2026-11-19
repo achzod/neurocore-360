@@ -1,3 +1,4 @@
+import { compareRecent } from "@/lib/blogSort";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Header } from "@/components/Header";
@@ -36,7 +37,7 @@ export default function Blog() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"recent" | "popular">("popular");
+  const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
 
   useEffect(() => {
     document.title = "Blog ACHZOD | Articles Musculation, Nutrition & Performance";
@@ -79,7 +80,7 @@ export default function Blog() {
   }, []);
 
   const featuredArticles = useMemo(
-    () => articles.filter((article) => article.featured).slice(0, 6),
+    () => [...articles].sort(compareRecent).slice(0, 6),
     [articles]
   );
 
@@ -99,9 +100,10 @@ export default function Blog() {
   const sortedArticles = useMemo(() => {
     return [...categoryArticles].sort((a, b) => {
       if (sortBy === "popular") {
-        return ((b as any).priority || 0) - ((a as any).priority || 0);
+        const diff = ((b as any).priority || 0) - ((a as any).priority || 0);
+        if (diff !== 0) return diff;
       }
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      return compareRecent(a, b);
     });
   }, [categoryArticles, sortBy]);
 
@@ -270,9 +272,9 @@ export default function Blog() {
           <section className="py-16 border-t border-white/5">
             <div className="mx-auto max-w-7xl px-4">
               <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
-                [ À LA UNE ]
+                [ NOUVEAUTÉS ]
               </p>
-              <h2 className="mb-10 text-2xl font-bold text-white">Articles à la une</h2>
+              <h2 className="mb-10 text-2xl font-bold text-white">Derniers articles</h2>
               <div className="grid gap-6 md:grid-cols-3">
                 {featuredArticles.map((article, index) => (
                   <motion.div

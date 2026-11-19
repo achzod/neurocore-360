@@ -1,3 +1,4 @@
+import { compareRecent } from "@/lib/blogSort";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "wouter";
 import { Header } from "@/components/Header";
@@ -88,7 +89,7 @@ export default function BlogPillar() {
     if (!pillar) return [];
     return articles
       .filter((article) => matchPillar(article, pillar))
-      .sort((a, b) => ((b as any).priority ?? 0) - ((a as any).priority ?? 0))
+      .sort((a, b) => ((b as any).priority ?? 0) - ((a as any).priority ?? 0) || compareRecent(a, b))
       .slice(0, 36);
   }, [articles, pillar]);
 

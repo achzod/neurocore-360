@@ -1,3 +1,4 @@
+import { compareRecent } from "@/lib/blogSort";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "wouter";
 import { Header } from "@/components/Header";
@@ -76,7 +77,7 @@ export default function BlogCategory() {
         const aPri = (a as any).priority ?? 0;
         const bPri = (b as any).priority ?? 0;
         if (aPri !== bPri) return bPri - aPri;
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        return compareRecent(a, b);
       });
   }, [articles, slug]);
 
