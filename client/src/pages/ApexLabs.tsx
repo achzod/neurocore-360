@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { BETA_REVIEWS } from "@/data/betaReviews";
 import { trackClick } from "@/lib/analytics";
+import { HeroBackgroundVideo } from "@/components/HeroBackgroundVideo";
 
 // ============================================================================
 // TYPES
@@ -32,7 +33,7 @@ const OFFERS: Offer[] = [
     description: "Tu stagnes, tu es crevé, tu ne sais pas pourquoi. Ce scan gratuit analyse 10 domaines clés de ta santé en ~66 questions: sommeil, stress, énergie, digestion, entraînement, nutrition, lifestyle et mindset. Tu repars avec un score global sur 100, la liste de tes blocages métaboliques et hormonaux, et un audit complet de ce qui ne va pas, section par section. Le point de départ pour comprendre ce qui cloche vraiment.",
     features: ["10 domaines analysés", "Score global sur 100", "Identification des blocages", "Audit complet section par section"],
     price: "Gratuit",
-    imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
+    imageUrl: "/images/hr_hrv.avif",
     reverse: false
   },
   {
@@ -42,7 +43,7 @@ const OFFERS: Offer[] = [
     description: "L'analyse complète pour ceux qui veulent des réponses. 137 questions sur 16 sections: profil hormonal détaillé (testostérone, cortisol, thyroïde), axes cliniques (diabète, SII, fatigue surrénalienne), nutrition avancée, suppléments et composition corporelle. Tu reçois un protocole Matin Anti-Cortisol, un protocole Soir Sommeil, un reset digestif 14 jours, un stack suppléments personnalisé et un plan d'action 30-60-90 jours. Rapport de 20+ pages.",
     features: ["16 sections d'analyse", "Profil hormonal complet", "Axes cliniques", "Stack suppléments personnalisé"],
     price: "59€",
-    imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
+    imageUrl: "/images/bmi_stress_activity.avif",
     reverse: true
   },
   {
@@ -63,7 +64,7 @@ const OFFERS: Offer[] = [
     description: "Le scan le plus complet du marché. 183 questions sur 18 sections + analyse photo posturale (face, dos, profil). On couvre tout: nutrition timing, cardio & performance Zone 2, analyse HRV, blessures & mobilité, psychologie du mindset. Je croise toutes tes données pour générer le rapport le plus précis possible. 40-50 pages de protocoles personnalisés.",
     features: ["18 sections d'analyse", "Analyse photo posturale", "Protocole 30-60-90 jours"],
     price: "79€",
-    imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
+    imageUrl: "/images/cno_pro.avif",
     reverse: true
   },
   {
@@ -391,7 +392,7 @@ function Header() {
           <span className="text-xl font-black tracking-tighter text-white">
             APEX<span className="text-[#FCDD00]">LABS</span>
           </span>
-          <span className="font-mono text-[10px] text-[#525252] tracking-widest uppercase">
+          <span className="font-mono text-[10px] text-[#8a8a8a] tracking-widest uppercase">
             BY ACHZOD
           </span>
         </a>
@@ -550,16 +551,7 @@ function Hero() {
 
       {/* Background Video */}
       <div className="absolute inset-0 z-0">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-screen scale-110"
-          style={{ animation: 'pulse-slow 8s infinite' }}
-        >
-            <source src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/m1/space.mp4" type="video/mp4" />
-        </video>
+        <HeroBackgroundVideo />
         {/* Overlay to ensure text readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-black/95" />
 
@@ -710,6 +702,7 @@ function Hero() {
                         <input
                             type="text"
                             placeholder="TON NOM COMPLET"
+                            aria-label="Ton nom complet"
                             className="w-full bg-neutral-900/50 border-0 border-b border-neutral-800 text-white px-0 py-3 focus:outline-none focus:border-[#FCDD00] placeholder-neutral-700 font-mono text-xs uppercase tracking-wider transition-colors"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
@@ -725,6 +718,7 @@ function Hero() {
                         <input
                             type="email"
                             placeholder="TON@EMAIL.COM"
+                            aria-label="Ton adresse email"
                             className="w-full bg-neutral-900/50 border-0 border-b border-neutral-800 text-white px-0 py-3 focus:outline-none focus:border-[#FCDD00] placeholder-neutral-700 font-mono text-xs uppercase tracking-wider transition-colors"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -889,6 +883,10 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
               <img
                 src={imageUrl}
                 alt={title}
+                loading="lazy"
+                decoding="async"
+                width={1092}
+                height={702}
                 className="w-full h-full object-cover transition-all duration-700 opacity-60 group-hover:opacity-100 grayscale group-hover:grayscale-0 group-hover:scale-105"
               />
             )}
@@ -1011,7 +1009,7 @@ function CertificationsSection() {
   return (
     <section id="certifications" className="py-16 bg-black border-y border-white/5">
       <div className="mx-auto max-w-5xl px-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-8">12 Certifications Internationales</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-400 text-center mb-8">12 Certifications Internationales</p>
         <div className="flex flex-wrap justify-center gap-4">
           {certs.map((c) => (
             <motion.div
@@ -1236,7 +1234,7 @@ function PressSection() {
   return (
     <section className="py-12 bg-black">
       <div className="container mx-auto px-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-8">Recommandé par les médias</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-400 text-center mb-8">Recommandé par les médias</p>
         <div className="flex flex-wrap justify-center gap-6">
           {pressLinks.map((press, i) => (
             <a

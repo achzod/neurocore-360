@@ -177,9 +177,9 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
   if (article.slug === "meilleurs-peptides-performance-sportive") {
     return {
       intent: "peptides",
-      title: "Quel protocole peptides correspond vraiment a ton profil ?",
+      title: "Quel protocole peptides correspond vraiment à ton profil ?",
       body:
-        "Le Pre-Peptides Engine gratuit cadre d'abord ton objectif, ton contexte et ton budget avant l'analyse complete.",
+        "Le Pre-Peptides Engine gratuit cadre d'abord ton objectif, ton contexte et ton budget avant l'analyse complète.",
       href: `${BASE_URL}/peptides-preview`,
       label: "Lancer mon Pre-Peptides gratuit",
     };
@@ -188,9 +188,9 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
   if (article.slug === "pct-sarms-protocole-complet") {
     return {
       intent: "blood",
-      title: "Tu as les resultats : transforme-les en priorites lisibles.",
+      title: "Tu as les résultats : transforme-les en priorités lisibles.",
       body:
-        "Blood Analysis structure la lecture des marqueurs autour de la recuperation, du profil hormonal, des lipides et du foie.",
+        "Blood Analysis structure la lecture des marqueurs autour de la récupération, du profil hormonal, des lipides et du foie.",
       href: `${BASE_URL}/offers/blood-analysis`,
       label: "Analyser mon bilan post-cycle",
     };
@@ -201,7 +201,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       intent: "blood",
       title: "Un cycle ne se pilote pas uniquement au ressenti.",
       body:
-        "Blood Analysis organise les marqueurs disponibles pour reperer les priorites de suivi avant de conclure sur la recuperation.",
+        "Blood Analysis organise les marqueurs disponibles pour repérer les priorités de suivi avant de conclure sur la récupération.",
       href: `${BASE_URL}/offers/blood-analysis`,
       label: "Faire lire mes marqueurs",
     };
@@ -215,7 +215,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       intent: "peptides",
       title: "Avant de toucher aux peptides, cadre le protocole et le monitoring.",
       body:
-        "Peptides Engine aide a relier objectif, contexte, risques, bilan sanguin, timing et coherence du protocole avant toute decision.",
+        "Peptides Engine aide à relier objectif, contexte, risques, bilan sanguin, timing et cohérence du protocole avant toute décision.",
       href: `${BASE_URL}/offers/peptides-engine`,
       label: "Voir Peptides Engine",
     };
@@ -224,9 +224,9 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
   if (category === "hormones" || /testost|hormone|libido|cortisol|thyro|estradiol|igf/.test(text)) {
     return {
       intent: "anabolic",
-      title: "Si tu stagnes malgre l'entrainement, lis ton profil complet.",
+      title: "Si tu stagnes malgré l'entraînement, lis ton profil complet.",
       body:
-        "Anabolic Bioscan relie sommeil, stress, recuperation, nutrition et signaux hormonaux pour sortir du conseil generique.",
+        "Anabolic Bioscan relie sommeil, stress, récupération, nutrition et signaux hormonaux pour sortir du conseil générique.",
       href: `${BASE_URL}/offers/anabolic-bioscan`,
       label: "Faire l'Anabolic Bioscan",
     };
@@ -237,7 +237,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       intent: "blood",
       title: "Ton bilan sanguin peut expliquer ce que les photos ne montrent pas.",
       body:
-        "Blood Analysis transforme les marqueurs en priorites concretes pour energie, recuperation, metabolisme et suivi.",
+        "Blood Analysis transforme les marqueurs en priorités concrètes pour énergie, récupération, métabolisme et suivi.",
       href: `${BASE_URL}/offers/blood-analysis`,
       label: "Analyser mon bilan",
     };
@@ -246,20 +246,20 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
   if (category === "musculation" || /prise de masse|seche|sèche|perte de gras|recomposition|deficit calorique|déficit calorique/.test(text)) {
     return {
       intent: "coaching",
-      title: "Tu veux ce plan adapte a ton niveau, ton rythme et ton objectif ?",
+      title: "Tu veux ce plan adapté à ton niveau, ton rythme et ton objectif ?",
       body:
-        "Le coaching AchZod transforme la theorie en plan d'entrainement et nutrition ajuste chaque semaine selon ta progression.",
+        "Le coaching AchZod transforme la théorie en plan d'entraînement et nutrition ajustés chaque semaine selon ta progression.",
       href: "https://www.achzodcoaching.com/formules-coaching",
       label: "Voir les suivis coaching",
     };
   }
 
-  if (category === "performance" || /squat|bench|developpe|souleve|mouvement|technique|biomecanique|douleur/.test(text)) {
+  if (category === "performance" || /squat|bench|developpe|souleve|mouvement|technique|biomécanique|douleur/.test(text)) {
     return {
       intent: "formcheck",
       title: "Si le blocage vient du mouvement, il faut voir l'execution.",
       body:
-        "FormCheck donne une lecture biomecanique sur video avec les corrections prioritaires a appliquer des la prochaine seance.",
+        "FormCheck donne une lecture biomécanique sur vidéo avec les corrections prioritaires à appliquer dès la prochaine séance.",
       href: `${BASE_URL}/offers/formcheck`,
       label: "Faire analyser ma technique",
     };
@@ -270,7 +270,7 @@ function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
       intent: "ultimate",
       title: "Quand plusieurs signaux se croisent, priorise le vrai limiteur.",
       body:
-        "Ultimate Scan relie sommeil, stress, recuperation, nutrition, posture et habitudes pour savoir quoi corriger en premier.",
+        "Ultimate Scan relie sommeil, stress, récupération, nutrition, posture et habitudes pour savoir quoi corriger en premier.",
       href: `${BASE_URL}/offers/ultimate-scan`,
       label: "Voir Ultimate Scan",
     };
@@ -666,28 +666,17 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
     const title = "APEXLABS by Achzod | Optimisation Humaine & Bio-Data";
     const description =
       "Audits métaboliques, scans hormonaux, Blood Analysis et protocoles bio-data pour identifier tes blocages et transformer tes données en plan d'action.";
-    const landingSchema = {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "APEXLABS",
-      url: BASE_URL,
-      inLanguage: "fr-FR",
-      publisher: {
-        "@type": "Organization",
-        name: "APEXLABS by Achzod",
-        url: BASE_URL,
-      },
-    };
+    // The WebSite JSON-LD lives once in client/index.html (shared by every page).
     const body = renderNoscriptPage({
       h1: "APEXLABS by Achzod",
       lead:
-        "APEXLABS transforme questionnaires, bilans sanguins et donnees de performance en rapports actionnables pour la nutrition, les hormones, le sommeil, la recuperation et le coaching.",
+        "APEXLABS transforme questionnaires, bilans sanguins et données de performance en rapports actionnables pour la nutrition, les hormones, le sommeil, la récupération et le coaching.",
       sections: [
         {
           title: "Scans disponibles",
           body: [
-            "Discovery Scan gratuit, Anabolic Bioscan, Ultimate Scan, Blood Analysis, FormCheck et Peptides Engine couvrent les principaux leviers de transformation physique et metabolique.",
-            "Chaque scan est concu comme une porte d'entree claire: comprendre le probleme, isoler les priorites, eviter les protocoles generiques et construire une suite logique vers un plan coaching plus precis.",
+            "Discovery Scan gratuit, Anabolic Bioscan, Ultimate Scan, Blood Analysis, FormCheck et Peptides Engine couvrent les principaux leviers de transformation physique et métabolique.",
+            "Chaque scan est conçu comme une porte d'entrée claire: comprendre le problème, isoler les priorités, éviter les protocoles génériques et construire une suite logique vers un plan coaching plus précis.",
           ],
           links: [
             { href: `${BASE_URL}/offers/discovery-scan`, label: "Discovery Scan gratuit" },
@@ -698,17 +687,17 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
           ],
         },
         {
-          title: "Methode APEXLABS",
+          title: "Méthode APEXLABS",
           body: [
-            "La methode combine questionnaire detaille, lecture des habitudes, marqueurs biologiques quand ils sont disponibles, contexte d'entrainement, niveau de stress, qualite du sommeil et objectif reel du client.",
-            "Le but n'est pas d'empiler des recommandations, mais de transformer des signaux disperses en decisions: quoi corriger maintenant, quoi surveiller, quoi laisser de cote et quand passer sur un accompagnement plus encadre.",
+            "La méthode combine questionnaire détaillé, lecture des habitudes, marqueurs biologiques quand ils sont disponibles, contexte d'entraînement, niveau de stress, qualité du sommeil et objectif réel du client.",
+            "Le but n'est pas d'empiler des recommandations, mais de transformer des signaux dispersés en décisions: quoi corriger maintenant, quoi surveiller, quoi laisser de côté et quand passer sur un accompagnement plus encadré.",
           ],
         },
         {
           title: "Lien avec le coaching",
           body: [
-            "APEXLABS sert aussi de filtre avant le coaching AchzodCoaching: les rapports montrent les blocages, les risques, la maturite du profil et les leviers les plus rentables pour une transformation durable.",
-            "Quand le diagnostic indique qu'un coaching est pertinent, le client arrive avec un dossier plus propre, une priorite d'action et une vision plus nette de ce qui doit etre suivi dans le temps.",
+            "APEXLABS sert aussi de filtre avant le coaching AchzodCoaching: les rapports montrent les blocages, les risques, la maturité du profil et les leviers les plus rentables pour une transformation durable.",
+            "Quand le diagnostic indique qu'un coaching est pertinent, le client arrive avec un dossier plus propre, une priorité d'action et une vision plus nette de ce qui doit être suivi dans le temps.",
           ],
           links: [{ href: `${BASE_URL}/deduction-coaching`, label: "Comprendre la deduction coaching" }],
         },
@@ -716,7 +705,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
           title: "Ressources",
           body: [
             "Le blog APEXLABS publie des analyses longues sur musculation, nutrition, hormones, sommeil, HRV, supplements et biohacking.",
-            "Ces contenus completeront les scans en donnant du contexte scientifique, des explications pratiques et des criteres pour mieux interpreter les signaux du corps sans tomber dans le marketing facile.",
+            "Ces contenus complètent les scans en donnant du contexte scientifique, des explications pratiques et des critères pour mieux interpréter les signaux du corps sans tomber dans le marketing facile.",
           ],
           links: [{ href: `${BASE_URL}/blog`, label: "Lire le blog APEXLABS" }],
         },
@@ -726,12 +715,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
       title,
       desc: description,
       canonical: BASE_URL,
-    })
-      .replace(
-        "</head>",
-        `<script type="application/ld+json">${JSON.stringify(landingSchema)}</script>\n</head>`,
-      )
-      .replace("</body>", `${body}\n</body>`);
+    }).replace("</body>", `${body}\n</body>`);
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.send(html);
   });
@@ -743,6 +727,15 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
       maxAge: "1d",
       etag: true,
       index: false, // do NOT auto-serve index.html (covered by the explicit handler)
+      setHeaders: (res, filePath) => {
+        // Blog data changes with each deploy: keep it fresh (ETag revalidation is cheap).
+        if (filePath.endsWith(".json") || filePath.endsWith(".webmanifest")) {
+          res.setHeader("Cache-Control", "public, max-age=3600");
+        } else if (/\.(woff2?|otf|ttf)$/i.test(filePath)) {
+          // Font files never change in place: cache them for 30 days.
+          res.setHeader("Cache-Control", "public, max-age=2592000");
+        }
+      },
     }),
   );
 
@@ -828,7 +821,7 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
           "@type": "ListItem",
           position: 3,
           name: categoryLabel,
-          item: `${BASE_URL}/blog/categorie/${category}`,
+          item: `${BASE_URL}/blog/catégorie/${category}`,
         },
         {
           "@type": "ListItem",
@@ -872,7 +865,7 @@ ${related
       `<li><a href="${BASE_URL}/blog/${esc(encodePathSegment(r.slug))}">${esc(r.title)}</a></li>`,
   )
   .join("\n")}
-<li><a href="${BASE_URL}/blog/categorie/${esc(category)}">Voir tous les articles ${esc(categoryLabel)}</a></li>
+<li><a href="${BASE_URL}/blog/catégorie/${esc(category)}">Voir tous les articles ${esc(categoryLabel)}</a></li>
 </ul>
 </nav>`
         : "";
@@ -985,7 +978,7 @@ ${relatedHtml}
       .filter(([slug]) => (byCategory.get(slug) || []).length > 0)
       .map(
         ([slug, label]) =>
-          `<li><a href="${BASE_URL}/blog/categorie/${esc(slug)}">${esc(label)}</a> (${(byCategory.get(slug) || []).length} articles)</li>`,
+          `<li><a href="${BASE_URL}/blog/catégorie/${esc(slug)}">${esc(label)}</a> (${(byCategory.get(slug) || []).length} articles)</li>`,
       )
       .join("\n");
     const pillarLinks = renderPillarLinksHtml();
@@ -1007,12 +1000,12 @@ ${relatedHtml}
 <h1>Blog APEXLABS</h1>
 <p>${esc(description)}</p>
 <section>
-<h2>Categories</h2>
+<h2>Catégories</h2>
 <ul>${categoryLinks}</ul>
 </section>
 ${pillarLinks}
 <section>
-<h2>Guides a decouvrir</h2>
+<h2>Guides à découvrir</h2>
 <ul>${priorityLinks}</ul>
 </section>
 <section>
@@ -1116,10 +1109,10 @@ ${renderPillarLinksHtml(BLOG_PILLARS.filter((p) => p.slug !== pillar.slug))}
     res.send(injectedHtml);
   });
 
-  // Category pillar page ,  /blog/categorie/:slug
-  // Route unknown categories to the default SPA (client will 404 or fall back
+  // Category pillar page ,  /blog/catégorie/:slug
+  // Route unknown catégories to the default SPA (client will 404 or fall back
   // to the generic /blog page).
-  app.get("/blog/categorie/:slug", (req, res) => {
+  app.get("/blog/catégorie/:slug", (req, res) => {
     const slug = req.params.slug;
     const label = CATEGORY_LABELS[slug];
     const intro = CATEGORY_INTROS[slug];
@@ -1136,7 +1129,7 @@ ${renderPillarLinksHtml(BLOG_PILLARS.filter((p) => p.slug !== pillar.slug))}
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
 
-    const url = `${BASE_URL}/blog/categorie/${slug}`;
+    const url = `${BASE_URL}/blog/catégorie/${slug}`;
     const title = `${label} : articles APEXLABS by Achzod`;
     const description = (intro || `Tous les articles ${label.toLowerCase()} par ACHZOD.`).slice(0, 160);
 
@@ -1178,9 +1171,9 @@ ${renderPillarLinksHtml(BLOG_PILLARS.filter((p) => p.slug !== pillar.slug))}
 <h1>${esc(label)}</h1>
 <p>${esc(intro || "")}</p>
 <section>
-<h2>Pourquoi cette categorie compte</h2>
-<p>${esc(label)} regroupe les articles APEXLABS qui aident a relier les donnees, les habitudes et les decisions de terrain. L'objectif est de donner une lecture pratique, pas seulement theorique.</p>
-<p>Chaque contenu est pense pour mieux comprendre les blocages de progression, les erreurs frequentes, les signaux a surveiller et les leviers qui peuvent ensuite etre verifies dans un scan ou un accompagnement plus complet.</p>
+<h2>Pourquoi cette catégorie compte</h2>
+<p>${esc(label)} regroupe les articles APEXLABS qui aident a relier les données, les habitudes et les décisions de terrain. L'objectif est de donner une lecture pratique, pas seulement théorique.</p>
+<p>Chaque contenu est pensé pour mieux comprendre les blocages de progression, les erreurs fréquentes, les signaux à surveiller et les leviers qui peuvent ensuite être vérifiés dans un scan ou un accompagnement plus complet.</p>
 </section>
 ${renderPillarLinksHtml()}
 <section>
@@ -1277,20 +1270,20 @@ ${sorted
     "discovery-scan": {
       h1: "Discovery Scan gratuit",
       lead:
-        "Un diagnostic gratuit pour identifier les blocages prioritaires sur nutrition, entrainement, sommeil, stress, metabolisme et recuperation.",
+        "Un diagnostic gratuit pour identifier les blocages prioritaires sur nutrition, entraînement, sommeil, stress, métabolisme et récupération.",
       sections: [
         {
           title: "Ce que le scan analyse",
           body: [
-            "Le questionnaire couvre les habitudes alimentaires, la recuperation, la digestion, la motivation, le niveau d'activite, les signaux hormonaux et les points de friction qui limitent ta progression.",
-            "Il permet de repérer si le blocage vient plutot d'un probleme d'apport, de sommeil, de stress, de surcharge d'entrainement, de digestion, de manque de structure ou d'un manque de coherence entre l'objectif et les actions du quotidien.",
+            "Le questionnaire couvre les habitudes alimentaires, la récupération, la digestion, la motivation, le niveau d'activité, les signaux hormonaux et les points de friction qui limitent ta progression.",
+            "Il permet de repérer si le blocage vient plutôt d'un problème d'apport, de sommeil, de stress, de surcharge d'entraînement, de digestion, de manque de structure ou d'un manque de cohérence entre l'objectif et les actions du quotidien.",
           ],
         },
         {
           title: "Suite logique",
           body: [
-            "Le rapport Discovery sert de point de depart pour choisir entre Anabolic Bioscan, Ultimate Scan, Blood Analysis ou un coaching complet.",
-            "Le client obtient une lecture courte, concrete et priorisee. Si le scan montre un besoin plus profond, la suite peut passer par une analyse hormonale, un bilan sanguin, un Ultimate Scan ou une discussion coaching plus ciblee.",
+            "Le rapport Discovery sert de point de départ pour choisir entre Anabolic Bioscan, Ultimate Scan, Blood Analysis ou un coaching complet.",
+            "Le client obtient une lecture courte, concrete et priorisee. Si le scan montre un besoin plus profond, la suite peut passer par une analyse hormonale, un bilan sanguin, un Ultimate Scan ou une discussion coaching plus ciblée.",
           ],
           links: [
             { href: `${BASE_URL}/offers/anabolic-bioscan`, label: "Passer a Anabolic Bioscan" },
@@ -1300,8 +1293,8 @@ ${sorted
         {
           title: "Pourquoi commencer ici",
           body: [
-            "Le Discovery Scan evite de vendre un accompagnement trop tot. Il clarifie d'abord la situation, les attentes, les habitudes et les signaux faibles qui expliquent souvent pourquoi une personne ne progresse plus.",
-            "Cette premiere couche de diagnostic rend la relance plus utile: on ne parle pas seulement d'une offre, on revient sur un probleme concret identifie dans le questionnaire et sur la prochaine action la plus rationnelle.",
+            "Le Discovery Scan évite de vendre un accompagnement trop tôt. Il clarifie d'abord la situation, les attentes, les habitudes et les signaux faibles qui expliquent souvent pourquoi une personne ne progresse plus.",
+            "Cette première couché de diagnostic rend la relance plus utile: on ne parle pas seulement d'une offre, on revient sur un problème concret identifie dans le questionnaire et sur la prochaine action la plus rationnelle.",
           ],
         },
       ],
@@ -1309,28 +1302,28 @@ ${sorted
     "anabolic-bioscan": {
       h1: "Anabolic Bioscan",
       lead:
-        "Analyse approfondie du profil anabolique: hormones, recuperation, sommeil, digestion, stress, nutrition et strategie de progression.",
+        "Analyse approfondie du profil anabolique: hormones, récupération, sommeil, digestion, stress, nutrition et stratégie de progression.",
       sections: [
         {
           title: "Objectif",
           body: [
-            "Identifier pourquoi la prise de muscle, la perte de gras ou l'energie stagnent malgre l'entrainement, puis prioriser les leviers les plus rentables.",
-            "L'analyse cherche les incoherences entre volume d'entrainement, sommeil, recuperation, apports, gestion du stress, signes digestifs, libido, energie, faim, humeur et progression reelle sur les charges ou la composition corporelle.",
+            "Identifier pourquoi la prise de muscle, la perte de gras ou l'énergie stagnent malgré l'entraînement, puis prioriser les leviers les plus rentables.",
+            "L'analyse cherche les incohérences entre volume d'entraînement, sommeil, récupération, apports, gestion du stress, signes digestifs, libido, énergie, faim, humeur et progression réelle sur les charges ou la composition corporelle.",
           ],
         },
         {
           title: "Rapport livre",
           body: [
-            "Le client recoit une synthese, des scores, des explications et un plan d'action lisible pour corriger les blocages detectes.",
-            "Le rapport n'est pas une liste de conseils generiques: il explique ce qui semble prioritaire, ce qui doit etre surveille, ce qui peut attendre et ce qui merite un accompagnement plus pousse si l'objectif est ambitieux.",
+            "Le client reçoit une synthèse, des scores, des explications et un plan d'action lisible pour corriger les blocages détectés.",
+            "Le rapport n'est pas une liste de conseils génériques: il explique ce qui semble prioritaire, ce qui doit être surveillé, ce qui peut attendre et ce qui mérite un accompagnement plus pousse si l'objectif est ambitieux.",
           ],
         },
         {
           title: "Passage vers le coaching",
           body: [
-            "Anabolic Bioscan est construit pour transformer un doute flou en decision claire. Si le profil a besoin d'un suivi, la discussion coaching part deja d'un diagnostic exploitable.",
-            "Le montant de l'offre peut aussi servir de passerelle commerciale selon les conditions de deduction affichees, ce qui limite la friction entre audit, comprehension du probleme et passage a l'action.",
-            "Ce positionnement aide aussi a mieux segmenter les relances: un profil fatigue, un profil qui stagne en prise de muscle et un profil qui gere mal sa recuperation ne doivent pas recevoir le meme message.",
+            "Anabolic Bioscan est construit pour transformer un doute flou en décision claire. Si le profil a besoin d'un suivi, la discussion coaching part déjà d'un diagnostic exploitable.",
+            "Le montant de l'offre peut aussi servir de passerelle commerciale selon les conditions de déduction affichées, ce qui limite la friction entre audit, compréhension du problème et passage à l'action.",
+            "Ce positionnement aide aussi a mieux segmenter les relances: un profil fatigue, un profil qui stagne en prise de muscle et un profil qui gère mal sa récupération ne doivent pas recevoir le même message.",
           ],
         },
       ],
@@ -1338,28 +1331,28 @@ ${sorted
     "ultimate-scan": {
       h1: "Ultimate Scan",
       lead:
-        "Le diagnostic APEXLABS le plus complet pour croiser questionnaire, posture, habitudes, recuperation, metabolisme et priorites coaching.",
+        "Le diagnostic APEXLABS le plus complet pour croiser questionnaire, posture, habitudes, récupération, métabolisme et priorités coaching.",
       sections: [
         {
           title: "Pour qui",
           body: [
-            "Pour les profils qui veulent une vision globale avant de s'engager dans une transformation serieuse, avec priorisation claire des actions.",
-            "Ultimate Scan s'adresse aux personnes qui ont deja essaye plusieurs approches sans resultat stable, aux sportifs qui veulent comprendre leurs limites, et aux clients qui veulent entrer en coaching avec une base d'analyse plus complete.",
+            "Pour les profils qui veulent une vision globale avant de s'engager dans une transformation sérieuse, avec priorisation claire des actions.",
+            "Ultimate Scan s'adresse aux personnes qui ont déjà essayé plusieurs approches sans résultat stable, aux sportifs qui veulent comprendre leurs limites, et aux clients qui veulent entrer en coaching avec une base d'analyse plus complète.",
           ],
         },
         {
           title: "Positionnement",
           body: [
             "Ultimate Scan sert de passerelle vers un plan coaching structure, avec deduction possible du montant paye selon les conditions affichees.",
-            "Le scan croise les reponses, la logique d'entrainement, les habitudes de recuperation, les signaux metabolique et le contexte de vie pour determiner ce qui bloque le plus le rendement de l'effort.",
+            "Le scan croise les réponses, la logique d'entraînement, les habitudes de récupération, les signaux métaboliques et le contexte de vie pour déterminer ce qui bloque le plus le rendement de l'effort.",
           ],
           links: [{ href: `${BASE_URL}/deduction-coaching`, label: "Voir la deduction coaching" }],
         },
         {
           title: "Ce que le client gagne",
           body: [
-            "Le client obtient une lecture hierarchisee: les erreurs visibles, les facteurs invisibles, les risques de stagnation et les premieres decisions a prendre pour avancer plus vite sans se disperser.",
-            "Pour AchzodCoaching, ce scan cree un dossier d'entree plus serieux et facilite une relance commerciale precise, basee sur des problemes reels plutot que sur une promotion vague.",
+            "Le client obtient une lecture hiérarchisée: les erreurs visibles, les facteurs invisibles, les risques de stagnation et les premières décisions à prendre pour avancer plus vite sans se disperser.",
+            "Pour AchzodCoaching, ce scan crée un dossier d'entrée plus sérieux et facilite une relance commerciale précise, basée sur des problèmes réels plutôt que sur une promotion vague.",
             "La page doit donc porter une promesse claire: moins d'approximation, plus de contexte, et une transition naturelle entre curiosite, diagnostic puis accompagnement si les signaux le justifient.",
           ],
         },
@@ -1368,34 +1361,34 @@ ${sorted
     "blood-analysis": {
       h1: "Blood Analysis",
       lead:
-        "Deux analyses de bilan sanguin utilisables sans expiration: une baseline avant les recommandations, puis un controle idealement 2 a 3 mois apres.",
+        "Deux analyses de bilan sanguin utilisables sans expiration: une baseline avant les recommandations, puis un contrôle idéalement 2 à 3 mois après.",
       sections: [
         {
-          title: "Deux credits inclus",
+          title: "Deux crédits inclus",
           body: [
-            "Le paiement unique de 99 EUR ajoute deux credits Blood Analysis au compte client. Chaque upload de bilan valide consomme un credit; les credits n'expirent pas.",
-            "Le parcours recommande consiste a analyser un bilan initial avant la mise en place des recommandations, puis un second bilan 2 a 3 mois apres pour mesurer l'evolution. Les credits restent utilisables librement.",
+            "Le paiement unique de 99 EUR ajoute deux crédits Blood Analysis au compte client. Chaque upload de bilan validé consomme un crédit; les crédits n'expirent pas.",
+            "Le parcours recommandé consiste à analyser un bilan initial avant la mise en place des recommandations, puis un second bilan 2 à 3 mois après pour mesurer l'évolution. Les crédits restent utilisables librement.",
           ],
         },
         {
           title: "Biomarqueurs",
           body: [
-            "La lecture porte sur hormones, metabolisme glucidique, lipides, inflammation, foie, reins, vitamines, mineraux et marqueurs de recuperation selon les donnees disponibles.",
-            "L'objectif est de sortir d'une interpretation binaire normal/anormal et de regarder les tendances utiles pour l'energie, la performance, la composition corporelle, la recuperation et la prevention des erreurs de protocole.",
+            "La lecture porte sur hormones, métabolisme glucidique, lipides, inflammation, foie, reins, vitamines, minéraux et marqueurs de récupération selon les données disponibles.",
+            "L'objectif est de sortir d'une interprétation binaire normal/anormal et de regarder les tendances utiles pour l'énergie, la performance, la composition corporelle, la récupération et la prévention des erreurs de protocole.",
           ],
         },
         {
           title: "Sortie client",
           body: [
-            "Le rapport transforme un PDF de laboratoire en lecture claire, avec priorites, explications et actions a discuter avec un professionnel de sante si necessaire.",
-            "Chaque analyse rappelle ses limites: elle n'est pas un diagnostic medical et ne remplace pas un medecin. Elle sert a mieux comprendre les signaux, preparer les questions et aligner hygiene de vie, entrainement et suivi.",
+            "Le rapport transforme un PDF de laboratoire en lecture claire, avec priorités, explications et actions à discuter avec un professionnel de santé si nécessaire.",
+            "Chaque analyse rappelle ses limites: elle n'est pas un diagnostic médical et ne remplace pas un médecin. Elle sert à mieux comprendre les signaux, préparer les questions et aligner hygiène de vie, entraînement et suivi.",
           ],
         },
         {
-          title: "Utilite commerciale",
+          title: "Utilité commerciale",
           body: [
-            "Blood Analysis est un point d'entree fort pour les profils qui veulent des donnees objectives avant d'investir dans un coaching. Le rapport peut montrer pourquoi un suivi structure est plus rentable qu'une accumulation de tests ou de supplements.",
-            "La page SEO doit donc presenter clairement la valeur: transformer des resultats de laboratoire en priorites pratiques, avec prudence, contexte et orientation vers les bons prochains choix.",
+            "Blood Analysis est un point d'entrée fort pour les profils qui veulent des données objectives avant d'investir dans un coaching. Le rapport peut montrer pourquoi un suivi structuré est plus rentable qu'une accumulation de tests ou de supplements.",
+            "La page SEO doit donc présenter clairement la valeur: transformer des résultats de laboratoire en priorités pratiques, avec prudence, contexte et orientation vers les bons prochains choix.",
           ],
         },
       ],
@@ -1403,27 +1396,27 @@ ${sorted
     formcheck: {
       h1: "FormCheck",
       lead:
-        "Analyse video de mouvements pour identifier les erreurs techniques, les compensations et les ajustements prioritaires en musculation.",
+        "Analyse vidéo de mouvements pour identifier les erreurs techniques, les compensations et les ajustements prioritaires en musculation.",
       sections: [
         {
           title: "Mouvements",
           body: [
-            "Squat, developpe couche, souleve de terre et mouvements structurants peuvent etre analyses pour ameliorer securite, tension mecanique et progression.",
-            "Le regard porte sur la trajectoire, les amplitudes, la stabilite, les compensations, la respiration, le placement articulaire et les elements qui peuvent limiter la charge ou creer une douleur recurrente.",
+            "Squat, développé couché, soulevé de terre et mouvements structurants peuvent être analysés pour améliorer sécurité, tension mécanique et progression.",
+            "Le regard porte sur la trajectoire, les amplitudes, la stabilité, les compensations, la respiration, le placement articulaire et les éléments qui peuvent limiter la charge ou créer une douleur recurrente.",
           ],
         },
         {
           title: "Resultat",
           body: [
-            "Le client recoit des corrections concretes et une explication biomecanique utilisable des la prochaine seance.",
-            "L'objectif n'est pas de juger une video, mais de donner un ordre de priorite: ce qu'il faut corriger tout de suite, ce qui peut etre travaille progressivement, et ce qui doit etre surveille si une douleur persiste.",
+            "Le client reçoit des corrections concrètes et une explication biomécanique utilisable dès la prochaine séance.",
+            "L'objectif n'est pas de juger une vidéo, mais de donner un ordre de priorité: ce qu'il faut corriger tout de suite, ce qui peut être travaillé progressivement, et ce qui doit être surveillé si une douleur persiste.",
           ],
         },
         {
           title: "Lien avec la performance",
           body: [
-            "Une technique plus propre peut ameliorer la tolerance au volume, la qualite du stimulus et la confiance sous charge. FormCheck devient donc une offre utile pour les clients qui veulent progresser sans attendre une blessure.",
-            "La page relie cette valeur au coaching: quand plusieurs erreurs structurelles se repetent, un suivi de programmation, de technique et de recuperation peut devenir plus pertinent qu'une correction isolee.",
+            "Une technique plus propre peut améliorer la tolérance au volume, la qualité du stimulus et la confiance sous charge. FormCheck devient donc une offre utile pour les clients qui veulent progresser sans attendre une blessure.",
+            "La page relie cette valeur au coaching: quand plusieurs erreurs structurelles se répètent, un suivi de programmation, de technique et de récupération peut devenir plus pertinent qu'une correction isolée.",
             "Elle peut aussi servir de relance intelligente pour les personnes qui consomment du contenu training mais n'ont pas encore ose demander un avis personnalise sur leurs mouvements.",
           ],
         },
@@ -1432,26 +1425,26 @@ ${sorted
     "peptides-engine": {
       h1: "Peptides Engine",
       lead:
-        "Protocole educatif personnalise sur les peptides: selection, logique de stack, timing, precautions, monitoring et coherence avec l'objectif.",
+        "Protocole éducatif sur les peptides: sélection, logique de stack, timing, précautions, monitoring et cohérence avec l'objectif.",
       sections: [
         {
           title: "Approche",
           body: [
-            "Le moteur part du profil, de l'historique, du niveau de tolerance au risque, des objectifs et du budget pour produire une lecture structuree et prudente.",
-            "La page explique la logique de selection, les incompatibilites possibles, les questions de timing, les limites d'un stack et la necessite de ne jamais confondre contenu educatif et prescription medicale.",
+            "Le moteur part du profil, de l'historique, du niveau de tolérance au risque, des objectifs et du budget pour produire une lecture structurée et prudente.",
+            "La page explique la logique de sélection, les incompatibilités possibles, les questions de timing, les limites d'un stack et la nécessité de ne jamais confondre contenu éducatif et prescription médicale.",
           ],
         },
         {
           title: "Important",
           body: [
-            "Les informations fournies sont educatives et ne remplacent pas un avis medical. Le monitoring biologique et la prudence priment sur toute optimisation.",
-            "Peptides Engine doit aussi preparer une discussion responsable: objectifs realistes, hygiene de vie, suivi des effets, signaux d'arret, lecture des risques et coherence avec les autres leviers deja en place.",
+            "Les informations fournies sont éducatives et ne remplacent pas un avis médical. Le monitoring biologique et la prudence priment sur toute optimisation.",
+            "Peptides Engine doit aussi préparer une discussion responsable: objectifs réalistes, hygiène de vie, suivi des effets, signaux d'arrêt, lecture des risques et cohérence avec les autres leviers déjà en place.",
           ],
         },
         {
           title: "Pourquoi une page dediee",
           body: [
-            "Les peptides generent beaucoup de recherches et beaucoup de contenus approximatifs. La landing doit donc clarifier la promesse, poser les limites, rassurer sur le cadre et diriger vers un rapport structure plutot qu'un conseil improvise.",
+            "Les peptides génèrent beaucoup de recherches et beaucoup de contenus approximatifs. La landing doit donc clarifier la promesse, poser les limites, rassurer sur le cadre et diriger vers un rapport structure plutôt qu'un conseil improvise.",
             "Cote conversion, la valeur repose sur la personnalisation et la prudence: comprendre le contexte du client avant toute recommandation, puis relier le rapport a un accompagnement plus global si le profil le justifie.",
           ],
         },
@@ -1573,17 +1566,17 @@ ${sorted
       {
         question: "Quel scan choisir pour commencer ?",
         answer:
-          "Discovery Scan est le point d'entree gratuit. Anabolic Bioscan va plus loin sur hormones, recuperation et progression. Ultimate Scan est le diagnostic le plus complet. Blood Analysis est adapte quand tu as deja un bilan sanguin a interpreter.",
+          "Discovery Scan est le point d'entrée gratuit. Anabolic Bioscan va plus loin sur hormones, récupération et progression. Ultimate Scan est le diagnostic le plus complet. Blood Analysis est adapte quand tu as déjà un bilan sanguin a interpréter.",
       },
       {
-        question: "Est-ce que les rapports remplacent un medecin ?",
+        question: "Est-ce que les rapports remplacent un médecin ?",
         answer:
-          "Non. Les rapports APEXLABS sont educatifs et orientes performance. Ils aident a comprendre les donnees, a prioriser les actions et a preparer les bonnes questions, mais ils ne remplacent pas un diagnostic medical ni une prescription.",
+          "Non. Les rapports APEXLABS sont éducatifs et orientés performance. Ils aident à comprendre les données, à prioriser les actions et à préparer les bonnes questions, mais ils ne remplacent pas un diagnostic médical ni une prescription.",
       },
       {
         question: "Combien de temps prend la livraison ?",
         answer:
-          "La livraison depend de l'offre, des donnees fournies et du niveau d'analyse. Les parcours automatiques generent puis planifient la livraison, tandis que les analyses plus sensibles peuvent demander une verification avant envoi.",
+          "La livraison dépend de l'offre, des données fournies et du niveau d'analyse. Les parcours automatiques génèrent puis planifient la livraison, tandis que les analyses plus sensibles peuvent demander une vérification avant envoi.",
       },
       {
         question: "C'est un paiement unique ou un abonnement ?",
@@ -1593,12 +1586,12 @@ ${sorted
       {
         question: "Pourquoi APEXLABS demande autant de contexte ?",
         answer:
-          "Un conseil utile depend du profil: objectif, historique, sommeil, nutrition, entrainement, stress, bilan sanguin, douleurs, contraintes et niveau de risque acceptable. Sans contexte, la recommandation devient trop generique.",
+          "Un conseil utile dépend du profil: objectif, historique, sommeil, nutrition, entraînement, stress, bilan sanguin, douleurs, contraintes et niveau de risque acceptable. Sans contexte, la recommandation devient trop générique.",
       },
       {
         question: "Quel est le lien avec le coaching AchzodCoaching ?",
         answer:
-          "Les scans servent a identifier les blocages et a qualifier la suite. Quand un coaching est pertinent, le rapport permet de discuter d'un plan plus precis et peut faciliter la deduction du montant paye selon les conditions affichees.",
+          "Les scans servent à identifier les blocages et à qualifier la suite. Quand un coaching est pertinent, le rapport permet de discuter d'un plan plus précis et peut faciliter la déduction du montant paye selon les conditions affichees.",
       },
     ];
     const faqSchema = {
@@ -1616,7 +1609,7 @@ ${sorted
     const body = renderNoscriptPage({
       h1: "Questions fréquentes APEXLABS",
       lead:
-        "Cette FAQ explique les offres, les delais, les limites medicales, la logique de diagnostic et le passage possible vers le coaching AchzodCoaching.",
+        "Cette FAQ explique les offres, les délais, les limites médicales, la logique de diagnostic et le passage possible vers le coaching AchzodCoaching.",
       sections: faqs.map((faq) => ({ title: faq.question, body: faq.answer })),
       links: [
         { href: `${BASE_URL}/offers/discovery-scan`, label: "Discovery Scan gratuit" },
@@ -1728,9 +1721,9 @@ ${sorted
     robots: "noindex, follow",
     cacheControl: INTERACTIVE_FLOW_CACHE_CONTROL,
     body: {
-      h1: "Questionnaire d'audit sante",
+      h1: "Questionnaire d'audit santé",
       lead:
-        "Cette page est un flow interactif de questionnaire. Elle reste accessible aux utilisateurs mais n'a pas vocation a etre indexee comme contenu SEO.",
+        "Cette page est un flow interactif de questionnaire. Elle reste accessible aux utilisateurs mais n'a pas vocation à être indexée comme contenu SEO.",
     },
   });
 
@@ -1741,28 +1734,28 @@ ${sorted
     body: {
       h1: "Presse et médias",
       lead:
-        "References, prises de parole et ressources media autour d'APEXLABS, d'Achzod et de l'optimisation humaine par la bio-data.",
+        "Références, prises de parole et ressources média autour d'APEXLABS, d'Achzod et de l'optimisation humaine par la bio-data.",
       sections: [
         {
           title: "Positionnement",
           body: [
             "APEXLABS documente une approche pratique de la transformation physique: questionnaires, marqueurs biologiques, coaching et suivi objectif.",
-            "Le projet relie contenu educatif, diagnostic personnalise et accompagnement. Les sujets couverts vont de la composition corporelle aux biomarqueurs, en passant par la recuperation, la nutrition, le sommeil et la performance.",
+            "Le projet relie contenu éducatif, diagnostic et accompagnement. Les sujets couverts vont de la composition corporelle aux biomarqueurs, en passant par la récupération, la nutrition, le sommeil et la performance.",
           ],
         },
         {
           title: "Angles media",
           body: [
-            "Les prises de parole possibles incluent l'usage responsable des donnees de sante, les limites du biohacking, l'importance du contexte individuel et la facon de convertir une analyse en changement durable.",
+            "Les prises de parole possibles incluent l'usage responsable des données de santé, les limites du biohacking, l'importance du contexte individuel et la façon de convertir une analyse en changement durable.",
             "APEXLABS peut aussi servir de cas pratique sur l'automatisation de rapports, la pedagogie scientifique et la transition entre contenu gratuit, audit payant et coaching premium.",
           ],
         },
         {
           title: "Ressources utiles",
           body: [
-            "Pour comprendre le positionnement, les pages d'offres presentent les diagnostics disponibles et le blog fournit des articles longs sur les themes que l'audience recherche deja.",
-            "Les demandes media peuvent ainsi s'appuyer sur des exemples concrets: Discovery Scan, Ultimate Scan, Blood Analysis, Peptides Engine et les contenus APEXLABS publies sur le blog.",
-            "Cette page garde un role simple: rassembler les signaux de credibilite, orienter vers les ressources publiques et eviter qu'une URL presse trop courte soit interpretee comme une page faible.",
+            "Pour comprendre le positionnement, les pages d'offres présentent les diagnostics disponibles et le blog fournit des articles longs sur les thèmes que l'audience recherche déjà.",
+            "Les demandes media peuvent ainsi s'appuyer sur des exemples concrets: Discovery Scan, Ultimate Scan, Blood Analysis, Peptides Engine et les contenus APEXLABS publiés sur le blog.",
+            "Cette page garde un rôle simple: rassembler les signaux de crédibilité, orienter vers les ressources publiques et éviter qu'une URL presse trop courte soit interprétée comme une page faible.",
           ],
           links: [
             { href: `${BASE_URL}/offers/discovery-scan`, label: "Discovery Scan" },
@@ -1780,13 +1773,13 @@ ${sorted
     body: {
       h1: "Déduction coaching",
       lead:
-        "Certains scans APEXLABS peuvent etre deduits d'un accompagnement coaching Achzod lorsque les conditions d'eligibilite sont respectees.",
+        "Certains scans APEXLABS peuvent être déduits d'un accompagnement coaching Achzod lorsque les conditions d'éligibilité sont respectées.",
       sections: [
         {
           title: "Principe",
           body: [
-            "Le scan sert d'audit initial. Si tu poursuis avec un coaching adapte, le montant eligible peut etre transforme en deduction pour faciliter le passage a l'action.",
-            "Cette logique reduit la friction commerciale: le client ne paie pas seulement un rapport, il construit une base de travail qui peut ensuite alimenter un accompagnement plus complet et plus precis.",
+            "Le scan sert d'audit initial. Si tu poursuis avec un coaching adapté, le montant éligible peut être transformé en déduction pour faciliter le passage à l'action.",
+            "Cette logique réduit la friction commerciale: le client ne paie pas seulement un rapport, il construit une base de travail qui peut ensuite alimenter un accompagnement plus complet et plus précis.",
           ],
           links: [
             { href: `${BASE_URL}/offers/discovery-scan`, label: "Commencer par Discovery Scan" },
@@ -1796,15 +1789,15 @@ ${sorted
         {
           title: "Pourquoi c'est utile",
           body: [
-            "Un coaching fonctionne mieux quand le probleme est deja formule. Le scan met en evidence les priorites, les habitudes a corriger, les signaux a suivre et le niveau d'engagement du client.",
-            "La deduction encourage donc une progression logique: diagnostic, comprehension, decision, puis suivi. Elle evite de repartir de zero au moment de construire le plan coaching.",
+            "Un coaching fonctionne mieux quand le problème est déjà formulé. Le scan met en évidence les priorités, les habitudes à corriger, les signaux à suivre et le niveau d'engagement du client.",
+            "La déduction encourage donc une progression logique: diagnostic, compréhension, décision, puis suivi. Elle évite de repartir de zéro au moment de construire le plan coaching.",
           ],
         },
         {
           title: "Offres concernees",
           body: [
-            "Les conditions exactes peuvent varier selon l'offre, le delai, le type d'accompagnement et la situation du client. La page sert a clarifier le principe general avant de discuter du cas individuel.",
-            "Les scans les plus utiles comme passerelle sont Anabolic Bioscan, Ultimate Scan et Blood Analysis, car ils donnent suffisamment de contexte pour evaluer la pertinence d'un suivi.",
+            "Les conditions exactes peuvent varier selon l'offre, le délai, le type d'accompagnement et la situation du client. La page sert à clarifier le principe général avant de discuter du cas individuel.",
+            "Les scans les plus utiles comme passerelle sont Anabolic Bioscan, Ultimate Scan et Blood Analysis, car ils donnent suffisamment de contexte pour évaluer la pertinence d'un suivi.",
           ],
         },
       ],
@@ -1819,13 +1812,13 @@ ${sorted
     body: {
       h1: "Blood Analysis APEXLABS",
       lead:
-        "Deux credits sans expiration pour analyser un bilan initial, puis mesurer l'evolution 2 a 3 mois apres les recommandations.",
+        "Deux crédits sans expiration pour analyser un bilan initial, puis mesurer l'évolution 2 à 3 mois après les recommandations.",
       sections: [
         {
           title: "Objectif",
           body: [
-            "Rendre un PDF de laboratoire exploitable: comprendre les marqueurs, reperer les priorites et preparer une discussion plus claire avec un professionnel de sante si necessaire.",
-            "Cette route est un parcours fonctionnel d'upload. La page publique indexable reste l'offre Blood Analysis, afin d'eviter les doublons et de concentrer les signaux SEO sur la bonne URL.",
+            "Rendre un PDF de laboratoire exploitable: comprendre les marqueurs, repérer les priorités et préparer une discussion plus claire avec un professionnel de santé si nécessaire.",
+            "Cette route est un parcours fonctionnel d'upload. La page publique indexable reste l'offre Blood Analysis, afin d'éviter les doublons et de concentrer les signaux SEO sur la bonne URL.",
           ],
           links: [{ href: `${BASE_URL}/offers/blood-analysis`, label: "Voir l'offre Blood Analysis" }],
         },
@@ -1841,7 +1834,7 @@ ${sorted
     body: {
       h1: "Mentions légales",
       lead:
-        "Informations legales relatives a l'editeur, l'hebergeur, la responsabilite de publication et l'utilisation du site APEXLABS.",
+        "Informations légales relatives à l'éditeur, l'hébergeur, la responsabilité de publication et l'utilisation du site APEXLABS.",
     },
   });
 
@@ -1861,7 +1854,7 @@ ${sorted
     canonical: `${BASE_URL}/cgv`,
     robots: "noindex, follow",
     body: {
-      h1: "Conditions generales de vente",
+      h1: "Conditions générales de vente",
       lead:
         "Modalites d'achat, livraison numerique, support, droit de retractation et conditions applicables aux produits APEXLABS.",
     },
@@ -1875,7 +1868,7 @@ ${sorted
     body: {
       h1: "Politique de confidentialité",
       lead:
-        "Informations sur les donnees collectees, les finalites, la securite, les cookies, les droits RGPD et les moyens de contact.",
+        "Informations sur les données collectées, les finalités, la sécurité, les cookies, les droits RGPD et les moyens de contact.",
     },
   });
 
@@ -1887,7 +1880,7 @@ ${sorted
     body: {
       h1: "L'offre coaching que je n'ai encore jamais proposée",
       lead:
-        "Une offre accessible a tous sur les suivis Essential, Elite et Private Lab, valable jusqu'au 20 octobre 2026 a 23 h 59, heure de Paris.",
+        "Une offre accessible à tous sur les suivis Essential, Elite et Private Lab, valable jusqu'au 20 octobre 2026 à 23 h 59, heure de Paris.",
     },
   });
 
@@ -1903,7 +1896,7 @@ ${sorted
       const canonical = `${BASE_URL}${pathname}`;
       const html = injectMeta(indexHtml, {
         title: "Page non indexable | APEXLABS",
-        desc: "Page fonctionnelle APEXLABS reservee aux utilisateurs, aux rapports, a l'administration ou aux parcours de conversion.",
+        desc: "Page fonctionnelle APEXLABS réservée aux utilisateurs, aux rapports, à l'administration ou aux parcours de conversion.",
         canonical,
         robots: "noindex, follow",
       });

@@ -80,6 +80,25 @@ async function buildAll() {
     isCanonicalBlogArticleSlug(article.slug),
   );
   await writeFile(resolve("client", "public", "blog-articles.json"), JSON.stringify(articles));
+  // Light index for listing pages + one body file per article (the full dump
+  // above stays for the server and as a client fallback). See client/src/lib/blogData.ts.
+  {
+    const { mkdir } = await import("fs/promises");
+    const index = articles.map(({ content: _content, ...meta }: any) => meta);
+    await writeFile(resolve("client", "public", "blog-index.json"), JSON.stringify(index));
+    const contentDir = resolve("client", "public", "blog-content");
+    await rm(contentDir, { recursive: true, force: true });
+    await mkdir(contentDir, { recursive: true });
+    await Promise.all(
+      articles.map((article: any) =>
+        writeFile(
+          resolve(contentDir, `${article.slug}.json`),
+          JSON.stringify({ slug: article.slug, content: article.content }),
+        ),
+      ),
+    );
+    console.log(`blog-index.json + blog-content/: ${articles.length} articles split`);
+  }
   console.log(
     `blog-articles.json: ${articles.length} canonical articles (${allArticles.length - articles.length} redirected aliases excluded)`,
   );

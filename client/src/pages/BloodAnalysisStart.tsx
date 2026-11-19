@@ -95,7 +95,7 @@ export default function BloodAnalysisStart() {
         localStorage.setItem("neurocore_email", email);
         navigate("/auth/login?next=/blood-dashboard&paid=true");
       } else {
-        setConfirmError(data.error || "Erreur de creation du paiement.");
+        setConfirmError(data.error || "Erreur de création du paiement.");
       }
     } catch {
       setConfirmError("Erreur serveur. Reessaie dans quelques instants.");
@@ -125,16 +125,16 @@ export default function BloodAnalysisStart() {
         <div className="text-center mb-8">
           <p className="text-xs uppercase tracking-[0.3em] mb-3" style={{ color: PRIMARY_BLUE }}>Blood Analysis</p>
           <h1 className="text-3xl font-bold mb-3">Obtiens tes 2 analyses sanguines</h1>
-          <p className="text-white/50 text-sm">2 credits sans expiration · 39 biomarqueurs · 6 panels</p>
+          <p className="text-white/50 text-sm">2 crédits sans expiration · 39 biomarqueurs · 6 panels</p>
         </div>
 
         <Card className="border border-white/10 bg-[#0a0a0a] p-8 space-y-6">
           {/* Price */}
           <div className="text-center">
             <p className="text-4xl font-bold text-white">99€</p>
-            <p className="text-white/70 text-sm font-semibold mt-2">Paiement unique ,  2 credits, soit 2 analyses completes</p>
+            <p className="text-white/70 text-sm font-semibold mt-2">Paiement unique, 2 crédits, soit 2 analyses complètes</p>
             <p className="text-white/40 text-xs mt-2">
-              Utilisables quand tu veux : idealement avant les recommandations, puis 2 a 3 mois apres.
+              Utilisables quand tu veux : idéalement avant les recommandations, puis 2 à 3 mois après.
             </p>
           </div>
 
@@ -144,8 +144,8 @@ export default function BloodAnalysisStart() {
           {/* Features */}
           <div className="space-y-2.5">
             {[
-              "2 credits Blood Analysis sans expiration",
-              "Comparaison avant / apres recommandations",
+              "2 crédits Blood Analysis sans expiration",
+              "Comparaison avant / après recommandations",
               "39 biomarqueurs analyses sur 6 panels",
               "Ranges optimaux vs normaux",
               "Plan d'action personnalise et priorise",
@@ -167,6 +167,7 @@ export default function BloodAnalysisStart() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ton@email.com"
+              aria-label="Ton adresse email"
               className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
@@ -179,6 +180,7 @@ export default function BloodAnalysisStart() {
               value={promoCode}
               onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
               placeholder="Ex: PEPBLOOD-XXXXXX"
+              aria-label="Code d'accès Blood Analysis"
               className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-blue-500 transition-colors font-mono"
             />
           </div>

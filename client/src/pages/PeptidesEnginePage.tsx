@@ -150,6 +150,7 @@ function QuestionField({
       return (
         <Input
           type="text"
+          aria-label={question.label}
           placeholder={question.placeholder}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
@@ -161,6 +162,7 @@ function QuestionField({
       return (
         <Input
           type="email"
+          aria-label={question.label}
           placeholder={question.placeholder}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
@@ -172,6 +174,7 @@ function QuestionField({
       return (
         <Input
           type="number"
+          aria-label={question.label}
           placeholder={question.placeholder}
           min={question.min}
           max={question.max}
@@ -184,6 +187,7 @@ function QuestionField({
     case "textarea":
       return (
         <Textarea
+          aria-label={question.label}
           placeholder={question.placeholder}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
@@ -194,8 +198,8 @@ function QuestionField({
     case "select": {
       return (
         <Select value={(value as string) || ""} onValueChange={onChange}>
-          <SelectTrigger className="bg-white/5 border-white/10 text-white max-w-md focus:border-amber-500 data-[placeholder]:text-white/30">
-            <SelectValue placeholder="Selectionner..." />
+          <SelectTrigger aria-label={question.label} className="bg-white/5 border-white/10 text-white max-w-md focus:border-amber-500 data-[placeholder]:text-white/30">
+            <SelectValue placeholder="Sélectionner..." />
           </SelectTrigger>
           <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
             {question.options?.map((opt) => (

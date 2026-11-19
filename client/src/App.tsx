@@ -91,14 +91,14 @@ const DiscoveryScanAds = lazy(() => import("@/pages/DiscoveryScanAds"));
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "APEXLABS by Achzod | Optimisation Humaine & Bio-Data",
-  "/offers/discovery-scan": "Discovery Scan Gratuit | APEXLABS",
+  "/offers/discovery-scan": "Discovery Scan Gratuit - Diagnostic Santé Complet | APEXLABS",
   "/ads/discovery-scan": "Discovery Scan - Questionnaire Gratuit | APEXLABS",
-  "/offers/anabolic-bioscan": "Anabolic Bioscan — Audit complet | APEXLABS",
-  "/offers/blood-analysis": "Blood Analysis — Analyse sanguine | APEXLABS",
-  "/offers/ultimate-scan": "Ultimate Scan — Le plus complet | APEXLABS",
-  "/offers/formcheck": "FormCheck — Analyse vidéo | APEXLABS",
+  "/offers/anabolic-bioscan": "Anabolic Bioscan - Profil Hormonal Complet | APEXLABS",
+  "/offers/blood-analysis": "Blood Analysis - Bilan Sanguin Optimisé | APEXLABS",
+  "/offers/ultimate-scan": "Ultimate Scan - L'Analyse La Plus Complète | APEXLABS",
+  "/offers/formcheck": "FormCheck - Analyse Vidéo de Tes Mouvements | APEXLABS",
   "/formcheck/upload": "Envoyer ma vidéo FormCheck | APEXLABS",
-  "/offers/peptides-engine": "Peptides Engine — Protocole personnalisé | APEXLABS",
+  "/offers/peptides-engine": "Peptides Engine - Protocole Peptides Personnalisé | APEXLABS",
   "/peptides-engine": "Questionnaire Peptides | APEXLABS",
   "/peptides-preview": "Aperçu Peptides Personnalisé | APEXLABS",
   "/questionnaire": "Questionnaire | APEXLABS",
@@ -124,6 +124,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/blog/pilier/peptides-peds": "Peptides & PEDs | Guides APEXLABS",
 };
 
+// Titles mirror the server-rendered <title> (server/static.ts) so the tab
+// title does not change after hydration.
 // Scroll to top + dynamic title + canonical URL + analytics on route change
 function ScrollToTop() {
   const [location] = useLocation();

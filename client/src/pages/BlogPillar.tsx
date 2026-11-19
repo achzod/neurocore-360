@@ -1,5 +1,6 @@
 import { compareRecent } from "@/lib/blogSort";
 import { useEffect, useMemo, useState } from "react";
+import { loadBlogIndex } from "@/lib/blogData";
 import { Link, useParams } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -72,8 +73,7 @@ export default function BlogPillar() {
 
   useEffect(() => {
     let active = true;
-    fetch("/blog-articles.json")
-      .then((res) => res.json())
+    loadBlogIndex()
       .then((data: BlogArticle[]) => {
         if (active) setArticles(data);
       })

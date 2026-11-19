@@ -6,6 +6,7 @@ import compression from "compression";
 import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
+import { applySecurityHeaders } from "./securityHeaders";
 import { createServer } from "http";
 import { resumePendingJobs } from "./reportJobManager";
 import { storage } from "./storage";
@@ -46,7 +47,13 @@ app.use(helmet({
   // fetched cross-origin from Gmail/SendPulse/etc.  Default "same-origin" was
   // breaking image rendering in email previews.
   crossOriginResourcePolicy: { policy: "cross-origin" },
+  // "no-referrer" (helmet default) strips the origin from every outbound
+  // request, which hides APEXLABS as a referrer (Stripe, partners) without a
+  // real privacy gain: the path and query are already dropped cross-origin.
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
 }));
+// CSP (Report-Only) + Permissions-Policy, see server/securityHeaders.ts.
+applySecurityHeaders(app);
 
 // Gzip compression for all responses
 app.use(compression());

@@ -87,7 +87,7 @@ export default function DiscoveryScanAds() {
                   <span className="text-xl font-black tracking-tighter text-white">
                     APEX<span className="text-[#FCDD00]">LABS</span>
                   </span>
-                  <span className="font-mono text-[10px] text-[#525252] tracking-widest uppercase">by Achzod</span>
+                  <span className="font-mono text-[10px] text-[#8a8a8a] tracking-widest uppercase">by Achzod</span>
                 </div>
               </a>
             </Link>
@@ -400,7 +400,7 @@ export default function DiscoveryScanAds() {
             <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
               <div className="mb-6">
                 <span className="bg-white/10 border border-white/30 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                  PRECISION
+                  PRÉCISION
                 </span>
               </div>
               <h3 className="text-3xl font-black text-white mb-2">Analyse Données</h3>

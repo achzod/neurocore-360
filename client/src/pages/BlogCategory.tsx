@@ -1,5 +1,6 @@
 import { compareRecent } from "@/lib/blogSort";
 import { useEffect, useMemo, useState } from "react";
+import { loadBlogIndex } from "@/lib/blogData";
 import { Link, useParams } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -50,10 +51,8 @@ export default function BlogCategory() {
   useEffect(() => {
     let active = true;
     setIsLoading(true);
-    fetch("/blog-articles.json")
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Impossible de charger les articles.");
-        const data = (await res.json()) as BlogArticle[];
+    loadBlogIndex()
+      .then((data) => {
         if (active) {
           setArticles(data);
           setLoadError(null);
@@ -83,7 +82,7 @@ export default function BlogCategory() {
 
   useEffect(() => {
     if (!categoryMeta) return;
-    const titleText = `${categoryMeta.label} , articles APEXLABS by Achzod`;
+    const titleText = `${categoryMeta.label}, articles APEXLABS by Achzod`;
     const desc = CATEGORY_INTROS[slug] || `Tous les articles ${categoryMeta.label.toLowerCase()} par ACHZOD.`;
     document.title = titleText;
     const metaDesc = document.querySelector('meta[name="description"]');

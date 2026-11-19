@@ -239,9 +239,9 @@ function IntegrationVisual() {
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          INTEGRATION
+          INTÉGRATION
         </motion.div>
-        <div className="text-white/40">3 sources de donnees</div>
+        <div className="text-white/40">3 sources de données</div>
       </div>
     </div>
   );
@@ -261,12 +261,12 @@ export default function ProPanel() {
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   const sections = [
-    "Executive Summary", "Analyse Energie & Recuperation", "Analyse Metabolisme & Nutrition",
-    "Analyse Hormonale", "Analyse Sommeil & Rythme Circadien", "Analyse Stress & Systeme Nerveux",
+    "Executive Summary", "Analyse Énergie & Récupération", "Analyse Métabolisme & Nutrition",
+    "Analyse Hormonale", "Analyse Sommeil & Rythme Circadien", "Analyse Stress & Système Nerveux",
     "Protocole Matin Anti-Cortisol", "Protocole Soir Sommeil", "Protocole Digestion 14 Jours",
-    "Analyse Nutrition Detaillee", "Analyse Axes Cliniques", "Analyse Composition Corporelle",
+    "Analyse Nutrition Détaillée", "Analyse Axes Cliniques", "Analyse Composition Corporelle",
     "Plan 30-60-90 Jours", "KPI & Suivi", "Stack Supplements",
-    "Analyse Visuelle & Posturale", "Analyse Biomecanique", "Synthese & Prochaines Etapes"
+    "Analyse Visuelle & Posturale", "Analyse Biomecanique", "Synthèse & Prochaines Étapes"
   ];
 
   return (
@@ -298,7 +298,7 @@ export default function ProPanel() {
             transition={{ duration: 0.6 }}
             className="inline-flex items-center gap-2 bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded-sm px-4 py-2 mb-8"
           >
-            <span className="text-[#FCDD00] text-xs font-mono uppercase tracking-widest">[ MOST COMPLETE ]</span>
+            <span className="text-[#FCDD00] text-xs font-mono uppercase tracking-widest">[ MOST COMPLÈTE ]</span>
           </motion.div>
 
           <motion.h1
@@ -319,7 +319,7 @@ export default function ProPanel() {
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
             ~183 questions sur 18 sections + analyse photo posturale.
-            Nutrition timing, cardio & performance (Zone 2, HRV), blessures & mobilite, psychologie.
+            Nutrition timing, cardio & performance (Zone 2, HRV), blessures & mobilité, psychologie.
           </motion.p>
 
           <motion.div
@@ -376,13 +376,13 @@ export default function ProPanel() {
                 Double Source
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
-                2 sources de donnees.
+                2 sources de données.
                 <br />
-                <span className="text-white/50">Precision maximale.</span>
+                <span className="text-white/50">Précision maximale.</span>
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Je croise les donnees de ton questionnaire et tes photos
-                pour generer le rapport le plus complet et precis possible.
+                Je croise les données de ton questionnaire et tes photos
+                pour generer le rapport le plus complet et précis possible.
               </p>
               <ul className="space-y-4">
                 {["183 questions sur 18 sections", "Analyse photo posturale et biomecanique"].map((item, i) => (
@@ -442,13 +442,13 @@ export default function ProPanel() {
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
                 Envoie 3 photos: face, dos, profil. J'analyse ta morphologie,
-                ta posture et ta biomecanique pour detecter les desequilibres
+                ta posture et ta biomecanique pour détecter les déséquilibres
                 invisibles qui limitent ta progression.
               </p>
               <ul className="space-y-4">
                 {[
-                  "Analyse morphologique complete",
-                  "Detection des desequilibres posturaux",
+                  "Analyse morphologique complète",
+                  "Détection des déséquilibres posturaux",
                   "Evaluation biomecanique",
                   "Protocoles correctifs personnalises"
                 ].map((item, i) => (
@@ -492,10 +492,10 @@ export default function ProPanel() {
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
                 L'analyse la plus
                 <br />
-                <span className="text-[#FCDD00]">complete.</span>
+                <span className="text-[#FCDD00]">complète.</span>
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Chaque aspect de ta sante et performance analyse en profondeur.
+                Chaque aspect de ta santé et performance analyse en profondeur.
                 Du sommeil a la psychologie, en passant par la nutrition timing
                 et l'analyse HRV.
               </p>
@@ -549,8 +549,8 @@ export default function ProPanel() {
                 "Protocole Matin Anti-Cortisol",
                 "Protocole Soir Verrouillage Sommeil",
                 "Protocole Digestion 14 Jours",
-                "Protocole Bureau Anti-Sedentarite",
-                "Protocole Entrainement Personnalise",
+                "Protocole Bureau Anti-Sédentarité",
+                "Protocole Entraînement Personnalise",
                 "Stack Supplements optimise",
                 "Plan semaine par semaine 30-60-90",
                 "KPI et Tableau de Bord",
@@ -603,23 +603,23 @@ export default function ProPanel() {
               { name: "Hormones", score: 85 },
             ]}
             alert={{
-              title: "Antéversion bassin detectee",
-              detail: "epaule droite plus haute de 2cm",
+              title: "Antéversion bassin détectée",
+              detail: "épaule droite plus haute de 2cm",
             }}
             protocol={{
               title: "Plan d'action prioritaire",
               items: [
                 "Exercices de correction posturale: hip flexor stretch 2x/jour",
-                "Renforcement trapeze inferieur: face pull 3x15 avant chaque seance",
-                "Exposition lumiere naturelle 30min apres le reveil",
-                "Magnesium Bisglycinate 300mg au coucher pour ameliorer HRV",
-                "Cardio zone 2 ,  3x45min/semaine pour optimiser RHR",
+                "Renforcement trapèze inférieur: face pull 3x15 avant chaque séance",
+                "Exposition lumière naturelle 30min après le réveil",
+                "Magnésium Bisglycinate 300mg au coucher pour améliorer HRV",
+                "Cardio zone 2, 3x45min/semaine pour optimiser RHR",
               ],
             }}
             extras={[
               {
                 title: "Analyse Posturale",
-                detail: "3 photos analysees ,  4 corrections identifiees",
+                detail: "3 photos analysees, 4 corrections identifiées",
               },
             ]}
           />
@@ -635,11 +635,11 @@ export default function ProPanel() {
           </motion.div>
           <div className="divide-y divide-white/10">
             {[
-              { q: "Quelle est la difference avec l'Anabolic Bioscan ?", a: "L'Anabolic Bioscan (59\u20ac) couvre 16 sections de rapport avec ~137 questions, sans photos. L'Ultimate Scan ajoute 2 sections exclusives basees sur tes 3 photos : \"Analyse visuelle et posturale complete\" et \"Analyse biomecanique et sangle profonde\". Total : 18 sections, ~183 questions, rapport de 40-50 pages au lieu de 20+." },
-              { q: "Combien de temps prend le questionnaire ?", a: "Environ 20-25 minutes. ~183 questions couvrant tous les domaines : profil, sante, sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle, mindset, hormones, axes cliniques, supplements, biomarqueurs, composition corporelle, cardio, HRV, blessures, mobilite, psychologie. Ta progression est sauvegardee automatiquement." },
-              { q: "Comment fonctionne l'analyse photo ?", a: "Tu uploades 3 photos (face, dos, profil) pendant le questionnaire. Mon IA analyse ta posture (epaules, bassin, lordose, cyphose), ta composition corporelle visible, les asymetries musculaires et les compensations biomecaniques (psoas, diaphragme, tensegrite myofasciale). Tu recois des protocoles correctifs personnalises dans le rapport." },
-              { q: "Que contient le rapport de 40-50 pages ?", a: "18 sections : executive summary avec score global, 2 analyses photo (posturale + biomecanique), 6 analyses approfondies (entrainement, cardiovasculaire, metabolisme, sommeil, digestion, axes hormonaux), 5 protocoles d'action (matin anti-cortisol, soir verrouillage sommeil, digestion 14j, bureau anti-sedentarite, entrainement personnalise), stack supplements optimise, plan semaine par semaine 30-60-90, KPI et tableau de bord, synthese." },
-              { q: "Combien de temps pour recevoir mon rapport ?", a: "Ton rapport complet de 40-50 pages est genere par mon moteur IA et delivre sous 48h par email. L'analyse photo et le croisement de 183 reponses demandent un traitement approfondi pour garantir la qualite. Tu recois un email des que ton rapport est pret." },
+              { q: "Quelle est la différence avec l'Anabolic Bioscan ?", a: "L'Anabolic Bioscan (59\u20ac) couvre 16 sections de rapport avec ~137 questions, sans photos. L'Ultimate Scan ajoute 2 sections exclusives basées sur tes 3 photos : \"Analyse visuelle et posturale complète\" et \"Analyse biomecanique et sangle profonde\". Total : 18 sections, ~183 questions, rapport de 40-50 pages au lieu de 20+." },
+              { q: "Combien de temps prend le questionnaire ?", a: "Environ 20-25 minutes. ~183 questions couvrant tous les domaines : profil, santé, sommeil, stress, énergie, digestion, entraînement, nutrition, lifestyle, mindset, hormones, axes cliniques, supplements, biomarqueurs, composition corporelle, cardio, HRV, blessures, mobilité, psychologie. Ta progression est sauvegardee automatiquement." },
+              { q: "Comment fonctionne l'analyse photo ?", a: "Tu uploades 3 photos (face, dos, profil) pendant le questionnaire. Mon IA analyse ta posture (épaules, bassin, lordose, cyphose), ta composition corporelle visible, les asymetries musculaires et les compensations biomécaniques (psoas, diaphragme, tensegrite myofasciale). Tu reçois des protocoles correctifs personnalises dans le rapport." },
+              { q: "Que contient le rapport de 40-50 pages ?", a: "18 sections : executive summary avec score global, 2 analyses photo (posturale + biomecanique), 6 analyses approfondies (entraînement, cardiovasculaire, métabolisme, sommeil, digestion, axes hormonaux), 5 protocoles d'action (matin anti-cortisol, soir verrouillage sommeil, digestion 14j, bureau anti-sédentarité, entraînement personnalise), stack supplements optimise, plan semaine par semaine 30-60-90, KPI et tableau de bord, synthèse." },
+              { q: "Combien de temps pour recevoir mon rapport ?", a: "Ton rapport complet de 40-50 pages est généré par mon moteur IA et délivré sous 48h par email. L'analyse photo et le croisement de 183 réponses demandent un traitement approfondi pour garantir la qualité. Tu reçois un email dès que ton rapport est prêt." },
             ].map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
             ))}
@@ -658,15 +658,15 @@ export default function ProPanel() {
           <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
             L'analyse
             <br />
-            <span className="text-[#FCDD00]">la plus complete.</span>
+            <span className="text-[#FCDD00]">la plus complète.</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
             Questionnaire + photos. 18 sections. 183 questions.
-            Le maximum de donnees pour le maximum de resultats.
+            Le maximum de données pour le maximum de résultats.
           </p>
           <Link href="/questionnaire?plan=ultimate">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
-              Lancer mon Ultimate Scan ,  79€ d'acompte
+              Lancer mon Ultimate Scan, 79€ d'acompte
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
           </Link>
