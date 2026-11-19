@@ -22,6 +22,7 @@ import {
   isCriticalTransactionalEmail,
   shouldBlockForMarketingUnsubscribe,
 } from "./emailDeliveryPolicy";
+import { evaluateEmailSuppression, loadSuppressionContext } from "./emailSuppression";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -515,6 +516,54 @@ async function sendEmailWithTracking(
       return { result: false, error: "unsubscribed" };
     }
 
+    // Liste de suppression (hard bounce, plainte, désinscription, 2 échecs
+    // destinataire consécutifs, nurture froid 90 jours). Les transactionnels
+    // et les mails admin ne passent jamais par ce blocage.
+    if (!criticalEmail && process.env.EMAIL_SUPPRESSION_ENABLED !== "0") {
+      try {
+        const { pool } = await import("./db");
+        const suppressionContext = await loadSuppressionContext(pool, trackingData.recipientEmail, {
+          unsubscribed,
+          excludeTrackingId: typeof trackingData.metadata?.trackingId === "string" ? trackingData.metadata.trackingId : null,
+        });
+        const suppression = evaluateEmailSuppression(
+          {
+            emailType: trackingData.emailType,
+            subject: emailPayload.subject,
+            recipientEmail: trackingData.recipientEmail,
+            adminEmails: [ADMIN_EMAIL_CC, SENDER_EMAIL],
+          },
+          suppressionContext,
+        );
+        if (suppression.suppressed) {
+          console.log(`[EmailSuppression] BLOCKED ${trackingData.emailType} , ${trackingData.recipientEmail} (${suppression.reason})`);
+          await logEmail({
+            emailType: trackingData.emailType,
+            recipientEmail: trackingData.recipientEmail,
+            recipientName: trackingData.recipientName,
+            auditId: trackingData.auditId,
+            auditType: trackingData.auditType,
+            subject: emailPayload.subject,
+            previewText: emailPayload.text.substring(0, 100),
+            sendpulseStatus: "suppressed",
+            sendpulseError: `suppressed: ${suppression.reason}`,
+            metadata: {
+              ...(trackingData.metadata || {}),
+              sendpulseAccepted: false,
+              sendpulseVerified: false,
+              blockedReason: "suppression_list",
+              suppressionReason: suppression.reason,
+              suppressionClass: suppression.emailClass,
+            },
+          });
+          return { result: false, error: `suppressed:${suppression.reason}` };
+        }
+      } catch (suppressionError) {
+        // Fail open : une erreur de lecture ne doit pas casser les envois.
+        console.error("[EmailSuppression] lookup failed, sending anyway:", suppressionError);
+      }
+    }
+
     // Replace unsubscribe placeholder with the actual link.
     //
     // IMPORTANT: callers encode the HTML with encodeBase64() BEFORE handing it
@@ -559,12 +608,14 @@ async function sendEmailWithTracking(
 
     const token = await getAccessToken(trackingData.requestTimeoutMs);
 
-    // Add BCC to admin email unless the admin is already a direct recipient.
-    // Duplicating the same Gmail address in To + BCC makes some SendPulse
-    // payloads fail RFC 5322 validation and would hide critical cost alerts.
-    const shouldBccAdmin = !emailPayload.to.some(
+    // Plus de copie cachée systématique vers l'admin : chaque BCC doublait les
+    // envois comptés par SendPulse et noyait la boîte admin. Les mails admin
+    // partent directement à l'admin (destinataire principal). Le BCC reste
+    // possible en opt-in explicite (bccAdmin: true), jamais par défaut.
+    // Pas de doublon To + BCC : SendPulse rejette ce cas (RFC 5322).
+    const shouldBccAdmin = trackingData.bccAdmin === true && !emailPayload.to.some(
       (recipient) => recipient.email.trim().toLowerCase() === ADMIN_EMAIL_CC.toLowerCase(),
-    ) && trackingData.bccAdmin !== false;
+    );
     const payloadWithBcc = {
       ...emailPayload,
       ...(shouldBccAdmin
@@ -573,7 +624,7 @@ async function sendEmailWithTracking(
     };
 
     console.log(
-      `[SendPulse] Sending ${trackingData.emailType} to ${trackingData.recipientEmail} (BCC: ${shouldBccAdmin ? ADMIN_EMAIL_CC : "none, already direct recipient"})`,
+      `[SendPulse] Sending ${trackingData.emailType} to ${trackingData.recipientEmail} (BCC: ${shouldBccAdmin ? ADMIN_EMAIL_CC : "none"})`,
     );
 
     const sentStartedAt = new Date();
@@ -7247,6 +7298,54 @@ export async function sendAdminBloodQaHoldNotification(
     return result.result === true;
   } catch (error) {
     console.error("[SendPulse] Error sending blood QA hold notification:", error);
+    return false;
+  }
+}
+
+/**
+ * Relance d'un paiement abandonné (étape 1 à ~1 h, étape 2 à ~24 h).
+ * Mail marketing : soumis à la désinscription et à la liste de suppression,
+ * pas de copie admin, pas de bascule Brevo/SMTP.
+ */
+export async function sendCheckoutRecoveryEmail(input: {
+  email: string;
+  subject: string;
+  text: string;
+  html: string;
+  trackingId: string;
+  orderId: string;
+  productType: string;
+  step: 1 | 2;
+  sequenceId: string;
+}): Promise<boolean> {
+  try {
+    const result = await sendEmailWithTracking(
+      {
+        subject: input.subject,
+        from: { name: "Achzod", email: SENDER_EMAIL },
+        to: [{ email: input.email }],
+        html: encodeBase64(input.html),
+        text: input.text,
+      },
+      {
+        emailType: "sendCheckoutRecoveryEmail",
+        recipientEmail: input.email,
+        auditId: input.orderId,
+        auditType: input.productType,
+        bccAdmin: false,
+        allowProviderFallback: false,
+        metadata: {
+          trackingId: input.trackingId,
+          orderId: input.orderId,
+          checkoutRecoveryStep: input.step,
+          checkoutRecoverySequenceId: input.sequenceId,
+          campaign: "checkout_recovery",
+        },
+      },
+    );
+    return result.result === true;
+  } catch (error) {
+    console.error("[CheckoutRecovery] send error:", error);
     return false;
   }
 }
