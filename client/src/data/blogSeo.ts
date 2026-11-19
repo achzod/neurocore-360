@@ -29,6 +29,14 @@ export const BLOG_ARTICLE_REDIRECTS = {
     "la-microencapsulation-dans-les-complements-alimentaires",
   "yam-the-new-era-of-supplements-mcu-20-achzod-748":
     "la-microencapsulation-dans-les-complements-alimentaires",
+  // Doublons fusionnés : chaque ancien article redirige vers le guide gardé.
+  "creatine-monohydrate-guide-ultime": "creatine-guide-complet",
+  "tout-sur-la-creatine": "creatine-guide-complet",
+  "yam-creatine-the-queen-of-performance-supplements-76": "creatine-guide-complet",
+  "bcaa-eaa-recuperation-musculaire": "bcaa-utiles-inutiles",
+  "bcaa-pomper-ou-vider": "bcaa-utiles-inutiles",
+  "memoire-musculaire": "memoire-musculaire-science",
+  "un-bref-guide-de-la-coupe": "guide-seche-cutting",
 } as const;
 
 export const BLOG_REDIRECT_SLUGS = new Set<string>(

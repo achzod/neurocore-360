@@ -1946,14 +1946,14 @@ Commencez dès ce soir.
   },
   {  id: "7",
     slug: "chronotype-sommeil-productivite",
-    title: "Quel est votre chronotype et comment il influence votre productivité",
+    title: "Chronotype : comment il influence votre sommeil et votre productivité",
     excerpt: "Lion, Ours, Loup ou Dauphin : identifiez votre chronotype, comprenez vos pics naturels d'énergie et organisez votre journée, votre entraînement et votre sommeil autour d'eux.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2024-12-18",
     readTime: "7 min",
     image: "https://images.unsplash.com/photo-1520206183501-b80df61043c2?w=800&auto=format&fit=crop",
-    content: `# Quel est votre chronotype et comment il influence votre productivité
+    content: `# Chronotype : comment il influence votre sommeil et votre productivité
 
 ## Pourquoi vous êtes productif à certaines heures et pas à d'autres
 
@@ -2297,14 +2297,14 @@ Avec ces ajustements, vous verrez en 2 à 3 semaines :
   },
   {  id: "9",
     slug: "rythme-circadien-explique",
-    title: "Votre rythme circadien et votre cycle veille-sommeil expliqués",
+    title: "Rythme circadien et cycle veille-sommeil : comment ça fonctionne",
     excerpt: "Lumière, repas, exercice, hormones : comment fonctionne votre horloge biologique, ce qui la dérègle au quotidien et comment la resynchroniser pour mieux dormir et avoir plus d'énergie.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2024-12-12",
     readTime: "6 min",
     image: "https://images.unsplash.com/photo-1531353826977-0941b4779a1c?w=800&auto=format&fit=crop",
-    content: `# Votre rythme circadien et votre cycle veille-sommeil expliqués
+    content: `# Rythme circadien et cycle veille-sommeil : comment ça fonctionne
 
 ## Qu'est-ce que votre rythme circadien, au juste ?
 
@@ -2474,14 +2474,14 @@ Une fois que vous avez resynchronisé votre rythme circadien (généralement 2-4
   },
   {  id: "10",
     slug: "siestes-secret-longevite",
-    title: "Pourquoi les siestes sont le secret de la longévité",
+    title: "Sieste : bien la doser pour récupérer et rester vigilant",
     excerpt: "Bien dosée et bien placée, la sieste améliore la vigilance, l'humeur et la récupération. Les durées à privilégier, la fenêtre idéale, la sieste café et les erreurs à éviter.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2024-12-10",
     readTime: "4 min",
     image: "https://images.unsplash.com/photo-1495197359483-d092478c170a?w=800&auto=format&fit=crop",
-    content: `# Pourquoi les siestes sont le secret de la longévité
+    content: `# Sieste : bien la doser pour récupérer et rester vigilant
 
 ## La sieste : un outil de performance mal compris
 
@@ -2725,7 +2725,7 @@ Votre corps a évolué pendant des millions d'années avec un sommeil biphasique
   // ============================================================================
   {  id: "11",
     slug: "glucides-nus-pic-glycemique",
-    title: "Attention aux glucides nus : comment éviter les pics de glycémie",
+    title: "Glucides seuls : comment éviter les pics de glycémie",
     excerpt: "Manger des glucides seuls fait grimper puis chuter la glycémie, avec fatigue et fringales à la clé. Protéines, lipides, fibres, ordre des aliments : comment stabiliser votre énergie.",
     category: "nutrition",
     author: "ACHZOD",
@@ -2733,7 +2733,7 @@ Votre corps a évolué pendant des millions d'années avec un sommeil biphasique
     readTime: "4 min",
     image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&auto=format&fit=crop",
     featured: true,
-    content: `# Attention aux glucides nus : comment éviter les pics de glycémie
+    content: `# Glucides seuls : comment éviter les pics de glycémie
 
 ## Le piège des glucides nus : pourquoi des glucides mangés seuls plombent votre énergie
 
@@ -3991,14 +3991,14 @@ L'important est d'adapter votre consommation à votre situation, de surveiller v
   // ============================================================================
   {  id: "16",
     slug: "6-regles-hrv-entrainement",
-    title: "6 règles HRV pour un entraînement plus intelligent",
+    title: "HRV et entraînement : 6 règles pour bien s'en servir",
     excerpt: "Comment mesurer et lire votre variabilité de la fréquence cardiaque (HRV) pour savoir quand pousser, quand lever le pied et comment repérer le surentraînement à temps.",
     category: "performance",
     author: "ACHZOD",
     date: "2024-11-25",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
-    content: `# 6 règles HRV pour un entraînement plus intelligent
+    content: `# HRV et entraînement : 6 règles pour bien s'en servir
 
 ## Pourquoi la variabilité de la fréquence cardiaque change la donne
 
@@ -4695,14 +4695,14 @@ Arrêtez de penser en termes de camp. Vous n'êtes ni un coureur ni un pratiquan
   },
   {  id: "19",
     slug: "glucose-performance-athletique",
-    title: "Glucose et performance athlétique : comment le sucre alimente votre entraînement",
+    title: "Glucose et performance sportive : comment le sucre alimente l'effort",
     excerpt: "Glycogène, systèmes énergétiques, glucides avant, pendant et après l'effort, entraînement à jeun et apport du capteur de glucose : comment utiliser le glucose pour mieux performer.",
     category: "performance",
     author: "ACHZOD",
     date: "2024-11-18",
     readTime: "6 min",
     image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
-    content: `# Glucose et performance athlétique : comment le sucre alimente votre entraînement
+    content: `# Glucose et performance sportive : comment le sucre alimente l'effort
 
 ## Introduction : le glucose, carburant de la performance
 
@@ -6137,14 +6137,14 @@ Bonne nouvelle : la graisse viscérale répond mieux aux changements de mode de 
   // ============================================================================
   {  id: "27",
     slug: "mouth-taping-sommeil",
-    title: "Mouth taping pour dormir : bénéfices et risques expliqués",
+    title: "Mouth taping : dormir la bouche fermée, bénéfices et risques",
     excerpt: "Mettre un adhésif sur la bouche pour dormir : ce que la respiration nasale apporte vraiment, les bénéfices documentés, les contre-indications et un protocole progressif pour essayer sans risque.",
     category: "biohacking",
     author: "ACHZOD",
     date: "2024-10-28",
     readTime: "5 min",
     image: "/images/blog/mouth-taping-sommeil/thumb.webp",
-    content: `# Mouth taping pour dormir : bénéfices et risques expliqués
+    content: `# Mouth taping : dormir la bouche fermée, bénéfices et risques
 
 ## Introduction : une tendance qui fait débat
 
@@ -6741,14 +6741,14 @@ Le meilleur sommeil n'est pas celui qu'on surveille en permanence : c'est celui 
   // ============================================================================
   {  id: "30",
     slug: "cycle-menstruel-4-phases",
-    title: "Les 4 phases du cycle menstruel : comment vous pourriez vous sentir",
+    title: "Les 4 phases du cycle menstruel : ce qui change pour le corps et l'humeur",
     excerpt: "Menstruation, phase folliculaire, ovulation, phase lutéale : ce qui se passe dans votre corps à chaque phase du cycle, comment vous pourriez vous sentir et comment adapter entraînement et nutrition.",
     category: "femmes",
     author: "ACHZOD",
     date: "2024-10-20",
     readTime: "6 min",
     image: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=800&auto=format&fit=crop",
-    content: `# Les 4 phases du cycle menstruel : comment vous pourriez vous sentir
+    content: `# Les 4 phases du cycle menstruel : ce qui change pour le corps et l'humeur
 
 ## Introduction : votre cycle, un atout méconnu
 
@@ -7660,14 +7660,14 @@ Votre sommeil est cyclique et propre à votre physiologie : traitez-le comme tel
   },
   {  id: "33",
     slug: "hormones-bilan-sanguin",
-    title: "Hormones expliquées : ce que révèle un bilan sanguin",
+    title: "Bilan hormonal : ce que révèle une prise de sang",
     excerpt: "Œstradiol, progestérone, testostérone, thyroïde, cortisol, insuline : quelles hormones doser, à quel moment du cycle, comment lire les résultats et quoi faire ensuite.",
     category: "femmes",
     author: "ACHZOD",
     date: "2024-10-12",
     readTime: "7 min",
     image: "https://images.unsplash.com/photo-1574680178050-55c6a6a96e0a?w=800&auto=format&fit=crop",
-    content: `# Hormones expliquées : ce que révèle un bilan sanguin
+    content: `# Bilan hormonal : ce que révèle une prise de sang
 
 ## Introduction : des hormones souvent mal évaluées
 
@@ -8925,7 +8925,7 @@ Si vous respectez ces principes avec cohérence sur 8-12 semaines, vous serez su
     category: "musculation",
     author: "ACHZOD",
     date: "2024-09-28",
-    readTime: "8 min",
+    readTime: "14 min",
     image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
     content: `# Créatine : le guide complet du complément le plus efficace
 
@@ -8938,6 +8938,12 @@ La créatine est le complément le plus étudié de l'histoire de la science du 
 Voici comment elle fonctionne, ses bénéfices réels (ils sont nombreux), la meilleure façon de l'utiliser, et la vérité sur les mythes qui empêchent encore certains d'en profiter.
 
 ## Comment fonctionne la créatine : les bases biochimiques
+
+### D'où vient la créatine ?
+
+La créatine est un composé dérivé d'acides aminés, non protéique. Le foie, les reins et le pancréas la fabriquent à partir de trois acides aminés : l'arginine, la glycine et la méthionine. Le corps en produit environ 1 à 2 g par jour, et l'alimentation en apporte à peu près autant, surtout via la viande rouge et le poisson.
+
+Un adulte stocke environ 120 à 140 g de créatine, dont 95 % dans les muscles squelettiques, le reste se trouvant surtout dans le cerveau. Environ deux tiers de la créatine musculaire sont stockés sous forme de phosphocréatine. Avec une alimentation normale, les réserves musculaires sont remplies à 60 à 70 % environ : la supplémentation sert à les saturer.
 
 ### Le système de l'ATP : la source d'énergie des cellules
 
@@ -8963,6 +8969,10 @@ Quand vous prenez de la créatine, vous augmentez les réserves de phosphocréat
 
 **Meilleure performance sur les efforts anaérobies** : tout exercice qui dépend principalement du système des phosphagènes (sprints, sauts, levées maximales, séries de 5 à 15 répétitions) bénéficie de la créatine.
 
+### Tout le monde ne répond pas pareil
+
+La réponse à la créatine varie d'une personne à l'autre. Certains ont naturellement des réserves musculaires de phosphocréatine élevées : ils en tirent moins de bénéfices que ceux qui partent de réserves basses, comme les végétariens (Syrotuik et Bell, 2004). Ne comptez donc pas forcément prendre du poids avec la créatine, même si une prise d'un ou deux kilos dans les premières semaines est fréquente.
+
 ## Les bénéfices prouvés de la créatine
 
 ### Performance physique : des preuves solides
@@ -8977,6 +8987,8 @@ Les effets de la créatine sur la performance physique sont parmi les plus solid
 
 **Meilleure performance sur les séries répétées** : l'effet de la créatine s'amplifie au fil des séries. La différence entre avec et sans créatine est souvent plus marquée sur la 3e et la 4e série que sur la première.
 
+**Efforts d'endurance à haute intensité** : la créatine ne sert pas qu'aux sports de force. En course ou en vélo, elle peut aider sur les sprints finaux, les changements de rythme, les côtes et la récupération entre les intervalles.
+
 ### Hypertrophie : un effet indirect mais réel
 
 La créatine n'est pas directement anabolique (elle ne stimule pas directement la synthèse protéique), mais elle favorise l'hypertrophie de façon indirecte et efficace.
@@ -8988,6 +9000,10 @@ La créatine n'est pas directement anabolique (elle ne stimule pas directement l
 **Par l'activation des cellules satellites** : des études montrent que la créatine peut augmenter la prolifération et la différenciation des cellules satellites (cellules souches musculaires), qui fusionnent avec les fibres musculaires pour soutenir la croissance.
 
 **Les chiffres** : les études montrent généralement 1 à 2 kg de masse maigre en plus après 8 à 12 semaines de créatine associée à la musculation, par rapport au placebo.
+
+### Récupération après les séances
+
+La créatine peut aussi accélérer la récupération de la force après des lésions musculaires induites par un travail excentrique (Cooke et al., 2009). Une récupération plus rapide entre les séances permet d'accumuler plus d'entraînement de qualité sur la semaine.
 
 ### Cognition et cerveau : un bénéfice méconnu
 
@@ -9024,17 +9040,27 @@ Les formes « alternatives » ne montrent généralement pas de bénéfices sup�
 
 **Exception** : la créatine micronisée (monohydrate avec des particules plus fines) peut se dissoudre légèrement mieux dans l'eau, ce qui peut réduire les inconforts digestifs chez certaines personnes sensibles. Mais c'est toujours du monohydrate.
 
+**Si le monohydrate vous gêne vraiment** : en cas de troubles digestifs persistants, fractionnez la dose (par exemple deux prises de 2,5 g) ou testez une autre forme. Mieux vaut une forme un peu plus chère que vous tolérez qu'un monohydrate qui vous envoie aux toilettes entre deux séries.
+
+### Bien acheter sa créatine
+
+- **Le bon choix** : une créatine monohydrate, idéalement micronisée. Le label **Creapure** garantit une créatine produite en Allemagne avec un haut niveau de pureté.
+- **À éviter** : les mélanges propriétaires qui cachent les dosages, les formes « avancées » vendues plusieurs fois plus cher, les produits chargés d'additifs inutiles et les créatines de source inconnue (risque de contaminants).
+- **Le coût réaliste** : 10 à 20 € pour un mois. Au-delà, vous payez surtout du marketing.
+
 ### Dosage : 3 à 5 g par jour
 
 Pendant des années, le protocole standard était une « phase de charge » : 20 g par jour pendant 5 à 7 jours, puis 3 à 5 g par jour en entretien. Ce protocole sature rapidement les réserves musculaires.
 
 **Approche actuelle** : **3 à 5 g par jour sans phase de charge** permettent d'atteindre la saturation aussi bien. Cela prend simplement 3 à 4 semaines au lieu de 5 à 7 jours.
 
-Le bas de la fourchette suffit à la plupart des gens ; le haut convient mieux aux gabarits lourds.
+Le bas de la fourchette suffit à la plupart des gens ; le haut convient mieux aux gabarits lourds. Au-delà de 90 kg environ, certains athlètes montent à 5 à 10 g par jour sans problème (Kreider et al., 2017), mais 5 g par jour sur la durée donnent sans doute le même résultat à long terme.
 
 **Dose personnalisée** : pour être plus précis, vous pouvez calculer votre dose selon votre masse maigre : 0,03 à 0,05 g par kg de masse maigre. Mais pour simplifier, 3 à 5 g par jour convient à pratiquement tout le monde.
 
-**Phase de charge : encore utile ?** Si vous voulez sentir les effets plus vite (en une semaine plutôt qu'en 3 ou 4), vous pouvez faire une phase de charge de 20 g par jour pendant 5 à 7 jours. Mais ce n'est pas nécessaire. À long terme, les résultats sont identiques.
+**Phase de charge : encore utile ?** Si vous voulez sentir les effets plus vite (en une semaine plutôt qu'en 3 ou 4), vous pouvez faire une phase de charge de 20 g par jour (4 prises de 5 g, ou environ 0,3 g/kg) pendant 5 à 7 jours. Mais ce n'est pas nécessaire : après 28 jours, 3 g par jour saturent les réserves aussi bien qu'une charge suivie d'un entretien. À long terme, les résultats sont identiques.
+
+**Préparez-la au moment de la boire** : la créatine est très stable en poudre, mais beaucoup moins une fois diluée, où elle se dégrade peu à peu en créatinine, inutilisable par le muscle. Ne préparez pas votre shaker la veille.
 
 ### Timing : quand prendre la créatine ?
 
@@ -9048,6 +9074,10 @@ Contrairement à d'autres compléments, le moment de prise de la créatine compt
 
 **Matin ou soir** : les jours sans entraînement, n'importe quel moment fixe de la journée convient. L'important est la régularité.
 
+**Et la caféine ?** L'idée que le café annulerait la créatine vient de quelques études anciennes. Les travaux plus récents ne montrent pas d'interaction négative nette sur la force ou la puissance (Trexler et al., 2016). Vous pouvez garder votre café.
+
+**Avec ou sans repas ?** Les glucides, ou un mélange glucides et protéines, augmentent la rétention de créatine pendant la phase de saturation (Green et al., 1996). Une fois les réserves pleines, cela ne change plus grand-chose. À l'inverse, certaines personnes digèrent moins bien la créatine prise avec un gros repas : choisissez ce qui vous convient.
+
 **À retenir** : ne vous prenez pas la tête avec le timing. Si vous prenez 3 à 5 g tous les jours, vos réserves seront saturées et vous profiterez des effets. Le timing peut apporter un petit plus, mais la régularité compte 100 fois plus.
 
 ### Faut-il faire des cycles de créatine ?
@@ -9056,13 +9086,19 @@ Contrairement à d'autres compléments, le moment de prise de la créatine compt
 
 Certains mythes prétendent que le corps « s'habitue » à la créatine ou que vos récepteurs deviennent insensibles. C'est faux. La créatine fonctionne en augmentant simplement les réserves de phosphocréatine. Ce n'est pas un mécanisme qui peut développer une tolérance.
 
+L'idée vient probablement de la confusion avec les prohormones, très répandue à la fin des années 90. Prendre de la créatine freine un peu votre production naturelle, mais celle-ci reprend rapidement après l'arrêt, contrairement à ce qui se passe avec les hormones.
+
 En revanche, quand vous arrêtez la créatine, vos réserves reviennent à leur niveau naturel en 4 à 6 semaines. Vous perdez donc les bénéfices accumulés. Faire des cycles revient à vous priver de créatine la moitié du temps, sans aucun avantage.
 
 **Recommandation** : prenez 3 à 5 g par jour, tous les jours, sans interruption. C'est la meilleure stratégie.
 
 ## Les mythes sur la créatine
 
-### Mythe 1 : « La créatine déshydrate et donne des crampes »
+### Mythe 1 : « La créatine est un stéroïde »
+
+**Faux.** La créatine n'a aucun lien avec les stéroïdes anabolisants. C'est un composé que votre corps fabrique et que vous trouvez dans la viande et le poisson. Elle ne modifie pas vos hormones et n'est interdite par aucune organisation sportive.
+
+### Mythe 2 : « La créatine déshydrate et donne des crampes »
 
 **Faux.** C'est probablement le mythe le plus persistant et le plus infondé sur la créatine.
 
@@ -9070,9 +9106,11 @@ En revanche, quand vous arrêtez la créatine, vos réserves reviennent à leur 
 
 **Les études** : de nombreuses recherches ont examiné précisément si la créatine augmente le risque de déshydratation, de crampes, ou de problèmes liés à la chaleur. Résultat : aucune augmentation de ces problèmes. Certaines études suggèrent même que la créatine pourrait même réduire le risque de crampes.
 
+**Ce que l'on sait des crampes** : les preuves solides reliant déshydratation ou perte d'électrolytes aux crampes sont rares. Les travaux récents évoquent plutôt une combinaison de fatigue, de lésions musculaires et de manque de condition physique qui perturbe les motoneurones (Miller, 2015). Comme la créatine améliore la performance et la récupération, il est très peu probable qu'elle favorise les crampes.
+
 **L'origine du mythe** : probablement des anecdotes de personnes qui ont commencé la créatine en même temps qu'un nouveau programme d'entraînement intense (cause réelle des crampes) ou qui ne buvaient pas assez d'eau (problème d'hydratation préexistant).
 
-### Mythe 2 : « La créatine fait perdre ses cheveux »
+### Mythe 3 : « La créatine fait perdre ses cheveux »
 
 **Preuves faibles.** Ce mythe provient principalement d'une seule étude de 2009 sur des joueurs de rugby qui a trouvé une augmentation de la DHT (dihydrotestostérone) avec la supplémentation en créatine.
 
@@ -9084,7 +9122,7 @@ En revanche, quand vous arrêtez la créatine, vos réserves reviennent à leur 
 
 **Conclusion** : il n'existe pas de preuves solides que la créatine cause la perte de cheveux. Si vous avez une prédisposition génétique forte à la calvitie androgénique, vous pouvez rester prudent par précaution. Mais pour la grande majorité, ce n'est pas une préoccupation fondée.
 
-### Mythe 3 : « La créatine est dangereuse pour les reins »
+### Mythe 4 : « La créatine est dangereuse pour les reins »
 
 **Faux pour les personnes en bonne santé.** Ce mythe vient d'une confusion entre créatine et créatinine.
 
@@ -9098,7 +9136,7 @@ Quand vous prenez de la créatine, votre créatinine sanguine augmente naturelle
 
 **Conseil pratique** : si vous faites des analyses sanguines, informez votre médecin que vous prenez de la créatine pour qu'il puisse interpréter correctement les niveaux de créatinine.
 
-### Mythe 4 : « La créatine fait gonfler et donne un aspect flou »
+### Mythe 5 : « La créatine fait gonfler et donne un aspect flou »
 
 **En partie vrai, mais mal compris.** La créatine augmente effectivement le poids de corps de 1 à 3 kg en moyenne lors des premières semaines.
 
@@ -9109,6 +9147,21 @@ Quand vous prenez de la créatine, votre créatinine sanguine augmente naturelle
 **Pour les compétiteurs** : certains bodybuilders arrêtent la créatine quelques semaines avant une compétition pour perdre ce poids d'eau et paraître plus « secs ». C'est une stratégie de compétition spécifique, pas une raison d'éviter la créatine dans l'entraînement quotidien.
 
 **Pour la plupart des pratiquants** : cette augmentation de volume musculaire est généralement désirable. Vous paraissez plus musclé, pas gonflé.
+
+## Qui devrait en prendre, et qui doit être prudent ?
+
+### Les profils qui en profitent le plus
+
+- Pratiquants de musculation et de sports de force
+- Athlètes de sports explosifs (sprint, sports collectifs, sports de combat)
+- Végétariens et végans, dont les réserves de départ sont plus basses
+- Personnes âgées, pour préserver la masse musculaire et la force (Chilibeck et al., 2017)
+
+### Les cas où il faut demander un avis médical
+
+- Maladie rénale ou hépatique connue
+- Grossesse et allaitement, par précaution
+- Adolescents : la créatine est sans danger chez un adolescent en bonne santé, mais rarement utile. Entre 15 et 18 ans, l'entraînement, l'alimentation et le sommeil font déjà progresser très vite.
 
 ## Ce qu'il faut retenir : aucun complément n'est magique
 
@@ -9127,6 +9180,18 @@ La créatine est un complément très efficace, mais gardons les pieds sur terre
 **Optimisez votre supplémentation avec une approche personnalisée.** L'[Ultimate Scan](/offers/ultimate-scan) évalue vos besoins nutritionnels spécifiques et détermine quels suppléments (au-delà de la créatine) pourraient bénéficier à votre situation unique. Pour un protocole de supplémentation basé sur la science et adapté à vos objectifs, découvrez mon [coaching](https://www.achzodcoaching.com).
 
 ---
+
+## Références
+
+- Chilibeck, P.D., Kaviani, M., Candow, D.G. et Zello, G.A. (2017). Effect of creatine supplementation during resistance training on lean tissue mass and muscular strength in older adults: a meta-analysis. Open Access Journal of Sports Medicine, 8, 213-226.
+- Cooke, M.B., Rybalka, E., Williams, A.D., Cribb, P.J. et Hayes, A. (2009). Creatine supplementation enhances muscle force recovery after eccentrically-induced muscle damage in healthy individuals. Journal of the International Society of Sports Nutrition, 6, 13.
+- Dolan, E., Gualano, B. et Rawson, E.S. (2019). Beyond muscle: the effects of creatine supplementation on brain creatine, cognitive processing, and traumatic brain injury. European Journal of Sport Science, 19(1), 1-14.
+- Green, A.L., Simpson, E.J., Littlewood, J.J., Macdonald, I.A. et Greenhaff, P.L. (1996). Carbohydrate ingestion augments creatine retention during creatine feeding in humans. Acta Physiologica Scandinavica, 158(2), 195-202.
+- Jäger, R., Purpura, M., Shao, A., Inoue, T. et Kreider, R.B. (2011). Analysis of the efficacy, safety, and regulatory status of novel forms of creatine. Amino Acids, 40(5), 1369-1383.
+- Kreider, R.B. et al. (2017). International Society of Sports Nutrition position stand: safety and efficacy of creatine supplementation in exercise, sport, and medicine. Journal of the International Society of Sports Nutrition, 14, 18.
+- Miller, K.C. (2015). Rethinking the cause of exercise-associated muscle cramping: moving beyond dehydration and electrolyte losses. Current Sports Medicine Reports, 14(5), 353-354.
+- Syrotuik, D.G. et Bell, G.J. (2004). Acute creatine monohydrate supplementation: a descriptive physiological profile of responders vs. nonresponders. Journal of Strength and Conditioning Research, 18(3), 610-617.
+- Trexler, E.T. et al. (2016). Effects of coffee and caffeine anhydrous intake during creatine loading. Journal of Strength and Conditioning Research, 30(5), 1438-1446.
 `,
   },
   {  id: "40",
@@ -9360,7 +9425,7 @@ N'ayez pas peur de manger beaucoup de protéines.
     category: "musculation",
     author: "ACHZOD",
     date: "2024-09-22",
-    readTime: "5 min",
+    readTime: "7 min",
     image: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=800&auto=format&fit=crop",
     content: `# Mémoire musculaire : la science du retour en forme
 
@@ -9372,13 +9437,15 @@ La mémoire musculaire désigne la capacité de vos muscles à regagner rapideme
 
 ### Ne pas confondre avec l'apprentissage moteur
 
-L'apprentissage moteur est neurologique : votre cerveau et votre système nerveux se souviennent des patterns de mouvement. C'est pourquoi vous pouvez reprendre le vélo après 10 ans sans tomber. La mémoire musculaire, elle, est **cellulaire** : vos muscles gardent une trace physique de leur croissance passée, indépendamment de votre coordination ou de votre technique.
+L'apprentissage moteur est neurologique : votre cerveau et votre système nerveux se souviennent des patterns de mouvement. C'est pourquoi vous pouvez reprendre le vélo après 10 ans sans tomber, ou rejouer un morceau de piano appris enfant. Cette mémoire ne se trouve pas dans les mains ou les jambes, mais entièrement dans le système nerveux central. La mémoire musculaire, elle, est **cellulaire** : vos muscles gardent une trace physique de leur croissance passée, indépendamment de votre coordination ou de votre technique.
+
+Les chercheurs en donnent une définition stricte : une adaptation durable de la cellule qui **persiste après l'arrêt du stimulus** qui l'a créée (Gundersen, 2016). C'est ce critère qui permet de distinguer la vraie mémoire musculaire de l'apprentissage moteur.
 
 ## Le mécanisme : les myonoyaux
 
 ### Pourquoi les cellules musculaires sont uniques
 
-Les cellules musculaires sont parmi les plus grandes cellules du corps humain. Une fibre musculaire peut mesurer plusieurs centimètres de long. Pour gérer cette taille gigantesque, elles ont besoin ieurs "centres de commande" : c'est pourquoi elles sont **multinucléées**. Une seule fibre peut contenir des centaines, voire des milliers de noyaux cellulaires.
+Les cellules musculaires sont parmi les plus grandes cellules du corps humain. Une fibre musculaire peut mesurer plusieurs centimètres de long. Pour gérer cette taille gigantesque, elles ont besoin de plusieurs "centres de commande" : c'est pourquoi elles sont **multinucléées**. Une seule fibre peut contenir des centaines, voire des milliers de noyaux cellulaires.
 
 Chaque noyau contrôle une portion de la fibre musculaire appelée "domaine myonucléaire". Plus vous avez de noyaux, plus votre capacité de synthèse protéique est élevée, et donc plus votre muscle peut grossir.
 
@@ -9390,22 +9457,30 @@ Résultat : vos fibres musculaires acquièrent de nouveaux noyaux, augmentant ai
 
 ### La découverte qui a tout changé
 
-Pendant longtemps, on pensait que ces noyaux supplémentaires disparaissaient lors du désentraînement, lorsque le muscle s'atrophie. Mais les études récentes, notamment celles menées sur des modèles animaux et confirmées chez l'humain, ont révélé quelque chose d'extraordinaire : **ces noyaux restent en place pendant au moins 15 ans**, même si vous arrêtez complètement l'entraînement.
+Pendant longtemps, on pensait que ces noyaux supplémentaires disparaissaient lors du désentraînement, lorsque le muscle s'atrophie. Mais les études sur l'animal ont montré autre chose : **le nombre de noyaux ne diminue pas pendant l'arrêt**, même quand le muscle s'atrophie (Bruusgaard et Gundersen, 2008). Et comme un myonoyau peut vivre au moins 15 ans, une fibre entraînée pourrait garder ses noyaux supplémentaires très longtemps.
 
 C'est comme si votre muscle gardait une "infrastructure" prête à reconstruire rapidement. Les noyaux ne disparaissent pas : ils restent là, en veille, attendant le signal pour relancer la machine de croissance musculaire.
 
 ## Les preuves scientifiques solides
 
-Une étude menée par Bruusgaard et ses collègues en 2010 a marqué un tournant. En utilisant des techniques de marquage cellulaire sur des souris, ils ont montré que les myonoyaux acquis pendant l'entraînement persistaient pendant au moins 3 mois après l'arrêt (équivalent à environ 15 ans chez l'humain).
+Une étude menée par Bruusgaard et ses collègues en 2010 a marqué un tournant. En utilisant des techniques de marquage cellulaire sur des souris, ils ont montré que les myonoyaux acquis pendant l'entraînement apparaissent avant la croissance de la fibre et persistent au moins 3 mois après l'arrêt, soit plus de 10 % de la vie d'une souris (Bruusgaard et al., 2010).
 
 D'autres recherches ont confirmé ce phénomène :
 - Les fibres musculaires préalablement entraînées conservent leur nombre de noyaux même après une atrophie sévère
 - Ces muscles "mémoriels" sont plus résistants à la perte de masse musculaire
-- Lors de la reprise, ils regagnent leur volume initial **2 à 3 fois plus rapidement** qu'un muscle jamais entraîné
+- Lors de la reprise, ils regagnent leur volume initial **nettement plus vite** qu'un muscle jamais entraîné
+
+Une autre étude sur la souris va plus loin : une courte exposition aux stéroïdes anabolisants laisse des myonoyaux supplémentaires qui facilitent la croissance musculaire longtemps après l'arrêt du produit (Egner et al., 2013). C'est l'un des arguments avancés pour prolonger les suspensions des sportifs contrôlés positifs.
+
+### Et chez l'humain ?
+
+Les études de désentraînement vont dans le même sens. Des femmes entraînées en force qui arrêtent plusieurs mois retrouvent leur force et leur volume beaucoup plus vite que lors de leur premier cycle d'entraînement (Staron et al., 1991). Chez les personnes âgées, une bonne partie de la force gagnée reste présente des mois, voire des années après l'arrêt (Taaffe et Marcus, 1997 ; Smith et al., 2003).
+
+Le rôle exact des myonoyaux est en revanche plus débattu chez l'humain : certaines études ne retrouvent pas de rétention nette des noyaux après l'arrêt (Psilander et al., 2019), alors que d'autres mettent en avant une mémoire épigénétique (Seaborne et al., 2018). La reprise rapide est bien établie ; son mécanisme précis fait encore l'objet de recherches.
 
 ### Pourquoi cette mémoire est si puissante
 
-Imaginez deux personnes : l'une n'a jamais fait de musculation, l'autre a construit 10 kg de muscle puis tout perdu après 2 ans d'arrêt. Si les deux commencent un programme identique :
+Imaginez deux personnes : l'une n'a jamais fait de musculation, l'autre a construit 10 kg de muscle puis tout perdu après 2 ans d'arrêt. Si les deux commencent un programme identique, voici un ordre de grandeur indicatif :
 
 - La première personne mettra peut-être 12-18 mois pour gagner 10 kg de muscle
 - La seconde les regagnera en 3-6 mois
@@ -9428,7 +9503,7 @@ Votre système nerveux conserve les "chemins" de recrutement des fibres musculai
 
 ### Modifications épigénétiques
 
-Des recherches récentes suggèrent que l'entraînement laisse des "marques épigénétiques" sur l'ADN musculaire. Ces marques facilitent l'expression des gènes impliqués dans la croissance musculaire lors d'une reprise.
+Des recherches récentes suggèrent que l'entraînement laisse des "marques épigénétiques" sur l'ADN musculaire (Seaborne et al., 2018). Ces marques facilitent l'expression des gènes impliqués dans la croissance musculaire lors d'une reprise.
 
 ### Remodelage du tissu conjonctif
 
@@ -9442,17 +9517,17 @@ Si vous devez arrêter l'entraînement pour blessure, voyage, ou raisons personn
 
 ### Chaque kilo de muscle est un investissement à vie
 
-C'est peut-être l'enseignement le plus important : **chaque gramme de muscle que vous construisez reste "programmé" dans vos cellules pour toujours**. Même si vous perdez tout à 30 ans et reprenez à 50 ans, vous rebondirez plus vite qu'un débutant du même âge.
+C'est peut-être l'enseignement le plus important : **chaque gramme de muscle que vous construisez laisse une trace durable dans vos cellules**. Même si vous perdez tout à 30 ans et reprenez à 50 ans, vous rebondirez plus vite qu'un débutant du même âge.
 
 ### Optimisez vos comebacks
 
-Lors d'une reprise après un arrêt, ne vous précipitez pas. Commencez avec 50-60% de votre volume et intensité précédents. Votre capacité de contraction musculaire reviendra vite, mais vos tendons et ligaments ont besoin  de temps pour se réadapter. Évitez les blessures en progressant graduellement.
+Lors d'une reprise après un arrêt, ne vous précipitez pas. Commencez avec 50-60% de votre volume et intensité précédents. Votre capacité de contraction musculaire reviendra vite, mais vos tendons et ligaments ont besoin de temps pour se réadapter. Évitez les blessures en progressant graduellement.
 
 ## Les limites de la mémoire musculaire
 
 Attention : la mémoire musculaire ne signifie pas que vous pouvez maintenir vos muscles sans entraînement. Sans stimulus, le muscle s'atrophie. Ce que la mémoire garantit, c'est une **reprise accélérée**, pas un maintien automatique.
 
- si vous n'avez jamais construit de muscle, vous ne bénéficierez pas de ce phénomène. Il faut d'abord investir le temps et l'effort pour créer cette "bibliothèque cellulaire".
+Enfin, si vous n'avez jamais construit de muscle, vous ne bénéficierez pas de ce phénomène. Il faut d'abord investir le temps et l'effort pour créer cette "bibliothèque cellulaire".
 
 ## À retenir : votre corps garde la trace
 
@@ -9466,7 +9541,20 @@ Vous construisez un patrimoine biologique qui vous suivra toute votre vie. Même
 
 **Construisez votre capital musculaire.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) évalue votre potentiel de développement. Pour un programme optimisé, découvrez mon [coaching](https://www.achzodcoaching.com).
 
----`,
+---
+
+## Références
+
+- Bruusgaard, J.C. et Gundersen, K. (2008). In vivo time-lapse microscopy reveals no loss of murine myonuclei during weeks of muscle atrophy. The Journal of Clinical Investigation, 118(4), 1450-1457.
+- Bruusgaard, J.C., Johansen, I.B., Egner, I.M., Rana, Z.A. et Gundersen, K. (2010). Myonuclei acquired by overload exercise precede hypertrophy and are not lost on detraining. Proceedings of the National Academy of Sciences, 107(34), 15111-15116.
+- Egner, I.M., Bruusgaard, J.C., Eftestøl, E. et Gundersen, K. (2013). A cellular memory mechanism aids overload hypertrophy in muscle long after an episodic exposure to anabolic steroids. The Journal of Physiology, 591(24), 6221-6230.
+- Gundersen, K. (2016). Muscle memory and a new cellular model for muscle atrophy and hypertrophy. Journal of Experimental Biology, 219(2), 235-242.
+- Psilander, N. et al. (2019). Effects of training, detraining, and retraining on strength, hypertrophy, and myonuclear number in human skeletal muscle. Journal of Applied Physiology, 126(6), 1636-1645.
+- Seaborne, R.A. et al. (2018). Human skeletal muscle possesses an epigenetic memory of hypertrophy. Scientific Reports, 8, 1898.
+- Smith, K., Winegard, K., Hicks, A.L. et McCartney, N. (2003). Two years of resistance training in older men and women: the effects of three years of detraining on the retention of dynamic strength. Canadian Journal of Applied Physiology, 28(3), 462-474.
+- Staron, R.S. et al. (1991). Strength and skeletal muscle adaptations in heavy-resistance-trained women after detraining and retraining. Journal of Applied Physiology, 70(2), 631-640.
+- Taaffe, D.R. et Marcus, R. (1997). Dynamic muscle strength alterations to detraining and retraining in elderly men. Clinical Physiology, 17(3), 311-324.
+`,
   },
   {  id: "42",
     slug: "connexion-esprit-muscle",
@@ -9801,7 +9889,7 @@ Apprenez à écouter votre corps plutôt que de suivre des règles arbitraires. 
     category: "musculation",
     author: "ACHZOD",
     date: "2024-09-15",
-    readTime: "9 min",
+    readTime: "10 min",
     image: "https://images.unsplash.com/photo-1521805103424-d8f8430e8933?w=800&auto=format&fit=crop",
     content: `# Le guide complet de la sèche : nutrition et entraînement
 
@@ -9824,7 +9912,9 @@ Le déficit calorique est obligatoire pour perdre de la graisse, mais son ampleu
 - Cible de perte : 450 à 900 g par semaine
 - Déficit calorique : environ 500 à 700 kcal/jour (sachant qu'1 kg de graisse = environ 7700 kcal)
 
-Pourquoi pas plus vite ? Parce qu'un déficit trop agressif active les mécanismes de survie du corps : augmentation du cortisol (hormone catabolique), baisse de la testostérone, augmentation de l'appétit, ralentissement métabolique.
+Pourquoi pas plus vite ? Parce qu'un déficit trop agressif active les mécanismes de survie du corps : augmentation du cortisol (hormone catabolique), baisse de la testostérone, augmentation de l'appétit, ralentissement métabolique. Un déficit modéré fait surtout perdre de la graisse, alors qu'un très gros déficit fait aussi perdre du muscle.
+
+**Raisonnez à la semaine** : plutôt que de juger chaque journée, fixez un déficit hebdomadaire. Multipliez le nombre de kilos à perdre par semaine par 7 700, puis divisez par 7 pour obtenir votre déficit quotidien moyen. C'est aussi ce qui rend le cyclage calorique simple à piloter.
 
 ### Le cyclage calorique : une stratégie avancée
 
@@ -9853,7 +9943,7 @@ En déficit calorique, vos besoins en protéines **augmentent**. Pourquoi ? Parc
 - **Effet thermique élevé** : digérer des protéines brûle 20-30% des calories qu'elles contiennent (vs 5-10% pour les glucides et lipides).
 - **Satiété** : elles réduisent la faim mieux que tous les autres macronutriments.
 
-**Plus vous êtes sec, plus vous avez besoin de protéines.** Un bodybuilder à 15% de masse grasse peut s'en sortir avec 2.2g/kg. Un athlète à 8% aura besoin de 2.7-3.3g/kg pour préserver sa masse.
+**Plus vous êtes sec, plus vous avez besoin de protéines.** Un bodybuilder à 15% de masse grasse peut s'en sortir avec 2.2g/kg. Un athlète à 8% aura besoin de 2.7-3.3g/kg pour préserver sa masse. Les recommandations pour les bodybuilders naturels en sèche vont dans ce sens : 2,3 à 3,1 g par kg de masse maigre, en montant dans la fourchette à mesure que vous vous affûtez (Helms et al., 2014). Il est très peu probable que ces calories protéiques vous fassent stocker du gras.
 
 ### Glucides : ne les éliminez pas (30-40% des calories)
 
@@ -9867,13 +9957,25 @@ L'une des erreurs classiques en sèche : couper drastiquement les glucides. Pour
 
 **Timing** : concentrez vos glucides autour de l'entraînement (avant et après) pour maximiser la performance et la récupération.
 
+**Avant un événement** : pour des vacances ou une séance photo, une recharge glucidique de 2 à 3 jours peut améliorer l'aspect. Elle augmente le glycogène et l'épaisseur musculaire, au point de faire afficher une masse maigre plus élevée aux appareils DXA (Rouillier et al., 2015). Ce n'est pas une préparation de compétition, juste un petit coup de pouce visuel.
+
 ### Lipides : indispensables aux hormones (25-30% des calories)
 
 Les lipides sont indispensables à la production hormonale, en particulier la testostérone. Des études montrent qu'une consommation de lipides inférieure à 20% des calories totales est associée à une **baisse nette de la testostérone**.
 
-Or, en sèche, vous voulez maintenir votre testostérone aussi haute que possible pour préserver le muscle. Ne descendez jamais en dessous de 0.8g/kg de poids corporel en lipides, même dans les phases les plus strictes.
+Or, en sèche, vous voulez maintenir votre testostérone aussi haute que possible pour préserver le muscle, d'autant que la perte de graisse elle-même la fait déjà baisser. Les recommandations pour les bodybuilders naturels situent les lipides entre 15 et 30% des calories (Helms et al., 2014). Commencez vers 25-30% pour garder de la marge. Quand il faut creuser le déficit en cours de route, retirez des lipides et des glucides, jamais des protéines.
 
 **Sources de qualité** : privilégiez les lipides mono et polyinsaturés (huile d'olive, avocats, noix, poissons gras) et gardez des acides gras saturés modérés (viandes, œufs, produits laitiers).
+
+## Exemple chiffré : un pratiquant de 90 kg
+
+Prenons un homme de 90 kg, 1,78 m et 25 ans. Ses besoins d'entretien sont d'environ 3 050 kcal par jour (équation de Mifflin-St Jeor). Pour perdre environ 0,5% de son poids par semaine, il mange en moyenne 2 500 kcal par jour, avec le cyclage calorique décrit plus haut :
+
+- **Protéines** : 200 à 210 g par jour au départ, en montant progressivement vers 250 à 280 g à mesure qu'il s'affûte
+- **Lipides** : 70 à 80 g par jour au départ, à réduire au besoin vers 45 à 50 g
+- **Glucides** : le reste, soit environ 250 g par jour au départ, placés surtout autour des séances, puis moins à mesure que les protéines montent et que le déficit se creuse
+
+Au départ, la répartition tourne autour de 33-40-27 (protéines, glucides, lipides). En fin de sèche, elle se rapproche de 40-30-30. La réponse à un régime reste très individuelle : ajustez glucides et lipides selon vos performances, votre faim et votre progression, mais gardez les protéines hautes.
 
 ## Ajustements d'entraînement : préserver l'intensité
 
@@ -9886,6 +9988,8 @@ En sèche, votre objectif à la salle est **simple** : **donner à votre corps u
 ### Le principe de maintien du stimulus
 
 La recherche montre que vous pouvez **réduire le volume d'entraînement jusqu'à 50-70%** tout en maintenant la masse musculaire, à condition de garder l'intensité élevée (80%+ du 1RM).
+
+Une étude de référence montre qu'un tiers du volume habituel suffit à maintenir la masse musculaire pendant plusieurs mois chez l'adulte jeune, tant que l'intensité est conservée (Bickel et al., 2011). Et des séries plus lourdes avec moins de répétitions donnent la même hypertrophie qu'un travail classique à volume égal (Schoenfeld et al., 2014) : c'est l'outil idéal pour réduire la fatigue sans perdre le stimulus.
 
 **Stratégie pratique** :
 - Réduisez le nombre de séries (ex : de 20 à 12-15 séries par groupe musculaire par semaine)
@@ -9911,7 +10015,7 @@ Le cardio n'est **pas obligatoire** pour sécher. Le déficit calorique se crée
 
 - **Fréquence** : 3-4 séances par semaine maximum
 - **Durée** : 20-30 minutes par séance
-- **Type** : privilégiez le HIIT (High Intensity Interval Training) ou le LISS (Low Intensity Steady State) selon vos préférences
+- **Type** : HIIT (High Intensity Interval Training) ou LISS (Low Intensity Steady State) selon vos préférences. L'effet d'interférence avec la musculation augmente avec la fréquence et la durée du cardio, et le vélo gêne moins que la course (Wilson et al., 2012)
 - **Timing** : évitez de faire du cardio intense juste avant ou après une séance jambes (compétition pour la récupération)
 
 ### Attention au cardio excessif
@@ -9977,6 +10081,18 @@ La clé : **déficit modéré, protéines élevées, intensité maintenue et pat
 **Séchez avec méthode.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse votre composition corporelle. Pour un programme de sèche personnalisé, réservez un [coaching](https://www.achzodcoaching.com).
 
 ---
+
+## Références
+
+- Bickel, C.S., Cross, J.M. et Bamman, M.M. (2011). Exercise dosing to retain resistance training adaptations in young and older adults. Medicine and Science in Sports and Exercise, 43(7), 1177-1187.
+- Davoodi, S.H. et al. (2014). Calorie shifting diet versus calorie restriction diet: a comparative clinical trial study. International Journal of Preventive Medicine, 5(4), 447-456.
+- Hall, K.D. (2008). What is the required energy deficit per unit weight loss? International Journal of Obesity, 32(3), 573-576.
+- Helms, E.R., Aragon, A.A. et Fitschen, P.J. (2014). Evidence-based recommendations for natural bodybuilding contest preparation: nutrition and supplementation. Journal of the International Society of Sports Nutrition, 11, 20.
+- Helms, E.R., Fitschen, P.J., Aragon, A.A., Cronin, J. et Schoenfeld, B.J. (2015). Recommendations for natural bodybuilding contest preparation: resistance and cardiovascular training. The Journal of Sports Medicine and Physical Fitness, 55(3), 164-178.
+- Izquierdo, M. et al. (2006). Differential effects of strength training leading to failure versus not to failure on hormonal responses, strength, and muscle power gains. Journal of Applied Physiology, 100(5), 1647-1656.
+- Rouillier, M.A. et al. (2015). Effect of an acute high carbohydrate diet on body composition using DXA in young men. Annals of Nutrition and Metabolism, 66(4), 233-236.
+- Schoenfeld, B.J. et al. (2014). Effects of different volume-equated resistance training loading strategies on muscular adaptations in well-trained men. Journal of Strength and Conditioning Research, 28(10), 2909-2918.
+- Wilson, J.M. et al. (2012). Concurrent training: a meta-analysis examining interference of aerobic and resistance exercises. Journal of Strength and Conditioning Research, 26(8), 2293-2307.
 `,
   },
   {  id: "45",
@@ -12368,7 +12484,7 @@ Arrêtez de stresser sur le nombre de repas. Concentrez-vous sur la qualité de 
     category: "musculation",
     author: "ACHZOD",
     date: "2024-08-20",
-    readTime: "5 min",
+    readTime: "12 min",
     image: "https://images.unsplash.com/photo-1623200216581-969d9479cf7d?w=800&auto=format&fit=crop",
     content: `# BCAA : utiles ou gaspillage d'argent ?
 
@@ -12466,25 +12582,27 @@ Les BCAA ne représentent que 3 de ces 9 acides aminés essentiels. **Il manque 
 - Thréonine
 - Tryptophane
 
-Activer mTOR sans fournir tous les acides aminés essentiels ne suffit pas : faute de matière première, la synthèse s'arrête vite.
+Activer mTOR sans fournir tous les acides aminés essentiels ne suffit pas : faute de matière première, la synthèse s'arrête vite. C'est le principe du « seau percé » : si un seul acide aminé essentiel manque, la synthèse protéique plafonne à son niveau, quelle que soit l'abondance des autres.
 
-### L'étude de Wolfe et al. (2017)
+Les données vont dans ce sens. Donner des acides aminés essentiels sans leucine augmente peu la synthèse protéique, et beaucoup plus quand on remet la leucine (Moberg et al., 2016). Dans l'autre sens, 25 g de whey stimulent davantage la synthèse que 6,25 g de whey complétés en leucine, alors que la quantité de leucine est la même (Churchward-Venne et al., 2012). La leucine sert de déclencheur, mais c'est la quantité totale d'acides aminés qui fixe le plafond.
 
-Cette étude a directement testé l'effet des BCAA isolés sur la synthèse protéique musculaire.
+### La revue de Wolfe (2017)
+
+Cette revue a examiné les études qui mesurent l'effet des BCAA isolés sur la synthèse protéique musculaire chez l'homme.
 
 **Méthodologie :**
-- Mesure précise de la synthèse protéique après ingestion de BCAA seuls
-- Comparaison avec protéines complètes
+- Analyse des études mesurant la synthèse protéique après ingestion de BCAA seuls
+- Comparaison avec l'effet des protéines complètes et des EAA
 
-**Résultat :** les BCAA seuls **augmentent légèrement la synthèse protéique, mais augmentent AUSSI la dégradation protéique**. Le bilan net ? **Négatif ou neutre.**
-
-**Explication :** en activant mTOR sans fournir tous les acides aminés nécessaires, les BCAA créent un déséquilibre. Le corps dégrade d'autres protéines pour obtenir les acides aminés manquants, annulant le bénéfice initial.
+**Conclusion :** les BCAA seuls n'augmentent que **modestement** la synthèse protéique. Les autres acides aminés essentiels doivent venir d'ailleurs, et c'est leur disponibilité qui limite le bénéfice net.
 
 **Citation de l'auteur :** « La consommation de BCAA isolés ne peut, par définition, soutenir la synthèse protéique nette, car tous les acides aminés essentiels doivent être disponibles pour produire une protéine complète. »
 
+**La limite de cet argument :** la revue de Wolfe s'appuie en grande partie sur des données obtenues à jeun prolongé. Chez quelqu'un qui mange normalement, il reste dans le sang assez d'acides aminés issus du repas précédent pour servir de matière première, sans puiser dans le muscle. Le vrai problème des BCAA n'est donc pas qu'ils détruiraient du muscle, mais qu'ils apportent peu quand l'alimentation est déjà riche en protéines.
+
 ### Ce que dit la science
 
-**Les BCAA seuls ne construisent pas de muscle. Ils peuvent même être contre-productifs.**
+**Les BCAA seuls ne suffisent pas à construire du muscle. Leur effet reste limité sans les autres acides aminés essentiels.**
 
 Pour un effet anabolique réel, vous avez besoin de **tous les acides aminés essentiels**, c'est-à-dire une protéine complète (whey, viande, œufs) ou un complément complet d'acides aminés essentiels (EAA).
 
@@ -12525,17 +12643,13 @@ Deuxième problème, encore plus concret.
 
 **La question :** pourquoi payer 5 g de leucine en plus quand vous en mangez déjà 14 g ?
 
-### Apport protéique suffisant contre BCAA
+**Même calcul, version moyenne :** les protéines alimentaires contiennent en moyenne 4,8 % d'isoleucine, 7,8 % de leucine et 6,2 % de valine. Un pratiquant de 82 kg qui mange 180 g de protéines par jour avale donc environ 34 g de BCAA, soit plus que les 24 à 30 g par jour testés dans les études sur la récupération.
 
-**Étude de Jackman et al. (2017) :**
-- Sujets avec un apport protéique de 1,6 g/kg (suffisant pour l'hypertrophie)
-- Groupe A : supplémentation en BCAA
-- Groupe B : placebo
-- Durée : 8 semaines de musculation
+### BCAA contre protéine complète
 
-**Résultat :** **aucune différence** de gains musculaires, force, ou composition corporelle entre les groupes.
+**Étude de Jackman et al. (2017) :** 5,6 g de BCAA pris après une séance de musculation augmentent la synthèse des protéines myofibrillaires d'environ 22 % par rapport à un placebo. C'est réel, mais les auteurs notent que cette réponse est environ moitié moindre que celle observée avec une dose de whey apportant la même quantité de BCAA.
 
-**Conclusion des chercheurs :** « Quand l'apport protéique est suffisant, la supplémentation en BCAA n'apporte aucun bénéfice supplémentaire. »
+**Conclusion :** les BCAA font quelque chose, mais une vraie source de protéines fait nettement mieux, pour un prix comparable.
 
 **En pratique :** si vous mangez 1,6 à 2,2 g/kg de protéines par jour, vos BCAA sont de l'argent perdu.
 
@@ -12594,6 +12708,18 @@ Soyons nuancés. Dans quelques situations très précises, les BCAA peuvent appo
 
 **Verdict :** à tester, mais attentes modestes. Pas pertinent pour la musculation.
 
+### Cas 5 : quand manger est impossible entre deux repas
+
+**Contexte :**
+- Journées très chargées (gardes de 12 h, réunions, déplacements)
+- Pas de frigo ni de pause pour un vrai repas ou un shake au lait
+
+**Ce que dit la recherche :** après un repas riche en protéines, la synthèse protéique retombe au bout de 3 heures environ, même si les acides aminés restent élevés dans le sang. Une dose de leucine prise 2 heures après le repas la maintient à son niveau maximal (Wilson et al., 2011, chez le rat). Les BCAA se mélangent bien à l'eau et se gardent à température ambiante.
+
+**Comment faire :** buvez la dose d'un coup plutôt que de la siroter pendant une heure, pour atteindre le seuil de leucine (environ 2 à 3 g). Vous pouvez aussi la prendre environ 2 heures après le shake d'après-séance si le déjeuner est encore loin.
+
+**Verdict :** c'est l'argument le plus solide en faveur des BCAA : la praticité. Une portion de whey dans de l'eau reste meilleure quand c'est possible.
+
 ## Mon verdict : pour 90 % des pratiquants, les BCAA sont un gaspillage
 
 Soyons clairs et directs. Si vous êtes un pratiquant de musculation typique :
@@ -12601,7 +12727,7 @@ Soyons clairs et directs. Si vous êtes un pratiquant de musculation typique :
 - qui mange 1,6 à 2,2 g/kg de protéines par jour
 - qui mange avant et/ou après l'entraînement
 
-**Alors les BCAA ne vous apporteront strictement rien.**
+**Alors les BCAA ne vous apporteront pratiquement rien.**
 
 Vous n'allez pas :
 - Construire plus de muscle
@@ -12612,7 +12738,6 @@ Vous n'allez pas :
 Vous allez simplement :
 - Dépenser 20 à 40 € par mois pour rien
 - Colorer votre urine (les BCAA non utilisés sont éliminés)
-- Potentiellement créer un déséquilibre en acides aminés
 
 ## Investissez plutôt dans ces alternatives prouvées
 
@@ -12665,7 +12790,18 @@ Si vous avez un budget compléments, voici où le mettre.
 - Vraiment anabolique (contrairement aux BCAA seuls)
 - Peut être utile en entraînement à jeun
 
+**Les 9 EAA :** leucine, isoleucine, valine, lysine, méthionine, phénylalanine, thréonine, tryptophane et histidine.
+
+**Dosage :** 10 à 15 g par prise, dont environ 3 g de leucine, avant, pendant ou après l'entraînement.
+
 **Conclusion :** si vous tenez à un complément d'acides aminés, les EAA sont meilleurs que les BCAA. Mais la whey reste la meilleure option.
+
+### Bien choisir si vous achetez quand même
+
+- **Pureté** : privilégiez les produits testés par un organisme tiers (Informed Sport, NSF).
+- **Origine** : préférez les acides aminés issus de fermentation végétale à ceux extraits de plumes ou de poils, une source réelle des produits bon marché.
+- **Dosage** : vérifiez que la dose et le ratio correspondent à ceux des études, et comparez le prix par gramme d'acide aminé actif.
+- **Additifs** : évitez les produits chargés en colorants, en stimulants ou en édulcorants inutiles.
 
 ## Les techniques marketing à repérer
 
@@ -12702,6 +12838,10 @@ L'industrie des BCAA utilise des tactiques spécifiques pour vous convaincre. Ap
 **Ce qu'ils omettent :** augmenter la leucine sans les autres acides aminés essentiels aggrave le problème de déséquilibre.
 
 **La réalité :** un déséquilibre plus prononcé n'est pas une amélioration.
+
+## BCAA et insulinorésistance : un marqueur, pas une cause
+
+On lit parfois que les BCAA favoriseraient l'insulinorésistance et l'obésité, parce que les personnes insulinorésistantes ont souvent des BCAA sanguins élevés. C'est une corrélation, pas une cause : quand la sensibilité à l'insuline se dégrade, le métabolisme des BCAA est perturbé et leur taux sanguin monte (Yoon, 2016 ; Giesbertz et Daniel, 2016). Les vraies causes restent la sédentarité et l'excès de masse grasse. Ce n'est pas une raison d'éviter les BCAA, ni une raison d'en acheter.
 
 ## Exception : le goût et le rituel
 
@@ -12758,6 +12898,16 @@ Misez sur ce qui fonctionne : une alimentation de qualité, un programme solide 
 **Optimisez vos suppléments.** L'[Ultimate Scan](/offers/ultimate-scan) analyse vos besoins nutritionnels réels et identifie les compléments qui vous seront vraiment utiles (spoiler : probablement pas les BCAA). Pour une stratégie de supplémentation efficace et sans gaspillage, découvrez mon [coaching](https://www.achzodcoaching.com).
 
 ---
+
+## Références
+
+- Churchward-Venne, T.A. et al. (2012). Supplementation of a suboptimal protein dose with leucine or essential amino acids: effects on myofibrillar protein synthesis at rest and following resistance exercise in men. The Journal of Physiology, 590(11), 2751-2765.
+- Giesbertz, P. et Daniel, H. (2016). Branched-chain amino acids as biomarkers in diabetes. Current Opinion in Clinical Nutrition and Metabolic Care, 19(1), 48-54.
+- Jackman, S.R., Witard, O.C., Philp, A., Wallis, G.A., Baar, K. et Tipton, K.D. (2017). Branched-chain amino acid ingestion stimulates muscle myofibrillar protein synthesis following resistance exercise in humans. Frontiers in Physiology, 8, 390.
+- Moberg, M. et al. (2016). Activation of mTORC1 by leucine is potentiated by branched-chain amino acids and even more so by essential amino acids following resistance exercise. American Journal of Physiology. Cell Physiology, 310(11), C874-C884.
+- Wilson, G.J. et al. (2011). Leucine or carbohydrate supplementation reduces AMPK and eEF2 phosphorylation and extends postprandial muscle protein synthesis in rats. American Journal of Physiology. Endocrinology and Metabolism, 301(6), E1236-E1242.
+- Wolfe, R.R. (2017). Branched-chain amino acids and muscle protein synthesis in humans: myth or reality? Journal of the International Society of Sports Nutrition, 14, 30.
+- Yoon, M.S. (2016). The emerging role of branched-chain amino acids in insulin resistance and metabolism. Nutrients, 8(7), 405.
 `,
   },
   {  id: "55",
@@ -37967,7 +38117,7 @@ Andreux 2019, Singh 2022 (les deux études), Liu 2022 et Denk 2025 comptent des 
 
 ### Ce que l'urolithine A n'est pas
 
-Ce n'est **pas un anabolisant**. Aucun essai ne montre de prise de masse musculaire. Dans l'étude de Singh (2022), la composition corporelle n'a pas changé. Si votre objectif est l'hypertrophie, vos leviers restent la surcharge progressive, l'apport en protéines, le sommeil et des suppléments validés comme la [créatine](/blog/tout-sur-la-creatine).
+Ce n'est **pas un anabolisant**. Aucun essai ne montre de prise de masse musculaire. Dans l'étude de Singh (2022), la composition corporelle n'a pas changé. Si votre objectif est l'hypertrophie, vos leviers restent la surcharge progressive, l'apport en protéines, le sommeil et des suppléments validés comme la [créatine](/blog/creatine-guide-complet).
 
 ### Là où le signal est le plus crédible
 

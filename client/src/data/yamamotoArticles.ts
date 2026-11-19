@@ -1551,9 +1551,9 @@ Chez les professionnels comme chez les amateurs, de plus en plus de données ind
   {
     id: `yam-27`,
     slug: `yam-how-to-deal-with-psychophysical-work-nd-emotional`,
-    title: "Comment gérer le stress psychophysique, professionnel et émotionnel",
+    title: "Stress physique, professionnel et émotionnel : les plantes qui aident",
     excerpt: "Travail, études, pression émotionnelle : face aux périodes de stress intense, trois plantes adaptogènes et nootropiques sont les plus étudiées, le bacopa, le ginseng et le ginkgo biloba.",
-    content: `# Comment gérer le stress psychophysique, professionnel et émotionnel
+    content: `# Stress physique, professionnel et émotionnel : les plantes qui aident
 
 ## Les sources de stress aujourd'hui
 
@@ -1602,9 +1602,9 @@ Il favoriserait aussi la hausse de la dopamine dans le cerveau, ce qui réduirai
   {
     id: `yam-28`,
     slug: `yam-the-secret-of-youthfulness-for-quality-geing-97`,
-    title: "Le secret de la jeunesse pour bien vieillir",
+    title: "Bien vieillir : la nutrition et les compléments qui comptent",
     excerpt: "Vieillissement intrinsèque et extrinsèque, carences en micronutriments et compléments utiles pour bien vieillir : oméga-3, curcuma, vitamines, acide alpha-lipoïque, CoQ10, collagène et acide hyaluronique.",
-    content: `# Le secret de la jeunesse pour bien vieillir
+    content: `# Bien vieillir : la nutrition et les compléments qui comptent
 
 ## Le vieillissement biologique
 
