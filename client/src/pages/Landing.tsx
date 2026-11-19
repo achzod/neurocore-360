@@ -4,6 +4,7 @@ import { BETA_REVIEWS } from "@/data/betaReviews";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { trackClick } from "@/lib/analytics";
+import { StudentTransformationsSection } from "@/components/sections/StudentTransformations";
 
 // ============================================================================
 // TYPES
@@ -1462,6 +1463,7 @@ export default function Landing() {
       <CertificationsSection />
       <OffersSection />
       <CoachingDeductionBanner />
+      <StudentTransformationsSection />
       <ReviewsSection />
       <PressSection />
       <VisionSection />
