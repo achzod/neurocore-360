@@ -163,6 +163,17 @@ function normalizeBlogCategory(category: string | undefined): string {
 }
 
 function getBlogIntentCta(article: BlogArticle): BlogIntentCta {
+  if (article.slug === "retatrutide-ce-quon-sait-vraiment-2026") {
+    return {
+      intent: "peptides",
+      title: "Avant de penser rétatrutide, fais le point sur ton contexte.",
+      body:
+        "Le Pré-Peptides Engine gratuit cadre ton objectif, ton contexte et les points de vigilance à aborder avec ton médecin, sans dosage ni promesse.",
+      href: `${BASE_URL}/peptides-preview`,
+      label: "Lancer mon Pré-Peptides gratuit",
+    };
+  }
+
   if (article.slug === "meilleurs-peptides-performance-sportive") {
     return {
       intent: "peptides",
@@ -292,38 +303,36 @@ function detectFaqPairs(
   maxPairs = 8,
 ): Array<{ q: string; a: string }> {
   if (!content) return [];
+  // FAQPage is only emitted for a real FAQ block: an H2 titled "FAQ" or
+  // "Questions fréquentes" followed by H3 questions. Question-shaped section
+  // titles in the body of an article are not a FAQ and must not be marked up.
   const lines = content.split(/\r?\n/);
   const pairs: Array<{ q: string; a: string }> = [];
-  const questionRegex =
-    /^(pourquoi|comment|quand|que(?:lle?s?)?|qu['’]est-ce|qui|ou|combien|est[- ]ce|faut[- ]il|peut[- ]on|doit[- ]on|puis[- ]je)\b/i;
+  const faqStart = lines.findIndex((line) =>
+    /^\s{0,3}##\s+(?:\*\*)?\s*(?:FAQ\b|Questions?\s+fr[ée]quentes|Foire aux questions)/i.test(line),
+  );
+  if (faqStart < 0) return [];
 
-  for (let i = 0; i < lines.length && pairs.length < maxPairs; i++) {
+  for (let i = faqStart + 1; i < lines.length && pairs.length < maxPairs; i++) {
     const raw = lines[i];
-    const headingMatch = raw.match(/^\s{0,3}(#{2,3})\s+(.+?)\s*$/);
+    if (/^\s{0,3}##\s+/.test(raw)) break; // end of the FAQ section
+    const headingMatch = raw.match(/^\s{0,3}###\s+(.+?)\s*$/);
     if (!headingMatch) continue;
-    const title = headingMatch[2].replace(/\*\*/g, "").trim();
+    const title = headingMatch[1].replace(/\*\*/g, "").trim();
     if (!title) continue;
-    const isQuestion =
-      title.endsWith("?") ||
-      title.endsWith(" ?") ||
-      questionRegex.test(title);
-    if (!isQuestion) continue;
 
-    // Collect answer lines until next heading.
     const answerLines: string[] = [];
     for (let j = i + 1; j < lines.length; j++) {
       const next = lines[j];
       if (/^\s{0,3}#{2,3}\s+/.test(next)) break;
       answerLines.push(next);
-      if (answerLines.join(" ").length > 600) break;
+      if (answerLines.join(" ").length > 900) break;
     }
-    const answer = stripMarkdown(answerLines.join(" "))
-      .trim()
-      .slice(0, 300);
+    const answer = stripMarkdown(answerLines.join(" ")).trim().slice(0, 600);
     if (answer.length < 40) continue;
 
     pairs.push({
-      q: title.endsWith("?") ? title : `${title} ?`,
+      q: /\?\s*$/.test(title) ? title : `${title} ?`,
       a: answer,
     });
   }
