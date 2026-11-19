@@ -409,6 +409,10 @@ export const BLOG_SEO_META: Record<string, BlogSeoMeta> = {
     seoTitle: "Collagène : peau, articulations, dosage et résultats",
     metaDescription: "Collagène : types, formes de complément, effets sur la peau, les articulations, les os et les tendons, dosage, rôle de la vitamine C, délai des résultats.",
   },
+  "collagene-peau-articulations-guide": {
+    seoTitle: "Collagène en complément : types, efficacité et dosage",
+    metaDescription: "Collagène en complément : types I, II et III, ce qu'il change vraiment pour la peau et les articulations, le bon dosage et comment choisir son produit.",
+  },
   "adaptogenes-stress-fatigue-performance": {
     seoTitle: "Adaptogènes : rhodiola, ginseng, ashwagandha et stress",
     metaDescription: "Adaptogènes : ashwagandha, rhodiola, ginseng, schisandra, éleuthérocoque. Effets sur le stress et le cortisol, doses, associations et précautions.",
