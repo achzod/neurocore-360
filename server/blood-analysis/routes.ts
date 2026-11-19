@@ -2440,6 +2440,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    * Complete analysis with all risk scores + AI report
    */
   app.post("/api/blood-analysis/full-analysis", async (req, res) => {
+    // Appels IA payants sans paiement ni propriétaire : réservé à l'admin
+    // (aucun appel depuis le front ; le parcours client passe par /submit).
+    if (!isAdminRequestAuthorized(req)) {
+      res.status(401).json({ error: "Unauthorized - admin key required" });
+      return;
+    }
     try {
       const { markers, profile, pdfBase64, pdfName } = req.body as {
         markers?: BloodMarkerInput[];
@@ -2587,6 +2593,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    * Includes: radar chart, risk scores, supplements, protocols, action plan
    */
   app.post("/api/blood-analysis/comprehensive-report", async (req, res) => {
+    // Appels IA payants sans paiement ni propriétaire : réservé à l'admin
+    // (aucun appel depuis le front ; le parcours client passe par /submit).
+    if (!isAdminRequestAuthorized(req)) {
+      res.status(401).json({ error: "Unauthorized - admin key required" });
+      return;
+    }
     try {
       const { markers, profile, pdfBase64, pdfName } = req.body as {
         markers?: BloodMarkerInput[];
