@@ -23,6 +23,15 @@ import {
   shouldBlockForMarketingUnsubscribe,
 } from "./emailDeliveryPolicy";
 import { evaluateEmailSuppression, loadSuppressionContext } from "./emailSuppression";
+import {
+  buildListUnsubscribeHeaders,
+  buildListUnsubscribeUrl,
+  isMarketingSmtpRelayEnabled,
+  shouldAttachListUnsubscribe,
+  withBrevoListUnsubscribe,
+  withSendPulseRestListUnsubscribe,
+  withSmtpListUnsubscribe,
+} from "./listUnsubscribe";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -576,12 +585,29 @@ async function sendEmailWithTracking(
     //
     // Use base64url for the email token so Gmail's auto-linker doesn't trip
     // on the trailing `==` padding chars.
+    //
+    // Lien signé (jeton HMAC) quand un secret est configuré : personne ne peut
+    // désinscrire une autre adresse. L'ancien lien reste en secours si aucun
+    // secret n'est disponible (la route /api/unsubscribe accepte toujours les
+    // liens déjà envoyés).
     const recipientB64Url = Buffer.from(trackingData.recipientEmail)
       .toString("base64")
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
       .replace(/=+$/, "");
-    const unsubLink = `https://apexlabs.achzodcoaching.com/api/unsubscribe?email=${recipientB64Url}`;
+    const unsubLink = buildListUnsubscribeUrl(trackingData.recipientEmail)
+      || `https://apexlabs.achzodcoaching.com/api/unsubscribe?email=${recipientB64Url}`;
+
+    // En-têtes List-Unsubscribe + List-Unsubscribe-Post (RFC 8058) pour les
+    // mails marketing et les séquences uniquement, jamais les transactionnels.
+    const listUnsubscribeHeaders = !criticalEmail && shouldAttachListUnsubscribe({
+      emailType: trackingData.emailType,
+      subject: emailPayload.subject,
+      recipientEmail: trackingData.recipientEmail,
+      adminEmails: [ADMIN_EMAIL_CC, SENDER_EMAIL],
+    })
+      ? buildListUnsubscribeHeaders(trackingData.recipientEmail)
+      : null;
 
     const looksLikeBase64 = (s: string): boolean =>
       typeof s === "string" && s.length > 40 && /^[A-Za-z0-9+/=\r\n]+$/.test(s.trim());
@@ -605,6 +631,61 @@ async function sendEmailWithTracking(
     }
     emailPayload.text = stripDashes(emailPayload.text).replace(/\{\{UNSUB_LINK\}\}/g, unsubLink);
     emailPayload.subject = stripDashes(emailPayload.subject);
+
+    // L'API REST SendPulse n'accepte pas d'en-têtes personnalisés. Quand
+    // EMAIL_MARKETING_VIA_SMTP_RELAY=1 et que le relais SMTP est configuré,
+    // les mails marketing passent par le relais pour porter les en-têtes
+    // List-Unsubscribe. En cas d'échec du relais, l'envoi repart par l'API REST.
+    const relayMetadata: Record<string, any> = {};
+    if (listUnsubscribeHeaders && isMarketingSmtpRelayEnabled()) {
+      const relayTransport = getSmtpFallbackTransport();
+      if (relayTransport) {
+        try {
+          const relayHtml = looksLikeBase64(emailPayload.html)
+            ? Buffer.from(emailPayload.html, "base64").toString("utf8")
+            : emailPayload.html;
+          const relayAttachments = emailPayload.attachments_binary
+            ? Object.entries(emailPayload.attachments_binary).map(([filename, content]) => ({
+              filename,
+              content: Buffer.from(content, "base64"),
+            }))
+            : undefined;
+          const relayInfo = await relayTransport.sendMail(withSmtpListUnsubscribe({
+            from: { name: emailPayload.from.name, address: emailPayload.from.email },
+            to: emailPayload.to.map((recipient) => ({ name: recipient.name || "", address: recipient.email })),
+            subject: emailPayload.subject,
+            html: relayHtml,
+            text: emailPayload.text,
+            ...(relayAttachments ? { attachments: relayAttachments } : {}),
+          }, listUnsubscribeHeaders));
+          const relayResult: SendPulseSendResult = { result: true, id: relayInfo.messageId };
+          await logEmail({
+            emailType: trackingData.emailType,
+            recipientEmail: trackingData.recipientEmail,
+            recipientName: trackingData.recipientName,
+            auditId: trackingData.auditId,
+            auditType: trackingData.auditType,
+            subject: emailPayload.subject,
+            previewText: emailPayload.text.substring(0, 100),
+            sendpulseStatus: "success",
+            metadata: {
+              ...(trackingData.metadata || {}),
+              sendpulseAccepted: true,
+              sendpulseVerified: false,
+              transport: "smtp_relay",
+              smtpRelayMessageId: relayInfo.messageId,
+              smtpRelayAccepted: relayInfo.accepted,
+              listUnsubscribeHeaders: true,
+            },
+          });
+          console.log(`[SMTPRelay] ✅ ${trackingData.emailType} accepted for ${trackingData.recipientEmail} (List-Unsubscribe)`);
+          return relayResult;
+        } catch (relayError) {
+          relayMetadata.smtpRelayError = relayError instanceof Error ? relayError.message : String(relayError);
+          console.error("[SMTPRelay] marketing send failed, retrying through SendPulse API:", relayError);
+        }
+      }
+    }
 
     const token = await getAccessToken(trackingData.requestTimeoutMs);
 
@@ -634,7 +715,11 @@ async function sendEmailWithTracking(
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ email: payloadWithBcc, track_opens: 1, track_clicks: 1 }),
+      body: JSON.stringify({
+        email: withSendPulseRestListUnsubscribe(payloadWithBcc, listUnsubscribeHeaders),
+        track_opens: 1,
+        track_clicks: 1,
+      }),
       signal: trackingData.requestTimeoutMs ? AbortSignal.timeout(trackingData.requestTimeoutMs) : undefined,
     });
 
@@ -761,7 +846,7 @@ async function sendEmailWithTracking(
             "Content-Type": "application/json",
             "api-key": BREVO_API_KEY,
           },
-          body: JSON.stringify({
+          body: JSON.stringify(withBrevoListUnsubscribe({
             sender: emailPayload.from,
             to: emailPayload.to,
             ...(shouldBccAdmin
@@ -770,7 +855,7 @@ async function sendEmailWithTracking(
             subject: emailPayload.subject,
             htmlContent,
             textContent: emailPayload.text,
-          }),
+          }, listUnsubscribeHeaders)),
         });
         const brevoText = await brevoResponse.text();
         let brevoData: Record<string, any> = {};
@@ -814,7 +899,7 @@ async function sendEmailWithTracking(
           const htmlContent = looksLikeBase64(emailPayload.html)
             ? Buffer.from(emailPayload.html, "base64").toString("utf8")
             : emailPayload.html;
-          const smtpInfo = await smtpTransport.sendMail({
+          const smtpInfo = await smtpTransport.sendMail(withSmtpListUnsubscribe({
             from: { name: emailPayload.from.name, address: SMTP_USER },
             replyTo: emailPayload.from.email,
             to: emailPayload.to.map((recipient) => ({
@@ -825,7 +910,7 @@ async function sendEmailWithTracking(
             subject: emailPayload.subject,
             html: htmlContent,
             text: emailPayload.text,
-          });
+          }, listUnsubscribeHeaders));
           result.result = true;
           result.id = smtpInfo.messageId;
           delete result.error;
@@ -855,6 +940,8 @@ async function sendEmailWithTracking(
       sendpulseAccepted: response.ok && parsed?.result === true,
       sendpulseVerified: result.result,
       ...liveLookupMetadata,
+      ...relayMetadata,
+      ...(listUnsubscribeHeaders ? { listUnsubscribeEligible: true } : {}),
       ...(sendpulseTaskId ? { sendpulseTaskId } : {}),
       ...(result.message !== undefined ? { sendpulseMessage: result.message } : {}),
     };

@@ -11361,6 +11361,19 @@ export async function registerRoutes(
 
   // ==================== EMAIL UNSUBSCRIBE ====================
 
+  // Désinscription en un clic (RFC 8058) : jeton signé, liste de suppression.
+  // GET affiche une page avec un bouton (les scanners de liens ne désinscrivent
+  // personne), POST désinscrit (bouton Gmail/Yahoo ou bouton de la page).
+  {
+    const { createListUnsubscribeHandlers, LIST_UNSUBSCRIBE_PATH } = await import("./listUnsubscribe");
+    const listUnsubscribe = createListUnsubscribeHandlers({
+      unsubscribe: (email, reason) => storage.unsubscribeEmail(email, reason),
+    });
+    app.get(LIST_UNSUBSCRIBE_PATH, listUnsubscribe.get);
+    app.post(LIST_UNSUBSCRIBE_PATH, listUnsubscribe.post);
+  }
+
+
   // GET /api/unsubscribe , Public page: shows confirmation + auto-processes unsubscribe
   app.get("/api/unsubscribe", async (req, res) => {
     try {
