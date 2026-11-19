@@ -1,3 +1,4 @@
+import { maskEmailForLog } from "../logRedaction";
 import type { Express, Request, Response, NextFunction } from "express";
 import fs from "fs";
 import path from "path";
@@ -2688,7 +2689,7 @@ export function registerBloodTestsRoutes(app: Express): void {
                     emailSentAt: new Date().toISOString(),
                   } as any,
                 }).where(rEq(rBt.id, bt.id));
-                console.log(`[BloodTests-Recovery] ${bt.id} delivered to ${recipient}`);
+                console.log(`[BloodTests-Recovery] ${bt.id} delivered to ${maskEmailForLog(recipient)}`);
               }
             }
           }

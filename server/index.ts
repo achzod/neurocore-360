@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import * as Sentry from "@sentry/node";
 import helmet from "helmet";
+import { installConsoleEmailRedaction, redactPathForLog, summarizeErrorBodyForLog } from "./logRedaction";
+
 import { WATCHDOG_RSS_MB } from "./memoryBudget";
 import compression from "compression";
 import cors from "cors";
@@ -14,6 +16,9 @@ import { sendScheduledBloodEmail } from "./blood-analysis/routes";
 import { startAutonomousBackupWorker } from "./autonomousBackup";
 import { startPeptauraCatalogCron } from "./peptidesEngine";
 import { summarizeRecoveryCtaClickCronResult } from "./recoveryCtaClickFollowup";
+
+// Masque les emails dans les logs de production (RGPD).
+if (process.env.NODE_ENV === "production") installConsoleEmailRedaction();
 
 const app = express();
 const httpServer = createServer(app);
@@ -110,30 +115,23 @@ export function log(message: string, source = "express") {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-  const maxJsonLogChars = Number(process.env.API_RESPONSE_LOG_MAX_CHARS || 2000);
-  const omitResponseBodyFromLogs = req.path === "/api/admin/audits"
-    || /^\/api\/admin\/audits\/[^/]+(?:\/report-artifacts)?$/.test(req.path);
+  let capturedErrorSummary: string | undefined;
 
+  // Les corps de réponse ne sont plus journalisés : ils contenaient des emails,
+  // des commandes et des données de santé, et leur JSON.stringify doublait la
+  // mémoire des grosses réponses admin. On ne garde que le message d'erreur
+  // des réponses 4xx/5xx.
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
-    // Avoid a second full JSON serialization of large admin responses solely
-    // for logging. Express still serializes the actual response exactly once.
-    if (!omitResponseBodyFromLogs) capturedJsonResponse = bodyJson;
+    if (res.statusCode >= 400) capturedErrorSummary = summarizeErrorBodyForLog(bodyJson);
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        const serialized = JSON.stringify(capturedJsonResponse);
-        logLine += serialized.length > maxJsonLogChars
-          ? ` :: ${serialized.slice(0, maxJsonLogChars)}... [truncated ${serialized.length} chars]`
-          : ` :: ${serialized}`;
-      }
-
+      let logLine = `${req.method} ${redactPathForLog(path)} ${res.statusCode} in ${duration}ms`;
+      if (capturedErrorSummary) logLine += ` :: ${capturedErrorSummary}`;
       log(logLine);
     }
   });
@@ -391,10 +389,29 @@ if (process.env.NODE_ENV === "production") {
         }
       };
 
-      // Send first report immediately on startup (then every 6h)
-      runReportWithGuard();
-      setInterval(runReportWithGuard, REPORT_INTERVAL_MS);
-      log("Automatic 6h reports started (sent to admin email)");
+      // Créneaux fixes de 6 h (00/06/12/18 h UTC) au lieu d'un envoi à chaque
+      // démarrage : chaque déploiement renvoyait le rapport à l'admin.
+      // Envoi dans les 20 premières minutes du créneau, une fois par créneau.
+      const REPORT_SEND_WINDOW_MS = 20 * 60 * 1000;
+      let lastReportSlot = Math.floor(Date.now() / REPORT_INTERVAL_MS);
+      if (Date.now() - lastReportSlot * REPORT_INTERVAL_MS < REPORT_SEND_WINDOW_MS) {
+        lastReportSlot -= 1; // démarrage en début de créneau : le rapport part quand même
+      }
+      const maybeSendSlotReport = () => {
+        const now = Date.now();
+        const slot = Math.floor(now / REPORT_INTERVAL_MS);
+        if (slot === lastReportSlot) return;
+        if (now - slot * REPORT_INTERVAL_MS >= REPORT_SEND_WINDOW_MS) {
+          lastReportSlot = slot; // créneau manqué (serveur arrêté) : on attend le suivant
+          return;
+        }
+        lastReportSlot = slot;
+        void runReportWithGuard();
+      };
+      const reportTicker = setInterval(maybeSendSlotReport, 5 * 60 * 1000);
+      reportTicker.unref?.();
+      maybeSendSlotReport();
+      log("Automatic 6h reports scheduled (00/06/12/18 UTC, sent to admin email)");
 
       // Conversion tracking: DISABLED ,  no ads running, sends empty reports wasting tokens
       // To re-enable: uncomment and import sendDailyConversionReport from conversionTracker

@@ -240,12 +240,40 @@ export async function getCombinedStats(): Promise<{
  */
 
 const GOOGLE_SHEETS_NOTIFY_MIN_INTERVAL_MS = Number(process.env.GOOGLE_SHEETS_NOTIFY_MIN_INTERVAL_MS || 5 * 60 * 1000);
-const GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS = Number(process.env.GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS || 8000);
+// L'Apps Script rappelle /api/admin/export/tracking-json (2 à 8 s) puis réécrit
+// le sheet : 8 s ne suffisaient pas et chaque appel finissait en AbortError
+// alors que le sheet était bien mis à jour. 30 s par défaut.
+const GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS = Number(process.env.GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS || 30_000);
+const GOOGLE_SHEETS_NOTIFY_RETRY_DELAY_MS = Number(process.env.GOOGLE_SHEETS_NOTIFY_RETRY_DELAY_MS || 2 * 60 * 1000);
 let lastGoogleSheetNotifyAt = 0;
 let googleSheetNotifyInFlight = false;
 let googleSheetNotifySkipped = 0;
+let googleSheetRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function isAbortError(error: unknown): boolean {
+  const name = (error as { name?: string } | null)?.name;
+  return name === "AbortError" || name === "TimeoutError";
+}
+
+/**
+ * Une seule relance différée, non bloquante, après un vrai échec (réseau ou
+ * réponse non 2xx). Pas de relance sur timeout : l'Apps Script continue de
+ * tourner côté Google même si on coupe l'attente, le sheet est donc à jour.
+ */
+function scheduleGoogleSheetRetry(): void {
+  if (googleSheetRetryTimer) return;
+  googleSheetRetryTimer = setTimeout(() => {
+    googleSheetRetryTimer = null;
+    void callGoogleSheetWebhook(false).catch(() => undefined);
+  }, GOOGLE_SHEETS_NOTIFY_RETRY_DELAY_MS);
+  googleSheetRetryTimer.unref?.();
+}
 
 export async function notifyGoogleSheetUpdate(): Promise<boolean> {
+  return callGoogleSheetWebhook(true);
+}
+
+async function callGoogleSheetWebhook(allowRetry: boolean): Promise<boolean> {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
 
   if (!webhookUrl) {
@@ -254,22 +282,22 @@ export async function notifyGoogleSheetUpdate(): Promise<boolean> {
   }
 
   const now = Date.now();
-  if (googleSheetNotifyInFlight || now - lastGoogleSheetNotifyAt < GOOGLE_SHEETS_NOTIFY_MIN_INTERVAL_MS) {
+  const throttled = allowRetry && now - lastGoogleSheetNotifyAt < GOOGLE_SHEETS_NOTIFY_MIN_INTERVAL_MS;
+  if (googleSheetNotifyInFlight || throttled) {
     googleSheetNotifySkipped += 1;
     return false;
   }
 
   googleSheetNotifyInFlight = true;
   lastGoogleSheetNotifyAt = now;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS);
+  timeout.unref?.();
 
   try {
     const skipped = googleSheetNotifySkipped;
     googleSheetNotifySkipped = 0;
-    console.log(`[GoogleSheets] Calling webhook to update sheet${skipped ? ` (throttled ${skipped} intermediate updates)` : ""}...`);
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS);
-    timeout.unref?.();
+    console.log(`[GoogleSheets] Calling webhook to update sheet${skipped ? ` (throttled ${skipped} intermediate updates)` : ""}${allowRetry ? "" : " (retry)"}...`);
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -279,7 +307,6 @@ export async function notifyGoogleSheetUpdate(): Promise<boolean> {
       body: JSON.stringify({ timestamp: new Date().toISOString() }),
       signal: controller.signal,
     });
-    clearTimeout(timeout);
 
     if (!response.ok) {
       throw new Error(`Webhook returned ${response.status}`);
@@ -288,9 +315,16 @@ export async function notifyGoogleSheetUpdate(): Promise<boolean> {
     console.log('[GoogleSheets] ✅ Sheet updated successfully via webhook');
     return true;
   } catch (error) {
-    console.error('[GoogleSheets] ❌ Error calling webhook:', error);
+    if (isAbortError(error)) {
+      console.warn(`[GoogleSheets] Webhook still running after ${Math.round(GOOGLE_SHEETS_NOTIFY_TIMEOUT_MS / 1000)}s, stopped waiting (the Apps Script finishes on Google's side)`);
+      return false;
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[GoogleSheets] Webhook failed: ${message}${allowRetry ? `, retry in ${Math.round(GOOGLE_SHEETS_NOTIFY_RETRY_DELAY_MS / 1000)}s` : ""}`);
+    if (allowRetry) scheduleGoogleSheetRetry();
     return false;
   } finally {
+    clearTimeout(timeout);
     googleSheetNotifyInFlight = false;
   }
 }
