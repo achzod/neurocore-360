@@ -26,3 +26,21 @@ npm-debug.log*
 # Cache
 .cache/
 .vite/
+
+# Hygiène dépôt (2026-11-19)
+node_modules/
+dist/
+*.tsbuildinfo
+tsbuildinfo
+# Anciens sous-modules sans .gitmodules (cassaient le nettoyage CI)
+/neurocore-github/
+/neurocore-prod/
+# Sauvegardes et binaires
+*.bak
+*.backup
+*.backup_*
+*.zip
+*.app/
+*.xls
+playwright-report/
+test-results/
