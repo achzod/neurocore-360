@@ -36,8 +36,10 @@ test("admin audit collections are bounded and large bodies are not re-serialized
   assert.doesNotMatch(listRoute, /getAllAuditSummaries|getAllAudits\(/);
   assert.match(storage, /COUNT\(\*\) OVER\(\)::int AS total_count[\s\S]*LIMIT \$1 OFFSET \$2/);
   assert.match(routes, /report-artifacts[\s\S]{0,1800}Math\.min\(10[\s\S]{0,1800}LIMIT \$2/);
-  assert.match(index, /omitResponseBodyFromLogs[\s\S]*\/api\/admin\/audits/);
-  assert.match(index, /if \(!omitResponseBodyFromLogs\) capturedJsonResponse = bodyJson/);
+  // Les corps de réponse ne sont plus du tout re-sérialisés pour les logs :
+  // seul le message d'erreur des réponses 4xx/5xx est gardé.
+  assert.doesNotMatch(index, /JSON\.stringify\(capturedJsonResponse\)/);
+  assert.match(index, /if \(res\.statusCode >= 400\) capturedErrorSummary = summarizeErrorBodyForLog\(bodyJson\)/);
 });
 
 test("production verification is a dedicated read-only PostgreSQL gate", () => {

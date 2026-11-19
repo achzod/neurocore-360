@@ -74,6 +74,7 @@ import { streamAuditZip } from "./exportZipService";
 import { createPayPalOrder, capturePayPalOrder, isPayPalConfigured } from "./paypalClient";
 import { buildReportAccessUrl, getAuthPayload, getReportAccessDecision, type AuthPayload } from "./auth";
 import crypto from "crypto";
+import { maskEmailForLog, redactEmailsInText } from "./logRedaction";
 import {
   OPENAI_REPORT_MODEL,
   checkAIUsageCostAlert,
@@ -852,6 +853,13 @@ export async function registerRoutes(
   const magicLinkLimiter = createRateLimiter({ windowMs: 15 * 60_000, max: 5 }); // 5 per 15min per IP
   const adminLimiter = createRateLimiter({ windowMs: 60_000, max: 20 }); // 20 per min per IP
   const whatsappLeadLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
+  // Routes publiques sans limite jusqu'ici (audit backend nov. 2026)
+  const progressReadLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
+  const progressWriteLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
+  const accountLookupLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
+  const magicLinkVerifyLimiter = createRateLimiter({ windowMs: 15 * 60_000, max: 20 });
+  const publicSubmitLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
+  const promoValidateLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
 
   let whatsappLeadsTableEnsured = false;
   async function ensureWhatsAppLeadsTable(): Promise<void> {
@@ -2402,7 +2410,7 @@ export async function registerRoutes(
     return true;
   }
 
-  app.post("/api/questionnaire/save-progress", async (req, res) => {
+  app.post("/api/questionnaire/save-progress", progressWriteLimiter, async (req, res) => {
     try {
       const data = saveProgressSchema.parse(req.body);
       const progress = await storage.saveProgress(data);
@@ -2416,7 +2424,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/questionnaire/clear-progress", async (req, res) => {
+  app.post("/api/questionnaire/clear-progress", progressReadLimiter, async (req, res) => {
     try {
       const schema = z.object({ email: z.string().trim().toLowerCase().email() });
       const { email } = schema.parse(req.body);
@@ -2428,7 +2436,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/questionnaire/progress/:email", async (req, res) => {
+  app.get("/api/questionnaire/progress/:email", progressReadLimiter, async (req, res) => {
     try {
       const email = req.params.email;
       const progress = await storage.getProgress(email);
@@ -2932,9 +2940,10 @@ export async function registerRoutes(
   // Public: Get conversion stats with secret key (no login required)
   app.get("/api/conversions", async (req, res) => {
     const key = req.query.key;
-    const adminSecret = process.env.ADMIN_SECRET || "your_admin_secret";
+    const adminSecret = process.env.ADMIN_SECRET;
 
-    if (key !== adminSecret) {
+    // Pas de secret par défaut : le dépôt est public.
+    if (!adminSecret || key !== adminSecret) {
       return res.status(403).json({ error: "Invalid key" });
     }
 
@@ -4177,7 +4186,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/auth/verify", async (req, res) => {
+  app.get("/api/auth/verify", magicLinkVerifyLimiter, async (req, res) => {
     try {
       const { token, email } = req.query;
       if (!token || !email) {
@@ -4230,7 +4239,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/verify-magic-link", async (req, res) => {
+  app.post("/api/auth/verify-magic-link", magicLinkVerifyLimiter, async (req, res) => {
     try {
       const { token, email } = req.body as { token?: string; email?: string };
       const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -4267,7 +4276,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/check-email", async (req, res) => {
+  app.post("/api/auth/check-email", accountLookupLimiter, async (req, res) => {
     try {
       const { email } = req.body;
       const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -10024,7 +10033,7 @@ export async function registerRoutes(
 
   // ==================== REVIEW ENDPOINTS ====================
 
-  app.post("/api/review", async (req, res) => {
+  app.post("/api/review", publicSubmitLimiter, async (req, res) => {
     try {
       const parsed = insertReviewSchema.parse(req.body);
       const audit = await storage.getAudit(parsed.auditId);
@@ -10049,7 +10058,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/submit-review", async (req, res) => {
+  app.post("/api/submit-review", publicSubmitLimiter, async (req, res) => {
     try {
       const parsed = insertReviewSchema.parse(req.body);
 
@@ -10241,6 +10250,9 @@ export async function registerRoutes(
   });
 
   app.post("/api/generate-premium-audit", async (req, res) => {
+    // Génération OpenAI payante à partir de données arbitraires : réservée à l'admin
+    // (aucun appel depuis le front).
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { clientData, photoAnalysis, resumeAuditId } = req.body as {
         clientData: ClientData;
@@ -11441,10 +11453,12 @@ export async function registerRoutes(
   app.get("/api/export/emails-for-sheets", async (req, res) => {
     try {
       // Token fixe pour Google Sheets (read-only access)
-      const SHEETS_READ_TOKEN = process.env.GOOGLE_SHEETS_READ_TOKEN || "apexlabs_sheets_readonly_2026";
+      // Pas de jeton par défaut : l'ancien jeton codé en dur est visible dans
+      // le dépôt public. Sans GOOGLE_SHEETS_READ_TOKEN, l'export est fermé.
+      const SHEETS_READ_TOKEN = process.env.GOOGLE_SHEETS_READ_TOKEN;
       const providedToken = req.query.token || req.headers['x-sheets-token'];
 
-      if (providedToken !== SHEETS_READ_TOKEN) {
+      if (!SHEETS_READ_TOKEN || providedToken !== SHEETS_READ_TOKEN) {
         return res.status(401).json({ success: false, error: "Invalid token" });
       }
 
@@ -11615,7 +11629,7 @@ export async function registerRoutes(
   });
 
   // Validate promo code (Public - for checkout)
-  app.post("/api/promo-codes/validate", async (req, res) => {
+  app.post("/api/promo-codes/validate", promoValidateLimiter, async (req, res) => {
     try {
       const rawCode = req.body?.code;
       const auditType = req.body?.auditType;
@@ -12624,7 +12638,7 @@ export async function registerRoutes(
   };
 
   // Subscribe to waitlist (ApexLabs pre-launch)
-  app.post("/api/waitlist/subscribe", async (req, res) => {
+  app.post("/api/waitlist/subscribe", publicSubmitLimiter, async (req, res) => {
     const { email, source = "apexlabs", name = "", objective = "" } = req.body;
 
     // Validation
@@ -16056,8 +16070,23 @@ export async function registerRoutes(
 
   // ==================== SENDPULSE WEBHOOK - Track CTA clicks ====================
   app.post("/api/webhooks/sendpulse", async (req, res) => {
+    // Jeton partagé optionnel : actif seulement si SENDPULSE_WEBHOOK_TOKEN est
+    // défini (à mettre aussi dans l'URL du webhook côté SendPulse : ?token=...).
+    const expectedSendPulseToken = String(process.env.SENDPULSE_WEBHOOK_TOKEN || "").trim();
+    if (expectedSendPulseToken) {
+      const providedToken = String(req.query.token || req.headers["x-webhook-token"] || "").trim();
+      const valid = providedToken.length === expectedSendPulseToken.length
+        && crypto.timingSafeEqual(Buffer.from(providedToken), Buffer.from(expectedSendPulseToken));
+      if (!valid) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+    }
     try {
-      console.log("[SendPulseWebhook] Received webhook:", JSON.stringify(req.body, null, 2));
+      // Pas de dump du corps : il contient les emails des destinataires.
+      const rawBody = req.body;
+      const rawShape = Array.isArray(rawBody) ? `array(${rawBody.length})` : typeof rawBody;
+      console.log(`[SendPulseWebhook] Received webhook (${rawShape}${rawBody?.event_type ? `, event_type=${String(rawBody.event_type)}` : ""})`);
 
       // SendPulse sends either a legacy array of flat events or the newer
       // envelope { "0": {...}, event_type, data: { action, data: [...] } }.
@@ -16085,7 +16114,7 @@ export async function registerRoutes(
           // Les hard bounces suivent EMAIL_SUPPRESSION_ENABLED.
           await applySendPulseSuppressions(queuedEvents, {
             addToSuppressionList: (address, reason) => storage.addEmailToSuppressionList(address, reason),
-            log: (message) => console.log(message),
+            log: (message) => console.log(redactEmailsInText(message)),
           }).catch((suppressionError: unknown) =>
             console.error("[SendPulseWebhook] suppression list update failed:", suppressionError),
           );
@@ -16128,7 +16157,7 @@ export async function registerRoutes(
               }
 
               if (emailResult.rows.length === 0) {
-                console.log(`[SendPulseWebhook] ⚠️  Email tracking not found for: ${normalizedEmail || providerTaskId}`);
+                console.log(`[SendPulseWebhook] ⚠️  Email tracking not found for: ${normalizedEmail ? maskEmailForLog(normalizedEmail) : providerTaskId}`);
                 // Still record the event with null email_tracking_id
               }
 
@@ -16196,7 +16225,7 @@ export async function registerRoutes(
                 }
               }
 
-              console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail || providerTaskId}`);
+              console.log(`[SendPulseWebhook] ✅ Tracked ${eventType} for ${normalizedEmail ? maskEmailForLog(normalizedEmail) : providerTaskId}`);
               processed++;
             } catch (err) {
               console.error("[SendPulseWebhook] Error processing event:", err);
