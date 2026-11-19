@@ -559,10 +559,10 @@ export const BLOG_SEO_META: Record<string, BlogSeoMeta> = {
   },
   "alcool-et-gains": {
     seoTitle: "Alcool et prise de muscle : synthèse, hormones, récup",
-    metaDescription: "Alcool et prise de muscle : il freine la synthèse des protéines, perturbe les hormones et ralentit la récupération. Études et moyens de limiter les dégâts.",
+    metaDescription: "L'alcool freine la synthèse des protéines, perturbe les hormones et ralentit la récupération. Ce que montrent les études et comment limiter les dégâts.",
   },
   "le-pouvoir-de-la-musculation": {
-    seoTitle: "Le pouvoir de la musculation : l'histoire de Pete",
+    seoTitle: "La musculation qui change une vie : l'histoire de Pete",
     metaDescription: "L'histoire de Pete, débutant qui découvre le bodybuilding dans un salon fitness, apprend la patience auprès d'un partenaire puis transmet à son tour.",
   },
   "un-bref-guide-de-la-coupe": {
@@ -638,7 +638,7 @@ export const BLOG_SEO_META: Record<string, BlogSeoMeta> = {
     metaDescription: "Combien boire avant et pendant l'entraînement ? Une légère déshydratation réduit force, puissance et endurance et fait monter le cortisol. Rôle du sodium.",
   },
   "la-boite-a-lunch": {
-    seoTitle: "La lunch box : une leçon de responsabilité personnelle",
+    seoTitle: "Responsabilité personnelle : la leçon des trois ouvriers",
     metaDescription: "Trois ouvriers et leur déjeuner pour comprendre une chose simple : votre physique et votre vie dépendent surtout de ce que vous choisissez d'y mettre.",
   },
   "sadapter-a-la-resistance": {
@@ -650,7 +650,7 @@ export const BLOG_SEO_META: Record<string, BlogSeoMeta> = {
     metaDescription: "Partenaire d'entraînement : ponctualité, hygiène, motivation, parade, coaching mutuel et honnêteté. Les règles d'un bon binôme, études à l'appui.",
   },
   "ce-que-je-ferais-differemment": {
-    seoTitle: "Musculation : ce que je ferais différemment aujourd'hui",
+    seoTitle: "Musculation : 6 regrets de pratiquants expérimentés",
     metaDescription: "Apprendre avant de charger, faire du cardio, viser cinq ans plutôt que cinq jours, rééduquer ses blessures : les regrets fréquents des pratiquants.",
   },
   "quelques-physique-du-bodybuilding": {
@@ -710,7 +710,7 @@ export const BLOG_SEO_META: Record<string, BlogSeoMeta> = {
     metaDescription: "Masque chirurgical, tissu ou FFP2 à la salle : ce que disent les études sur la respiration, l'endurance et la musculation, et comment adapter la séance.",
   },
   "mode-bete": {
-    seoTitle: "Mode bête : l'humain face aux animaux, en chiffres",
+    seoTitle: "Humain contre animaux : force, vitesse et endurance",
     metaDescription: "Masse maigre, force, détente, vitesse de course, nage, VO2 max : comment l'humain se compare aux animaux et pourquoi le mode bête relève de l'autodérision.",
   },
   "nutrition-post-entrainement": {
@@ -962,7 +962,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "À lire aussi",
     links: [
       { slug: "guide-seche-cutting", label: "Sèche musculation : perdre du gras sans perdre de muscle" },
-      { slug: "un-bref-guide-de-la-coupe", label: "Sèche d'été : déficit, macros, cardio et entraînement" },
       { slug: "calories-balance-energetique", label: "Balance énergétique : calories, déficit et surplus" },
     ],
   },
@@ -1165,9 +1164,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "Les articles de ce dossier",
     links: [
       { slug: "top-10-supplements-preuves-scientifiques", label: "Compléments efficaces : les 10 qui ont des preuves" },
-      { slug: "creatine-monohydrate-guide-ultime", label: "Créatine monohydrate : reins, rétention d'eau et choix" },
-      { slug: "tout-sur-la-creatine", label: "Créatine : phase de charge, forme et quand la prendre" },
-      { slug: "yam-creatine-the-queen-of-performance-supplements-76", label: "Créatine et performance : stockage, dose et protocole" },
       { slug: "beta-alanine-endurance-performance-musculaire", label: "Bêta-alanine : dosage, picotements et performance" },
       { slug: "tout-sur-la-cafeine", label: "Caféine avant l'entraînement : 3 à 6 mg/kg, effets" },
       { slug: "cafeine-performance-guide", label: "Caféine et sport : dose, timing et effets sur la force" },
@@ -1175,8 +1171,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
       { slug: "citruline-malate-nitrique-oxyde-pump", label: "Citrulline malate : pump, endurance et dosage" },
       { slug: "yam-beta-lanine--supplement-to-support-resistance-", label: "Bêta-alanine et carnosine : dose et sports concernés" },
       { slug: "acides-amines-essentiels-performance-muscle", label: "EAA : acides aminés essentiels et synthèse musculaire" },
-      { slug: "bcaa-pomper-ou-vider", label: "BCAA et alimentation riche en protéines : utiles ?" },
-      { slug: "bcaa-eaa-recuperation-musculaire", label: "BCAA ou EAA : lequel pour la récupération musculaire ?" },
       { slug: "bcaa-utiles-inutiles", label: "BCAA : utiles ou argent jeté par les fenêtres ?" },
     ],
   },
@@ -1196,7 +1190,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "À lire aussi",
     links: [
       { slug: "stagnation-musculation-pourquoi-vous-stagnez", label: "Stagnation en musculation : 9 causes" },
-      { slug: "memoire-musculaire", label: "Mémoire musculaire : myonoyaux et apprentissage du geste" },
       { slug: "entrainement-des-mollets-101", label: "Entraînement des mollets : fréquence, reps et étirement" },
     ],
   },
@@ -1220,7 +1213,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "Les articles de ce dossier",
     links: [
       { slug: "stagnation-musculation-pourquoi-vous-stagnez", label: "Stagnation en musculation : 9 causes" },
-      { slug: "un-bref-guide-de-la-coupe", label: "Sèche d'été : déficit, macros, cardio et entraînement" },
       { slug: "recomposition-corporelle", label: "Perdre du gras sans perdre de muscle : la recomposition" },
       { slug: "recomposition-corporelle-possible", label: "Recomposition corporelle : perdre du gras, gagner du muscle" },
       { slug: "entrainement-a-jeun", label: "Musculation à jeun : performance, EPOC et perte de gras" },
@@ -1312,8 +1304,7 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "À lire aussi",
     links: [
       { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
-      { slug: "bcaa-pomper-ou-vider", label: "BCAA et alimentation riche en protéines : utiles ?" },
-      { slug: "bcaa-eaa-recuperation-musculaire", label: "BCAA ou EAA : lequel pour la récupération musculaire ?" },
+      { slug: "acides-amines-essentiels-performance-muscle", label: "EAA : acides aminés essentiels et synthèse musculaire" },
     ],
   },
   "amplitude-mouvement-croissance": {
@@ -1352,7 +1343,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "À lire aussi",
     links: [
       { slug: "guide-seche-cutting", label: "Sèche musculation : perdre du gras sans perdre de muscle" },
-      { slug: "un-bref-guide-de-la-coupe", label: "Sèche d'été : déficit, macros, cardio et entraînement" },
       { slug: "frequence-repas-metabolisme", label: "Fréquence des repas : 3 ou 6 repas pour le métabolisme ?" },
     ],
   },
@@ -1552,14 +1542,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
       { slug: "yam-ashwagandha--valuable-lly-gainst-stress-952", label: "Ashwagandha et stress : withanolides, cortisol, récup" },
     ],
   },
-  "creatine-monohydrate-guide-ultime": {
-    heading: "À lire aussi",
-    links: [
-      { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
-      { slug: "tout-sur-la-creatine", label: "Créatine : phase de charge, forme et quand la prendre" },
-      { slug: "yam-creatine-the-queen-of-performance-supplements-76", label: "Créatine et performance : stockage, dose et protocole" },
-    ],
-  },
   "probiotiques-sante-intestinale-guide": {
     heading: "À lire aussi",
     links: [
@@ -1582,14 +1564,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
       { slug: "top-10-supplements-preuves-scientifiques", label: "Compléments efficaces : les 10 qui ont des preuves" },
       { slug: "zinc-immunite-testosterone-sante", label: "Zinc : immunité, testostérone, carence et dosage" },
       { slug: "omega-3-guide-complet-bienfaits", label: "Oméga-3 : bienfaits, sources et dose selon l'objectif" },
-    ],
-  },
-  "bcaa-eaa-recuperation-musculaire": {
-    heading: "À lire aussi",
-    links: [
-      { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
-      { slug: "acides-amines-essentiels-performance-muscle", label: "EAA : acides aminés essentiels et synthèse musculaire" },
-      { slug: "yam-essential-mino-cids-more-on-the-most-discussed-s", label: "Acides aminés essentiels : besoins, ratio et qualité" },
     ],
   },
   "nootropiques-naturels-cognition": {
@@ -1702,7 +1676,7 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "À lire aussi",
     links: [
       { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
-      { slug: "bcaa-eaa-recuperation-musculaire", label: "BCAA ou EAA : lequel pour la récupération musculaire ?" },
+      { slug: "bcaa-utiles-inutiles", label: "BCAA : utiles ou argent jeté par les fenêtres ?" },
       { slug: "yam-essential-mino-cids-more-on-the-most-discussed-s", label: "Acides aminés essentiels : besoins, ratio et qualité" },
     ],
   },
@@ -1878,7 +1852,7 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
       { slug: "entrainement-maison-sans-equipement", label: "Musculation à la maison sans matériel : garder ses gains" },
       { slug: "differences-genre-entrainement", label: "Musculation femme et homme : quelles différences ?" },
       { slug: "temps-sous-tension", label: "TUT en musculation : la tension compte plus que le temps" },
-      { slug: "le-pouvoir-de-la-musculation", label: "Le pouvoir de la musculation : l'histoire de Pete" },
+      { slug: "le-pouvoir-de-la-musculation", label: "La musculation qui change une vie : l'histoire de Pete" },
     ],
   },
   "biomecanique-musculation-guide-complet": {
@@ -1916,7 +1890,7 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "À lire aussi",
     links: [
       { slug: "stagnation-musculation-pourquoi-vous-stagnez", label: "Stagnation en musculation : 9 causes" },
-      { slug: "ce-que-je-ferais-differemment", label: "Musculation : ce que je ferais différemment aujourd'hui" },
+      { slug: "ce-que-je-ferais-differemment", label: "Musculation : 6 regrets de pratiquants expérimentés" },
       { slug: "proteines-bodybuilders-doses", label: "Protéines en musculation : combien par jour viser ?" },
     ],
   },
@@ -2030,22 +2004,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
       { slug: "une-histoire-de-trois-bodybuilders", label: "Trois bodybuilders, trois méthodes : qui progresse ?" },
     ],
   },
-  "un-bref-guide-de-la-coupe": {
-    heading: "À lire aussi",
-    links: [
-      { slug: "guide-seche-cutting", label: "Sèche musculation : perdre du gras sans perdre de muscle" },
-      { slug: "calories-balance-energetique", label: "Balance énergétique : calories, déficit et surplus" },
-      { slug: "iifym-macros-flexible-dieting", label: "IIFYM et flexible dieting : calculer ses macros" },
-    ],
-  },
-  "memoire-musculaire": {
-    heading: "À lire aussi",
-    links: [
-      { slug: "stagnation-musculation-pourquoi-vous-stagnez", label: "Stagnation en musculation : 9 causes" },
-      { slug: "memoire-musculaire-science", label: "Mémoire musculaire : pourquoi le muscle revient vite" },
-      { slug: "surcharge-progressive-guide", label: "Surcharge progressive : la méthode pour progresser" },
-    ],
-  },
   "genetique-et-athletes-delite": {
     heading: "À lire aussi",
     links: [
@@ -2109,20 +2067,11 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
       { slug: "periodisation-musculation", label: "Périodisation en musculation : linéaire, ondulée, blocs" },
     ],
   },
-  "tout-sur-la-creatine": {
-    heading: "À lire aussi",
-    links: [
-      { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
-      { slug: "creatine-monohydrate-guide-ultime", label: "Créatine monohydrate : reins, rétention d'eau et choix" },
-      { slug: "yam-creatine-the-queen-of-performance-supplements-76", label: "Créatine et performance : stockage, dose et protocole" },
-    ],
-  },
   "tout-sur-la-cafeine": {
     heading: "À lire aussi",
     links: [
       { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
       { slug: "cafeine-performance-guide", label: "Caféine et sport : dose, timing et effets sur la force" },
-      { slug: "tout-sur-la-creatine", label: "Créatine : phase de charge, forme et quand la prendre" },
     ],
   },
   "frequence-de-formation": {
@@ -2288,7 +2237,7 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "À lire aussi",
     links: [
       { slug: "guide-seche-cutting", label: "Sèche musculation : perdre du gras sans perdre de muscle" },
-      { slug: "la-boite-a-lunch", label: "La lunch box : une leçon de responsabilité personnelle" },
+      { slug: "la-boite-a-lunch", label: "Responsabilité personnelle : la leçon des trois ouvriers" },
       { slug: "calories-balance-energetique", label: "Balance énergétique : calories, déficit et surplus" },
     ],
   },
@@ -2298,14 +2247,6 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
       { slug: "stagnation-musculation-pourquoi-vous-stagnez", label: "Stagnation en musculation : 9 causes" },
       { slug: "periodisation-musculation", label: "Périodisation en musculation : linéaire, ondulée, blocs" },
       { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
-    ],
-  },
-  "bcaa-pomper-ou-vider": {
-    heading: "À lire aussi",
-    links: [
-      { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
-      { slug: "bcaa-utiles-inutiles", label: "BCAA : utiles ou argent jeté par les fenêtres ?" },
-      { slug: "bcaa-eaa-recuperation-musculaire", label: "BCAA ou EAA : lequel pour la récupération musculaire ?" },
     ],
   },
   "sentrainer-avec-des-masques": {
@@ -2336,7 +2277,7 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     heading: "À lire aussi",
     links: [
       { slug: "stagnation-musculation-pourquoi-vous-stagnez", label: "Stagnation en musculation : 9 causes" },
-      { slug: "ce-que-je-ferais-differemment", label: "Musculation : ce que je ferais différemment aujourd'hui" },
+      { slug: "ce-que-je-ferais-differemment", label: "Musculation : 6 regrets de pratiquants expérimentés" },
       { slug: "surcharge-progressive-guide", label: "Surcharge progressive : la méthode pour progresser" },
     ],
   },
@@ -2356,20 +2297,11 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
       { slug: "squats-mauvais-genoux-mythe", label: "Squat et genoux : le squat abîme-t-il vraiment les genoux ?" },
     ],
   },
-  "yam-creatine-the-queen-of-performance-supplements-76": {
-    heading: "À lire aussi",
-    links: [
-      { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
-      { slug: "creatine-monohydrate-guide-ultime", label: "Créatine monohydrate : reins, rétention d'eau et choix" },
-      { slug: "tout-sur-la-creatine", label: "Créatine : phase de charge, forme et quand la prendre" },
-    ],
-  },
   "yam-beta-lanine--supplement-to-support-resistance-": {
     heading: "À lire aussi",
     links: [
       { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
       { slug: "beta-alanine-endurance-performance-musculaire", label: "Bêta-alanine : dosage, picotements et performance" },
-      { slug: "yam-creatine-the-queen-of-performance-supplements-76", label: "Créatine et performance : stockage, dose et protocole" },
     ],
   },
   "yam-ashwagandha--valuable-lly-gainst-stress-952": {
@@ -2393,7 +2325,7 @@ export const BLOG_RELATED_LINKS: Record<string, BlogRelatedLinks> = {
     links: [
       { slug: "creatine-guide-complet", label: "Créatine : effets, dosage de 3 à 5 g et risques réels" },
       { slug: "acides-amines-essentiels-performance-muscle", label: "EAA : acides aminés essentiels et synthèse musculaire" },
-      { slug: "bcaa-eaa-recuperation-musculaire", label: "BCAA ou EAA : lequel pour la récupération musculaire ?" },
+      { slug: "bcaa-utiles-inutiles", label: "BCAA : utiles ou argent jeté par les fenêtres ?" },
     ],
   },
   "yam-prebiotics-probiotics-nd-intestinal-bacterial-flo": {

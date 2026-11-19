@@ -1534,14 +1534,14 @@ Une maladie sérieuse impose quelques jours de repos, car il est très facile de
   {  id: "mph-16",
     priority: 31,
     slug: "apport-en-proteines-et-bodybuilders",
-    title: "Apport en protéines et bodybuilders",
+    title: "Protéines : les besoins réels des bodybuilders",
     excerpt: "1,6 g/kg de protéines suffit-il pour maximiser la prise de muscle ? Ce que disent vraiment les revues au-delà du résumé, et les apports à viser en prise de masse comme en sèche.",
     category: "supplements",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=800&auto=format&fit=crop",
-    content: `# Apport en protéines et bodybuilders
+    content: `# Protéines : les besoins réels des bodybuilders
 
 
 La recommandation actuelle de 1,6 g de protéines par kilo de poids de corps et par jour suffit-elle pour maximiser la croissance musculaire ? Sur cette question, les avis sont étonnamment partagés. Beaucoup pensent que ce niveau suffit. Presque autant estiment qu'il faut beaucoup plus de protéines pour optimiser les gains. Comme la plupart des lecteurs de ce blog cherchent justement à maximiser leur croissance, voyons ce que dit la science sur les protéines chez les bodybuilders.
@@ -1782,7 +1782,7 @@ S'entraîner avec un glycogène musculaire bas peut aussi augmenter la dégradat
 
 Il faut plus de recherches, car on ne sait pas encore comment une restriction sévère en glucides affecte les gains de force et de masse à long terme (du moins hors régime cétogène). Si vous choisissez cette stratégie, n'hésitez pas à ajuster la quantité et le moment de vos glucides jusqu'à trouver ce qui vous convient.
 
-Pour aller plus loin sur l'adaptation à l'exercice avec peu de glucides, lisez l'article sur [le cyclage des glucides](/blog/cyclisme-des-glucides). Et pour les glucides et la musculation en général, l'article sur [le timing des nutriments](/blog/calendrier-des-nutriments).
+Pour aller plus loin sur l'adaptation à l'exercice avec peu de glucides, lisez l'article sur [le cyclage des glucides](/blog/cyclage-glucides-efficace). Et pour les glucides et la musculation en général, l'article sur [le timing des nutriments](/blog/calendrier-des-nutriments).
 
 
 ### Restriction du flux sanguin
@@ -1924,14 +1924,14 @@ L'hormèse appliquée à l'exercice reste un sujet de recherche récent, de nouv
   {  id: "mph-19",
     priority: 49,
     slug: "un-secret-de-motivation",
-    title: "Un secret de motivation : la science derrière une discipline durable",
+    title: "Motivation : pourquoi s'entraîner pour les autres aide à tenir",
     excerpt: "La motivation centrée sur soi finit toujours par lâcher. Dopamine, motivation intrinsèque et responsabilité sociale : pourquoi s'entraîner pour quelqu'un d'autre aide à tenir sur la durée.",
     category: "nutrition",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1543362906-acfc16c67564?w=800&auto=format&fit=crop",
-    content: `# Un secret de motivation : la science derrière une discipline durable
+    content: `# Motivation : pourquoi s'entraîner pour les autres aide à tenir
 
 ## Introduction : le mythe de la motivation
 
@@ -2375,7 +2375,7 @@ Optimiser le timing des protéines peut aider à mieux progresser. Mais il faut 
 
 Avec une alimentation végétale et un objectif de prise de muscle, on revient au point 1. Les protéines végétales peuvent être aussi efficaces que les protéines animales pour la croissance musculaire, mais il faut en consommer davantage pour atteindre le seuil de leucine qui maximise la synthèse des protéines musculaires. 24 grammes de whey suffisent à atteindre ce seuil, alors qu'il faut 36 grammes de protéines de riz pour obtenir la même réponse (7), parce que les protéines végétales contiennent beaucoup moins de leucine.
 
-Pour aller plus loin sur les sources de protéines, lisez l'article sur [les protéines végétales et animales](/blog/proteines-vegetales-ou-animales).
+Pour aller plus loin sur les sources de protéines, lisez l'article sur [les protéines végétales et animales](/blog/proteine-vegetale-animale).
 
 3. Le timing : c'est le dernier facteur à considérer quand on planifie son apport en protéines pour progresser ou améliorer sa composition corporelle. Le timing peut jouer un rôle dans les résultats, mais le privilégier au détriment de l'apport total ou du type de protéines serait une erreur, car il compte probablement moins que les deux autres. Plusieurs chercheurs recommandent tout de même de consommer des protéines peu après l'entraînement pour profiter de la « fenêtre anabolique », la période après la séance où la synthèse des protéines est augmentée (1, 6, 8, 13).
 
@@ -2477,14 +2477,14 @@ Pour ceux qui veulent simplement gagner en force ou en masse musculaire, les pro
   {  id: "mph-23",
     priority: 42,
     slug: "la-salle-daudience-des-gains",
-    title: "Le tribunal des gains",
+    title: "Le procès du quart de squat",
     excerpt: "Un procès imaginaire contre un adepte du quart de squat, jugé par un jury de légendes de la fonte. Derrière l'humour, un rappel simple : votre progression dépend de vos choix à l'entraînement.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1585435557343-3b092031a831?w=800&auto=format&fit=crop",
-    content: `# Le tribunal des gains
+    content: `# Le procès du quart de squat
 
 
 Dans le système judiciaire, les infractions liées à la musculation sont considérées comme particulièrement graves. Les enquêteurs chargés de ces crimes font partie d'une brigade d'élite spécialisée dans les atteintes aux gains. Voici l'histoire de Joe Obtus, accusé de quarts de squat à répétition malgré les avertissements de la direction de sa salle.
@@ -2625,14 +2625,14 @@ Si vous étiez convoqué devant le tribunal des gains, que plaideriez-vous ? Et 
   {  id: "mph-24",
     priority: 15,
     slug: "alcool-et-gains",
-    title: "Alcool et gains",
+    title: "Alcool et prise de muscle",
     excerpt: "L'alcool freine la synthèse des protéines, perturbe les hormones et ralentit la récupération. Ce que montrent les études, et comment limiter les dégâts sur vos gains quand vous buvez.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1556742031-c6961e8560b0?w=800&auto=format&fit=crop",
-    content: `# Alcool et gains
+    content: `# Alcool et prise de muscle
 
 
 La question de l'alcool revient souvent, donc elle mérite qu'on prenne le temps de regarder ses effets sur les gains et la croissance musculaire. Précision : il s'agit d'une revue objective de la littérature, pas d'un encouragement à boire. L'éthique et la morale autour de l'alcool sortent du cadre de cet article, donc il n'en sera pas question ici.
@@ -2979,14 +2979,14 @@ En fin de compte, ajouter de la variation à votre programme peut empêcher les 
   {  id: "mph-26",
     priority: 21,
     slug: "le-pouvoir-de-la-musculation",
-    title: "Le pouvoir de la musculation",
+    title: "Comment la musculation change une vie : l'histoire de Pete",
     excerpt: "L'histoire de Pete, un débutant qui découvre le bodybuilding lors d'un salon fitness, apprend la patience auprès d'un partenaire d'entraînement et finit par transmettre à son tour.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "17 min",
     image: "https://images.unsplash.com/photo-1577174881658-0f30ed549adc?w=800&auto=format&fit=crop",
-    content: `# Le pouvoir de la musculation
+    content: `# Comment la musculation change une vie : l'histoire de Pete
 
 Avant de commencer, je tiens à rendre hommage à Dave Tate et à son récit « The Education of a Powerlifter ». Ce qui suit s'inspire de ses mots et de sa façon de raconter le parcours d'un seul pratiquant pour parler à tout le monde. C'est une tentative modeste d'adapter ce récit pour les amateurs de bodybuilding.
 
@@ -4108,7 +4108,7 @@ On classe les AINS selon l'isoforme de cyclo-oxygénase qu'ils inhibent. On en c
 
 L'inflammation a mauvaise presse dans le milieu du fitness et du bien-être, mais il est bien établi que la réponse inflammatoire à la musculation peut servir de signal de croissance. Certains récepteurs des prostanoïdes déclenchent une cascade de signalisation vers la synthèse des protéines (9). La signalisation des prostanoïdes intervient aussi dans l'ajout de myonoyaux par les cellules satellites (12), ce qui compte beaucoup pour la croissance.
 
-L'ajout de myonoyaux est presque certainement nécessaire à la prise de muscle, selon la « théorie du domaine nucléaire » : un noyau ne peut contrôler qu'un volume limité de cellule. Pour qu'une cellule grossisse, il lui faut donc plus de noyaux pour fonctionner (11). Pour aller plus loin, lisez l'article sur [la mémoire musculaire](/blog/memoire-musculaire).
+L'ajout de myonoyaux est presque certainement nécessaire à la prise de muscle, selon la « théorie du domaine nucléaire » : un noyau ne peut contrôler qu'un volume limité de cellule. Pour qu'une cellule grossisse, il lui faut donc plus de noyaux pour fonctionner (11). Pour aller plus loin, lisez l'article sur [la mémoire musculaire](/blog/memoire-musculaire-science).
 
 D'après ces données, l'inflammation liée à cette activité enzymatique après un exercice traumatisant participe à la croissance musculaire (26). Si l'on prend un médicament en vente libre qui bloque cette activité enzymatique, est-ce qu'on freine la croissance ? Voyons ça.
 
@@ -4213,14 +4213,14 @@ Je ne suis pas médecin, donc je ne parlerai pas de dosages précis, de moment d
   {  id: "mph-35",
     priority: 36,
     slug: "science-musculaire-une-histoire",
-    title: "Science musculaire : une histoire",
+    title: "Comment fonctionne la contraction musculaire : de Hill à la titine",
     excerpt: "Du modèle de Hill à la titine : comment la science a fini par expliquer la force excentrique, pourquoi la première répétition du soulevé de terre est la plus dure et pourquoi l'amplitude complète compte.",
     category: "supplements",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop",
-    content: `# Science musculaire : une histoire
+    content: `# Comment fonctionne la contraction musculaire : de Hill à la titine
 
 
 Les sujets abordés ici sont complexes, mais ils répondent à beaucoup de questions que vous ne vous étiez peut-être jamais posées sur le fonctionnement du muscle. À la fin, vous comprendrez pourquoi la première répétition d'une série de soulevé de terre est plus dure que les suivantes, et pourquoi travailler en amplitude complète compte autant pour progresser.
@@ -4685,17 +4685,17 @@ Si vous savez ce que vous faites et disposez d’une forme de levage décente, l
   {  id: "mph-39",
     priority: 49,
     slug: "nids-de-poule",
-    title: "Les nids-de-poule de l'entraînement : composer avec les blessures",
+    title: "Blessures qui s'accumulent : adapter son entraînement au fil des années",
     excerpt: "Avec les années, les petites et grosses blessures s'accumulent comme des nids-de-poule sur la route. Comment adapter votre programme pour les contourner et continuer à progresser.",
     category: "musculation",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=800&auto=format&fit=crop",
-    content: `# Les nids-de-poule de l'entraînement : composer avec les blessures
+    content: `# Blessures qui s'accumulent : adapter son entraînement au fil des années
 
 
-Non, le titre ne cache aucun sous-entendu : il parle bien des trous dans la chaussée.
+Pour parler des blessures, je vais partir d'une image simple : les nids-de-poule, ces trous qui apparaissent dans la chaussée.
 
 ## L'analogie de la route
 
@@ -6722,14 +6722,14 @@ L'eau n'a rien de passionnant, mais elle peut être l'un des facteurs les plus i
   {  id: "mph-54",
     priority: 44,
     slug: "la-boite-a-lunch",
-    title: "La lunch box : une leçon de responsabilité personnelle",
+    title: "Qui prépare votre déjeuner ? La leçon des trois ouvriers",
     excerpt: "Une histoire de trois ouvriers et de leur déjeuner pour comprendre une chose simple : votre physique et votre vie dépendent surtout de ce que vous choisissez d'y mettre chaque jour.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&auto=format&fit=crop",
-    content: `# La lunch box : une leçon de responsabilité personnelle
+    content: `# Qui prépare votre déjeuner ? La leçon des trois ouvriers
 
 ## Introduction : qui prépare votre déjeuner ?
 
@@ -7034,14 +7034,14 @@ J'espère que vous appliquez déjà toutes ces règles, et sinon, essayez-les, s
   {  id: "mph-57",
     priority: 31,
     slug: "ce-que-je-ferais-differemment",
-    title: "Ce que je ferais différemment",
+    title: "Si c'était à refaire : 6 regrets de pratiquants expérimentés",
     excerpt: "Apprendre avant de charger, faire du cardio, viser cinq ans plutôt que cinq jours, rééduquer ses blessures, s'entraîner plus intelligemment : les regrets qui reviennent chez les pratiquants expérimentés.",
     category: "nutrition",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1546483875-ad9014c88eba?w=800&auto=format&fit=crop",
-    content: `# Ce que je ferais différemment
+    content: `# Si c'était à refaire : 6 regrets de pratiquants expérimentés
 
 
 Demandez à des pratiquants qui ont dix ans de fonte derrière eux ce qu'ils changeraient s'ils pouvaient recommencer, et les réponses se ressemblent beaucoup. Ce ne sont presque jamais des histoires de programme miracle ou de supplément oublié. Ce sont des erreurs de patience, de technique, de récupération et d'équilibre de vie.
@@ -7385,14 +7385,14 @@ J'ai laissé les références au format APA complet. L'article paraît plus long
   {  id: "mph-61",
     priority: 22,
     slug: "ecrire-votre-propre-programme-partie-2",
-    title: "Écrire votre propre programme, partie 2",
+    title: "Construire son programme de musculation, partie 2",
     excerpt: "Deuxième partie de la série pour écrire votre propre programme : spécificité, choix et ordre des exercices, plages de répétitions et fréquence d'entraînement, à caler sur vos objectifs.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1517130038641-a774d04afb3c?w=800&auto=format&fit=crop",
-    content: `# Écrire votre propre programme, partie 2
+    content: `# Construire son programme de musculation, partie 2
 
 
 Bienvenue dans la deuxième partie de ma série consacrée à l'écriture de votre propre programme. Si vous n'avez pas encore lu la première partie, commencez par elle. Comme dans une saga, chaque article s'appuie sur le précédent, et il faut les lire dans l'ordre pour bien comprendre.
@@ -7478,14 +7478,14 @@ Chacune de ces sections mériterait sans doute un article de plusieurs milliers 
   {  id: "mph-62",
     priority: 13,
     slug: "ecrire-votre-propre-programme-partie-1",
-    title: "Écrire votre propre programme, partie 1",
+    title: "Construire son programme de musculation, partie 1",
     excerpt: "Première partie de ma série pour écrire votre propre programme d'entraînement : fixer des objectifs SMART, puis faire une auto-évaluation honnête de votre point de départ avant de choisir le moindre exercice.",
     category: "musculation",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1600881333168-2ef49b341f30?w=800&auto=format&fit=crop",
-    content: `# Écrire votre propre programme, partie 1
+    content: `# Construire son programme de musculation, partie 1
 
 
 Bienvenue dans ma série consacrée à l'écriture de votre propre programme. Voici le premier volet d'une série qui devrait compter au moins 3 ou 4 articles. Je découpe le sujet en plusieurs parties pour ne pas tout réunir en un seul texte, qui deviendrait un vrai marathon de lecture.
@@ -7726,14 +7726,14 @@ Au moment de la publication, la référence n° 17 n'était plus disponible, ni 
   {  id: "mph-64",
     priority: 24,
     slug: "musculation-vs-dynamophilie",
-    title: "Musculation vs powerlifting",
+    title: "Musculation ou powerlifting : quelles différences ?",
     excerpt: "Musculation et powerlifting ne poursuivent pas le même but. Répétitions, temps de repos, choix des exercices, cardio et nutrition : voici ce qui change vraiment entre les deux.",
     category: "stress",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "28 min",
     image: "/images/blog/musculation-vs-dynamophilie/thumb.webp",
-    content: `# Musculation vs powerlifting
+    content: `# Musculation ou powerlifting : quelles différences ?
 
 
 Autant calmer les attentes tout de suite : malgré le titre, ce n'est pas un match. Cet article a deux objectifs : A) définir clairement ce qui sépare la musculation du powerlifting et B) voir comment ces différences devraient influencer l'entraînement et la nutrition de chacun. Et, honnêtement, on pourrait débattre de savoir si l'un ou l'autre est vraiment un sport, mais ce n'est pas le sujet aujourd'hui.
@@ -7934,14 +7934,14 @@ Je mettrai probablement cet article à jour au fil du temps. Je ne m'attends pas
   {  id: "mph-65",
     priority: 38,
     slug: "ecrire-votre-propre-programme-partie-3",
-    title: "Écrire votre propre programme, partie 3",
+    title: "Construire son programme de musculation, partie 3",
     excerpt: "Troisième partie de ma série pour écrire votre propre programme : pourquoi et à quelle fréquence varier les exercices, et les différentes façons d'appliquer la surcharge progressive.",
     category: "stress",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1574226516831-e1dff420e562?w=800&auto=format&fit=crop",
-    content: `# Écrire votre propre programme, partie 3
+    content: `# Construire son programme de musculation, partie 3
 
 
 Voici la troisième partie de ma série « Écrire votre propre programme ». Si vous n'avez pas lu les parties 1 et 2, faites-le avant d'attaquer celle-ci. Chaque partie s'appuie sur les précédentes, et il vaut mieux les lire dans l'ordre pour ne pas vous demander de quoi je parle à certains moments.
@@ -8505,14 +8505,14 @@ Comme toute théorie scientifique, celle-ci reste à affiner au fil des nouvelle
   {  id: "mph-70",
     priority: 23,
     slug: "inconvenient-nutritionnel",
-    title: "Rendre la mauvaise nourriture moins pratique",
+    title: "Mieux manger : rendre la malbouffe moins accessible",
     excerpt: "Savoir quoi manger ne suffit pas : il faut pouvoir s'y tenir. Des stratégies concrètes pour rendre les mauvais choix alimentaires moins pratiques et les bons choix beaucoup plus faciles au quotidien.",
     category: "sommeil",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
     image: "/images/blog/inconvenient-nutritionnel/thumb.webp",
-    content: `# Rendre la mauvaise nourriture moins pratique
+    content: `# Mieux manger : rendre la malbouffe moins accessible
 
 
 Pour la plupart des pratiquants, aller régulièrement à la salle est la partie la plus facile. Ce qui coince chez beaucoup de gens, c'est l'alimentation. Vous trouverez sur ce blog beaucoup d'articles sur la nutrition si vous avez besoin d'aide pour optimiser votre alimentation en vue de la prise de muscle ou de la perte de graisse.
@@ -8849,7 +8849,7 @@ Le contraire de la broscience, c'est l'approche « fondée sur les preuves ». C
 
 Mais l'approche fondée sur les preuves a aussi ses dérives. Parfois, des résultats scientifiques ne se traduisent pas bien dans la pratique. Par exemple, quelques études anciennes ont « montré » que les exercices d'isolation n'étaient pas plus efficaces que les exercices polyarticulaires pour faire grossir les biceps (par exemple Gentil et al., 2013). Ce type de résultat a conduit certains praticiens « fondés sur les preuves » à affirmer que l'isolation ne sert à rien pour la prise de muscle. Tout pratiquant sait que ça ne marche pas comme ça sur le terrain.
 
-Autre exemple : la littérature sur la périodisation. La périodisation, c'est la variation planifiée de votre entraînement (je lui ai consacré [un article complet](/blog/periodisation-en-musculation)). Dans les études, on constate souvent qu'elle n'a pas d'effet majeur sur la prise de muscle. Certains milieux « fondés sur les preuves » en ont conclu que la périodisation n'est pas nécessaire pour progresser : il suffirait de s'entraîner entre 8 et 12 répétitions à chaque séance. Affaire classée ? Pas vraiment.
+Autre exemple : la littérature sur la périodisation. La périodisation, c'est la variation planifiée de votre entraînement (je lui ai consacré [un article complet](/blog/periodisation-musculation)). Dans les études, on constate souvent qu'elle n'a pas d'effet majeur sur la prise de muscle. Certains milieux « fondés sur les preuves » en ont conclu que la périodisation n'est pas nécessaire pour progresser : il suffirait de s'entraîner entre 8 et 12 répétitions à chaque séance. Affaire classée ? Pas vraiment.
 
 C'est encore une simplification excessive de la littérature. La plupart des études sur la périodisation durent 8 à 12 semaines et portent sur des sujets non entraînés. Quel rapport avec le pratiquant qui s'entraîne depuis plus de 10 ans et pèse plus de 100 kg ? Les bodybuilders avancés ont tout intérêt à périodiser leur entraînement, car de courtes phases axées sur la force, la puissance ou même la condition physique peuvent apporter des progrès qui finissent par favoriser la prise de muscle.
 
@@ -9171,14 +9171,14 @@ Le masque n'améliorera probablement aucun aspect de votre entraînement. Il a a
   {  id: "mph-75",
     priority: 17,
     slug: "mode-bete",
-    title: "Mode bête",
+    title: "L'humain est-il vraiment une bête ? Force, vitesse et endurance comparées",
     excerpt: "Masse maigre, force, détente, vitesse de course, nage, VO2 max : comment l'humain se compare vraiment aux animaux, et pourquoi le « mode bête » à la salle relève surtout de l'autodérision.",
     category: "metabolisme",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
     image: "/images/blog/mode-bete/thumb.webp",
-    content: `# Mode bête
+    content: `# L'humain est-il vraiment une bête ? Force, vitesse et endurance comparées
 
 
 Vous êtes déjà passé en mode bête à la salle ? Évidemment. À peu près tous ceux qui ont déjà enfilé un débardeur l'ont fait. Mais que veut dire « mode bête » ? J'imagine que ça veut dire s'entraîner comme une bête, un animal sauvage impossible à dompter.
@@ -9429,14 +9429,14 @@ Au final, la nutrition post-entraînement est l'un des meilleurs leviers de réc
   {  id: "mph-77",
     priority: 58,
     slug: "une-histoire-de-trois-bodybuilders",
-    title: "Une histoire de trois bodybuilders",
+    title: "Trois bodybuilders, trois chemins : qui arrive au bout ?",
     excerpt: "Trois débutants, un même rêve de scène, trois chemins très différents : l'acharné sans méthode, la déçue des programmes d'influenceurs et celui qui a pris le temps d'apprendre.",
     category: "nutrition",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "13 min",
     image: "/images/blog/une-histoire-de-trois-bodybuilders/thumb.webp",
-    content: `# Une histoire de trois bodybuilders
+    content: `# Trois bodybuilders, trois chemins : qui arrive au bout ?
 
 
 C'est l'histoire de 3 bodybuilders. Leurs vrais noms se sont perdus dans la nuit des temps, alors je m'en tiendrai aux surnoms qu'ils portaient dans leurs équipes de balle aux prisonniers du dimanche : Blazer, Lazer et Fran Stalinovskovichdavidovitchsky, ou simplement « Fran ».
@@ -9711,14 +9711,14 @@ Les ischio-jambiers participent donc peu aux squats sous-maximaux, mais ils devi
   {  id: "mph-81",
     priority: 28,
     slug: "ecrire-votre-propre-programme-partie-4",
-    title: "Écrire votre propre programme, partie 4 : la planification à long terme",
+    title: "Construire son programme de musculation, partie 4 : la planification à long terme",
     excerpt: "Dernier volet de la série : microcycles, mésocycles et macrocycles, comment organiser semaines et blocs d'entraînement autour de vos objectifs et de vos compétitions pour progresser sur plusieurs années.",
     category: "nutrition",
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1594911772125-07fc7a2d8d9f?w=800&auto=format&fit=crop",
-    content: `# Écrire votre propre programme, partie 4 : la planification à long terme
+    content: `# Construire son programme de musculation, partie 4 : la planification à long terme
 
 
 Voici le dernier volet de la série « Écrire votre propre programme ». Si vous n'avez pas lu les précédents, commencez par la [partie 1](/blog/ecrire-votre-propre-programme-partie-1), la [partie 2](/blog/ecrire-votre-propre-programme-partie-2) et la [partie 3](/blog/ecrire-votre-propre-programme-partie-3) pour avoir les mêmes bases avant d'attaquer celle-ci.
