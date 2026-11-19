@@ -262,7 +262,13 @@ export interface IStorage {
   getProgress(email: string): Promise<QuestionnaireProgress | undefined>;
   saveProgress(input: SaveProgressInput): Promise<QuestionnaireProgress>;
   deleteProgress(email: string): Promise<void>;
-  getAllIncompleteProgress(): Promise<QuestionnaireProgress[]>;
+  /**
+   * Questionnaires IN_PROGRESS, sans la colonne JSONB `responses` (renvoyée vide),
+   * pour ne jamais charger en mémoire les réponses (photos base64 incluses) de toute la table.
+   * `limit`/`offset` optionnels pour les vues admin paginées.
+   */
+  getAllIncompleteProgress(opts?: { limit?: number; offset?: number }): Promise<QuestionnaireProgress[]>;
+  countIncompleteProgress(): Promise<number>;
 
   getBurnoutProgress(email: string): Promise<BurnoutProgress | undefined>;
   saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress>;
@@ -736,10 +742,16 @@ export class MemStorage implements IStorage {
     this.progress.delete(email);
   }
 
-  async getAllIncompleteProgress(): Promise<QuestionnaireProgress[]> {
-    return Array.from(this.progress.values())
+  async getAllIncompleteProgress(opts?: { limit?: number; offset?: number }): Promise<QuestionnaireProgress[]> {
+    const list = Array.from(this.progress.values())
       .filter(p => p.status === "IN_PROGRESS")
       .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
+    const offset = Math.max(0, opts?.offset ?? 0);
+    return opts?.limit !== undefined ? list.slice(offset, offset + opts.limit) : list.slice(offset);
+  }
+
+  async countIncompleteProgress(): Promise<number> {
+    return Array.from(this.progress.values()).filter(p => p.status === "IN_PROGRESS").length;
   }
 
   async getBurnoutProgress(email: string): Promise<BurnoutProgress | undefined> {
@@ -2783,9 +2795,21 @@ export class PgStorage implements IStorage {
     await pool.query("DELETE FROM questionnaire_progress WHERE email = $1", [email]);
   }
 
-  async getAllIncompleteProgress(): Promise<QuestionnaireProgress[]> {
+  async getAllIncompleteProgress(opts?: { limit?: number; offset?: number }): Promise<QuestionnaireProgress[]> {
+    // Never select `responses`: it can hold base64 photos and blew the heap when
+    // the whole table was loaded (crash exit 134, 2026-11-19).
+    const values: unknown[] = [];
+    let paging = "";
+    if (opts?.limit !== undefined) {
+      values.push(Math.max(1, Math.floor(opts.limit)), Math.max(0, Math.floor(opts.offset ?? 0)));
+      paging = " LIMIT $1 OFFSET $2";
+    }
     const result = await pool.query(
-      "SELECT * FROM questionnaire_progress WHERE status = 'IN_PROGRESS' ORDER BY last_activity_at DESC"
+      `SELECT id, email, current_section, total_sections, percent_complete, status, started_at, last_activity_at
+         FROM questionnaire_progress
+        WHERE status = 'IN_PROGRESS'
+        ORDER BY last_activity_at DESC${paging}`,
+      values
     );
     return result.rows.map(row => ({
       id: row.id,
@@ -2793,11 +2817,18 @@ export class PgStorage implements IStorage {
       currentSection: parseInt(row.current_section),
       totalSections: parseInt(row.total_sections),
       percentComplete: parseInt(row.percent_complete),
-      responses: row.responses,
+      responses: {},
       status: row.status,
       startedAt: row.started_at,
       lastActivityAt: row.last_activity_at,
     }));
+  }
+
+  async countIncompleteProgress(): Promise<number> {
+    const result = await pool.query(
+      "SELECT COUNT(*)::int AS c FROM questionnaire_progress WHERE status = 'IN_PROGRESS'"
+    );
+    return Number(result.rows[0]?.c ?? 0);
   }
 
   async getBurnoutProgress(email: string): Promise<BurnoutProgress | undefined> {

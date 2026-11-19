@@ -118,7 +118,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { trackDiscoveryFunnelStep } from "@/lib/analytics";
+import { trackDiscoveryFunnelStep, trackDiscoveryStartOnce } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 
 const iconMap: Record<string, React.ElementType> = {
@@ -449,6 +449,12 @@ function QuestionnaireContent() {
   });
 
   const selectedTier = PLAN_TIER_MAP[selectedPlan];
+
+  // GA4 funnel: discovery_start when the free questionnaire is opened.
+  useEffect(() => {
+    if (selectedPlan === "gratuit") trackDiscoveryStartOnce();
+  }, [selectedPlan]);
+
   const allQuestions = getQuestionsForTier(selectedTier);
   const filteredSections = getSectionsForTier(selectedTier);
 

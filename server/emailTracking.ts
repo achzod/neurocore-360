@@ -9,7 +9,7 @@
  * Admin email: achkou@gmail.com (destinataire des mails admin ; plus de BCC systématique)
  */
 
-import { db } from "./db";
+import { db, pool } from "./db";
 import { emailTracking } from "../shared/drizzle-schema";
 import { notifyGoogleSheetUpdate } from "./googleSheetsTracking";
 import { eq } from "drizzle-orm";
@@ -148,33 +148,31 @@ export async function getEmailTrackingStats(): Promise<{
   last7d: number;
 }> {
   try {
-    const allEmails = await db.select().from(emailTracking);
-
-    const now = new Date();
-    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
+    // Aggregated in SQL: never load the whole email_tracking table in memory.
+    const aggRes = await pool.query(`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE sendpulse_status = 'success')::int AS success_count,
+        COUNT(*) FILTER (WHERE opened IS NOT NULL)::int AS open_count,
+        COUNT(*) FILTER (WHERE clicked IS NOT NULL)::int AS click_count,
+        COUNT(*) FILTER (WHERE converted IS NOT NULL)::int AS conversion_count,
+        COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '24 hours')::int AS count24h,
+        COUNT(*) FILTER (WHERE sent_at >= NOW() - INTERVAL '7 days')::int AS count7d
+        FROM email_tracking
+    `);
+    const byTypeRes = await pool.query(
+      "SELECT email_type, COUNT(*)::int AS c FROM email_tracking GROUP BY email_type"
+    );
+    const row = aggRes.rows[0] || {};
     const byType: Record<string, number> = {};
-    let successCount = 0;
-    let openCount = 0;
-    let clickCount = 0;
-    let conversionCount = 0;
-    let count24h = 0;
-    let count7d = 0;
-
-    for (const email of allEmails) {
-      byType[email.emailType] = (byType[email.emailType] || 0) + 1;
-
-      if (email.sendpulseStatus === "success") successCount++;
-      if (email.opened) openCount++;
-      if (email.clicked) clickCount++;
-      if (email.converted) conversionCount++;
-
-      if (email.sentAt && email.sentAt >= last24h) count24h++;
-      if (email.sentAt && email.sentAt >= last7d) count7d++;
-    }
-
-    const total = allEmails.length;
+    for (const r of byTypeRes.rows) byType[r.email_type] = Number(r.c);
+    const total = Number(row.total || 0);
+    const successCount = Number(row.success_count || 0);
+    const openCount = Number(row.open_count || 0);
+    const clickCount = Number(row.click_count || 0);
+    const conversionCount = Number(row.conversion_count || 0);
+    const count24h = Number(row.count24h || 0);
+    const count7d = Number(row.count7d || 0);
 
     return {
       totalSent: total,

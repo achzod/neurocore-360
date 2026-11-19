@@ -1,6 +1,11 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { bootGoogleTag } from "./lib/googleTag";
+
+// GA4 + Google Ads in Consent Mode v2 (advanced): loaded before the first render,
+// consent denied by default until the visitor accepts the cookie banner.
+bootGoogleTag();
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
 if (sentryDsn) {

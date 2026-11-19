@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import * as Sentry from "@sentry/node";
 import helmet from "helmet";
+import { WATCHDOG_RSS_MB } from "./memoryBudget";
 import compression from "compression";
 import cors from "cors";
 import { registerRoutes } from "./routes";
@@ -605,10 +606,11 @@ if (process.env.NODE_ENV === "production") {
       }
 
       // RSS watchdog ,  graceful restart before Render container OOM-kills us
-      // with SIGABRT (exit 134). Render container is 512MB. max-old-space-size
+      // with SIGABRT (exit 134). Threshold comes from server/memoryBudget.ts
+      // (85% of RENDER_MEMORY_LIMIT_MB, 2048 on Standard). max-old-space-size
       // limits the V8 JS heap only; RSS also counts native memory (pdf-parse,
       // puppeteer, sharp, node_modules buffers) which doesn't respect that
-      // flag. If RSS climbs above 460MB we're minutes from a container-level
+      // flag. If RSS stays above WATCHDOG_RSS_MB we're minutes from a container-level
       // SIGABRT ,  better to exit cleanly ourselves, let Render auto-restart
       // with a warm pool, and emit a log we can grep on.
       //
@@ -618,9 +620,9 @@ if (process.env.NODE_ENV === "production") {
         let highRssStreak = 0;
         const watchdog = setInterval(() => {
           const rssMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
-          if (rssMb > 460) {
+          if (rssMb > WATCHDOG_RSS_MB) {
             highRssStreak += 1;
-            console.warn(`[Watchdog] RSS=${rssMb}MB > 460MB (streak=${highRssStreak})`);
+            console.warn(`[Watchdog] RSS=${rssMb}MB > ${WATCHDOG_RSS_MB}MB (streak=${highRssStreak})`);
             // Three consecutive high readings = real pressure, not a spike.
             if (highRssStreak >= 3) {
               console.error(`[Watchdog] 🚨 RSS=${rssMb}MB sustained, triggering graceful restart to avoid container SIGABRT`);
@@ -635,7 +637,7 @@ if (process.env.NODE_ENV === "production") {
           }
         }, 30_000);
         watchdog.unref();
-        log("RSS watchdog enabled (restart at sustained RSS > 460MB)");
+        log(`RSS watchdog enabled (restart at sustained RSS > ${WATCHDOG_RSS_MB}MB)`);
       }
     },
   );
