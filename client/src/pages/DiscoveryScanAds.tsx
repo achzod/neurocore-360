@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Check } from "lucide-react";
 
@@ -12,6 +12,19 @@ import { ArrowRight, Check } from "lucide-react";
  */
 
 export default function DiscoveryScanAds() {
+  const [reviews, setReviews] = useState<{ rating: number; comment: string; auditType?: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/reviews")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.reviews?.length) setReviews(data.reviews);
+      })
+      .catch(() => {});
+  }, []);
+  const avgRating = reviews.length
+    ? (Math.floor((reviews.reduce((t, r) => t + r.rating, 0) / reviews.length) * 10) / 10).toFixed(1).replace(".", ",")
+    : "";
+  const shownReviews = reviews.filter((r) => r.rating >= 4 && r.comment && r.comment.trim().length > 30).slice(0, 2);
   useEffect(() => {
     // Scroll to top on mount
     window.scrollTo(0, 0);
@@ -490,36 +503,22 @@ export default function DiscoveryScanAds() {
                 <span key={i} className="text-[#FCDD00] text-3xl">★</span>
               ))}
             </div>
-            <p className="text-2xl font-bold text-white mb-2">4.9/5</p>
-            <p className="text-white/60">Basé sur 148+ avis</p>
+            <p className="text-2xl font-bold text-white mb-2">{avgRating ? `${avgRating}/5` : ""}</p>
+            <p className="text-white/60">{reviews.length ? `Basé sur ${reviews.length} avis clients` : ""}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Review 1 */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-              <div className="flex gap-1 mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-[#FCDD00]">★</span>
-                ))}
+            {shownReviews.map((r, idx) => (
+              <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-6">
+                <div className="flex gap-1 mb-3">
+                  {[...Array(r.rating)].map((_, i) => (
+                    <span key={i} className="text-[#FCDD00]">★</span>
+                  ))}
+                </div>
+                <p className="text-white/80 mb-4 leading-relaxed">"{r.comment.trim()}"</p>
+                <p className="text-sm text-white/50">Client APEXLABS vérifié</p>
               </div>
-              <p className="text-white/80 mb-4 leading-relaxed">
-                "L'analyse est ultra précise et les recommandations sont concrètes. J'ai enfin compris où concentrer mes efforts pour progresser."
-              </p>
-              <p className="text-sm text-white/50">,  Alexandre M.</p>
-            </div>
-
-            {/* Review 2 */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-              <div className="flex gap-1 mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-[#FCDD00]">★</span>
-                ))}
-              </div>
-              <p className="text-white/80 mb-4 leading-relaxed">
-                "Le rapport est complet et facile à comprendre. Les protocoles personnalisés m'ont permis d'améliorer mes performances rapidement."
-              </p>
-              <p className="text-sm text-white/50">,  Thomas B.</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>

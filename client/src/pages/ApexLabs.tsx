@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BETA_REVIEWS } from "@/data/betaReviews";
 import { trackClick } from "@/lib/analytics";
 import { HeroBackgroundVideo } from "@/components/HeroBackgroundVideo";
 
@@ -22,6 +21,8 @@ interface Offer {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
+const ratingLabel = (list: { rating: number }[]) => list.length ? (Math.floor((list.reduce((t, r) => t + r.rating, 0) / list.length) * 10) / 10).toFixed(1).replace(".", ",") : "";
+
 const SITE_NAME = "APEXLABS";
 const TAGLINE = "OPTIMISATION HUMAINE & BIO-DATA";
 
@@ -431,7 +432,8 @@ function Hero() {
   const [objective, setObjective] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'already'>('idle');
   const [spotsLeft, setSpotsLeft] = useState(199);
-  const [totalReviews, setTotalReviews] = useState(BETA_REVIEWS.length);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [avgRating, setAvgRating] = useState("");
 
   // Fetch real spots count from API on mount
   useEffect(() => {
@@ -451,7 +453,8 @@ function Hero() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.success && data.reviews?.length) {
-          setTotalReviews(BETA_REVIEWS.length + data.reviews.length);
+          setTotalReviews(data.reviews.length);
+          setAvgRating(ratingLabel(data.reviews));
         }
       })
       .catch(() => {});
@@ -535,7 +538,7 @@ function Hero() {
             </svg>
           ))}
         </motion.div>
-        <span className="text-[#FCDD00] font-bold text-sm">4.9/5</span>
+        <span className="text-[#FCDD00] font-bold text-sm">{avgRating ? `${avgRating}/5` : ""}</span>
         <span className="text-white font-bold text-lg">{totalReviews}</span>
         <span className="text-gray-400 text-[10px] uppercase tracking-wider">avis</span>
         <motion.div
@@ -1052,7 +1055,7 @@ function mapAuditTypeToOffer(auditType: string): string {
 function ReviewsSection() {
   const [currentPage, setCurrentPage] = useState(0);
   const [realReviews, setRealReviews] = useState<any[]>([]);
-  const [totalReviews, setTotalReviews] = useState(BETA_REVIEWS.length);
+  const [totalReviews, setTotalReviews] = useState(0);
 
   // Load real approved reviews from API
   useEffect(() => {
@@ -1073,14 +1076,13 @@ function ReviewsSection() {
             isReal: true
           }));
           setRealReviews(transformed);
-          setTotalReviews(BETA_REVIEWS.length + transformed.length);
+          setTotalReviews(transformed.length);
         }
       })
       .catch(err => console.error('Failed to load reviews:', err));
   }, []);
 
-  // Merge beta + real reviews (real reviews first for visibility)
-  const allReviews = [...realReviews, ...BETA_REVIEWS];
+  const allReviews = realReviews;
 
   const reviewsPerPage = 3;
   const totalPages = Math.ceil(allReviews.length / reviewsPerPage);
@@ -1111,7 +1113,7 @@ function ReviewsSection() {
         {/* Header with Stroke Text Effect */}
         <div className="text-center mb-16">
           <span className="font-mono text-[10px] sm:text-xs text-neuro-accent uppercase tracking-[0.3em] block mb-3">
-            Beta Testers • {totalReviews}+ avis • 4.9/5 ★
+            {totalReviews} avis clients{totalReviews ? ` • ${ratingLabel(realReviews)}/5 ★` : ""}
           </span>
           <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tighter mb-2">
             RÉSULTATS
