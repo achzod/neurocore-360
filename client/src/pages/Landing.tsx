@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BETA_REVIEWS } from "@/data/betaReviews";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { trackClick } from "@/lib/analytics";
@@ -635,14 +634,16 @@ function CoachingDeductionBlock() {
 // HERO COMPONENT
 // ============================================================================
 function Hero() {
-  const [totalReviews, setTotalReviews] = useState(BETA_REVIEWS.length);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [avgRating, setAvgRating] = useState("");
 
   useEffect(() => {
     fetch("/api/reviews")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.reviews?.length) {
-          setTotalReviews(BETA_REVIEWS.length + data.reviews.length);
+          setTotalReviews(data.reviews.length);
+          setAvgRating(ratingLabel(data.reviews));
         }
       })
       .catch(() => {});
@@ -685,7 +686,7 @@ function Hero() {
             </svg>
           ))}
         </motion.div>
-        <span className="text-[#FCDD00] font-bold text-sm">4.9/5</span>
+        <span className="text-[#FCDD00] font-bold text-sm">{avgRating ? `${avgRating}/5` : ""}</span>
         <span className="text-white font-bold text-lg">{totalReviews}</span>
         <span className="text-gray-400 text-[10px] uppercase tracking-wider">avis</span>
         <motion.div
@@ -1126,8 +1127,10 @@ function CertificationsSection() {
 
 
 // ============================================================================
-// REVIEWS SECTION ,  real approved reviews first, then BETA_REVIEWS fallback
+// REVIEWS SECTION ,  real approved reviews only
 // ============================================================================
+
+const ratingLabel = (list: { rating: number }[]) => list.length ? (Math.floor((list.reduce((t, r) => t + r.rating, 0) / list.length) * 10) / 10).toFixed(1).replace(".", ",") : "";
 
 interface DisplayReview {
   name: string;
@@ -1178,8 +1181,7 @@ function ReviewsSection() {
       .catch(() => {});
   }, []);
 
-  // Real approved reviews first, then fill with beta reviews
-  const allReviews: DisplayReview[] = [...realReviews, ...BETA_REVIEWS];
+  const allReviews: DisplayReview[] = realReviews;
   const reviewsPerPage = 3;
   const totalPages = Math.ceil(allReviews.length / reviewsPerPage);
 
@@ -1209,7 +1211,7 @@ function ReviewsSection() {
         {/* Header with Stroke Text Effect */}
         <div className="text-center mb-16">
           <span className="font-mono text-[10px] sm:text-xs text-neuro-accent uppercase tracking-[0.3em] block mb-3">
-            {allReviews.length}+ avis clients • 4.9/5 ★
+            {allReviews.length} avis clients{allReviews.length ? ` • ${ratingLabel(allReviews)}/5 ★` : ""}
           </span>
           <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tighter mb-2">
             RÉSULTATS
