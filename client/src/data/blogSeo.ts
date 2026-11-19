@@ -1,4 +1,5 @@
 export const BLOG_ARTICLE_REDIRECTS = {
+  "cyclisme-des-glucides": "cyclage-glucides-efficace",
   "les-squats-sont-ils-mauvais-pour-vos-genoux": "squats-mauvais-genoux-mythe",
   "les-souleves-de-terre-sont-ils-dangereux": "souleve-terre-dangereux",
   "des-souleves-de-terre-le-jour-de-larriere": "souleve-terre-jour-dos",
