@@ -11395,143 +11395,17 @@ export async function registerRoutes(
   }
 
 
-  // GET /api/unsubscribe , Public page: shows confirmation + auto-processes unsubscribe
-  app.get("/api/unsubscribe", async (req, res) => {
-    try {
-      const emailToken = req.query.email as string;
-      if (!emailToken) {
-        return res.status(400).send("Missing email parameter");
-      }
-      // Accept both legacy base64 (with +/=) and new base64url (-_ no padding).
-      // Gmail/iCloud sometimes swallow the trailing = padding, so base64url is
-      // now the default , this branch keeps old links in circulation working.
-      const normalized = emailToken.replace(/-/g, "+").replace(/_/g, "/");
-      const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-      const email = Buffer.from(padded, "base64").toString("utf-8");
-      if (!email || !email.includes("@")) {
-        return res.status(400).send("Invalid email");
-      }
-
-      // Auto-unsubscribe on page load
-      await storage.unsubscribeEmail(email);
-
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(`<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Desabonnement - APEXLABS</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #0a0b0d;
-      color: #ffffff;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .card {
-      max-width: 480px;
-      width: 100%;
-      background: #111113;
-      border: 1px solid rgba(252, 221, 0, 0.15);
-      border-radius: 16px;
-      padding: 48px 32px;
-      text-align: center;
-    }
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 32px;
-    }
-    .brand-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: #FCDD00;
-    }
-    .brand-text {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #FCDD00;
-    }
-    .icon {
-      font-size: 48px;
-      margin-bottom: 24px;
-    }
-    h1 {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      letter-spacing: -0.5px;
-    }
-    .message {
-      color: #a1a1aa;
-      font-size: 15px;
-      line-height: 1.7;
-      margin-bottom: 32px;
-    }
-    .contact {
-      color: #525252;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-    .contact a {
-      color: #FCDD00;
-      text-decoration: none;
-    }
-    .contact a:hover {
-      text-decoration: underline;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="brand">
-      <div class="brand-dot"></div>
-      <span class="brand-text">APEXLABS BY ACHZOD</span>
-    </div>
-    <div class="icon">&#9993;</div>
-    <h1>Desabonnement confirme</h1>
-    <p class="message">
-      Tu as ete desabonne des emails APEXLABS.<br>
-      Tu ne recevras plus d'emails de notre part.
-    </p>
-    <p class="contact">
-      Si c'est une erreur, contacte<br>
-      <a href="mailto:coaching@achzodcoaching.com">coaching@achzodcoaching.com</a>
-    </p>
-  </div>
-</body>
-</html>`);
-    } catch (error) {
-      console.error("[Unsubscribe] Error:", error);
-      res.status(500).send("Erreur serveur");
-    }
-  });
-
-  // POST /api/unsubscribe , Process unsubscribe (API)
-  app.post("/api/unsubscribe", async (req, res) => {
-    try {
-      const { email, reason } = req.body || {};
-      if (!email || !email.includes("@")) {
-        return res.status(400).json({ success: false, error: "Email invalide" });
-      }
-      await storage.unsubscribeEmail(email, reason);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("[Unsubscribe] POST Error:", error);
-      res.status(500).json({ success: false, error: "Erreur serveur" });
-    }
-  });
+  // Ancienne route /api/unsubscribe?email=<base64> (liens déjà envoyés, non signés) :
+  // GET affiche seulement une page de confirmation, POST désinscrit, avec un
+  // rate limit par IP et au total.
+  {
+    const { createLegacyUnsubscribeHandlers, LEGACY_UNSUBSCRIBE_PATH } = await import("./legacyUnsubscribe");
+    const legacyUnsubscribe = createLegacyUnsubscribeHandlers({
+      unsubscribe: (email, reason) => storage.unsubscribeEmail(email, reason),
+    });
+    app.get(LEGACY_UNSUBSCRIBE_PATH, legacyUnsubscribe.get);
+    app.post(LEGACY_UNSUBSCRIBE_PATH, legacyUnsubscribe.post);
+  }
 
   // GET /api/admin/unsubscribes , Admin: list all unsubscribed emails
   app.get("/api/admin/unsubscribes", async (req, res) => {
