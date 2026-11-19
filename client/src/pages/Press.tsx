@@ -7,84 +7,84 @@ import { motion } from "framer-motion";
 const FEATURED_MEDIA = [
   {
     name: "Yahoo Finance",
-    logo: "https://logo.clearbit.com/yahoo.com",
+    logo: "https://www.google.com/s2/favicons?domain=yahoo.com&sz=128",
     reach: "3.4B",
     category: "Finance",
     articleUrl: "https://finance.yahoo.com/news/achzodcoaching-launches-elite-athlete-coaching-130000283.html",
   },
   {
     name: "Bloomberg",
-    logo: "https://logo.clearbit.com/bloomberg.com",
+    logo: "https://www.google.com/s2/favicons?domain=bloomberg.com&sz=128",
     reach: "49M",
     category: "Finance",
     articleUrl: "https://www.bloomberg.com/press-releases/2025-02-05/achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issa-nasm-and-10-certifications",
   },
   {
     name: "Business Insider",
-    logo: "https://logo.clearbit.com/businessinsider.com",
+    logo: "https://www.google.com/s2/favicons?domain=businessinsider.com&sz=128",
     reach: "102M",
     category: "Business",
     articleUrl: "https://markets.businessinsider.com/news/stocks/achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issa-nasm-and-10-certifications-1034173456",
   },
   {
     name: "MarketWatch",
-    logo: "https://logo.clearbit.com/marketwatch.com",
+    logo: "https://www.google.com/s2/favicons?domain=marketwatch.com&sz=128",
     reach: "52M",
     category: "Finance",
     articleUrl: "https://www.marketwatch.com/press-release/achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issa-nasm-and-10-certifications-2025-02-05",
   },
   {
     name: "Associated Press",
-    logo: "https://logo.clearbit.com/ap.org",
+    logo: "https://www.google.com/s2/favicons?domain=ap.org&sz=128",
     reach: "110M",
     category: "News",
     articleUrl: "https://apnews.com/press-release/ein-presswire-newsmatics/achzodcoaching-launches-elite-athlete-coaching-programs",
   },
   {
     name: "Reuters",
-    logo: "https://logo.clearbit.com/reuters.com",
+    logo: "https://www.google.com/s2/favicons?domain=reuters.com&sz=128",
     reach: "110M",
     category: "News",
     articleUrl: "https://www.reuters.com/business/achzodcoaching-launches-elite-athlete-coaching-programs-2025-02-05/",
   },
   {
     name: "Apple News",
-    logo: "https://logo.clearbit.com/apple.com",
+    logo: "https://www.google.com/s2/favicons?domain=apple.com&sz=128",
     reach: "438M",
     category: "News",
     articleUrl: "https://apple.news/AchzodCoaching-Elite-Athlete-Programs",
   },
   {
     name: "Benzinga",
-    logo: "https://logo.clearbit.com/benzinga.com",
+    logo: "https://www.google.com/s2/favicons?domain=benzinga.com&sz=128",
     reach: "10M",
     category: "Finance",
     articleUrl: "https://www.benzinga.com/pressreleases/25/02/g43567890/achzodcoaching-launches-elite-athlete-coaching-programs",
   },
   {
     name: "The Globe and Mail",
-    logo: "https://logo.clearbit.com/theglobeandmail.com",
+    logo: "https://www.google.com/s2/favicons?domain=theglobeandmail.com&sz=128",
     reach: "17M",
     category: "News",
     articleUrl: "https://www.theglobeandmail.com/business/article-achzodcoaching-elite-athlete-programs/",
   },
   {
     name: "Financial Post",
-    logo: "https://logo.clearbit.com/financialpost.com",
+    logo: "https://www.google.com/s2/favicons?domain=financialpost.com&sz=128",
     reach: "3.3M",
     category: "Finance",
     articleUrl: "https://financialpost.com/globe-newswire/achzodcoaching-launches-elite-athlete-coaching-programs",
   },
   {
     name: "Google News",
-    logo: "https://logo.clearbit.com/google.com",
+    logo: "https://www.google.com/s2/favicons?domain=google.com&sz=128",
     reach: "1B+",
     category: "News",
     articleUrl: "https://news.google.com/search?q=achzodcoaching",
   },
   {
     name: "Barchart",
-    logo: "https://logo.clearbit.com/barchart.com",
+    logo: "https://www.google.com/s2/favicons?domain=barchart.com&sz=128",
     reach: "7.5M",
     category: "Finance",
     articleUrl: "https://www.barchart.com/story/news/achzodcoaching-launches-elite-athlete-coaching-programs",
@@ -107,10 +107,10 @@ const ADDITIONAL_MEDIA = [
 
 // Podcast placements
 const PODCASTS = [
-  { name: "Spotify", logo: "https://logo.clearbit.com/spotify.com", reach: "500M" },
-  { name: "Apple Podcasts", logo: "https://logo.clearbit.com/apple.com", reach: "500M" },
-  { name: "Amazon Music", logo: "https://logo.clearbit.com/amazon.com", reach: "1B" },
-  { name: "iHeart", logo: "https://logo.clearbit.com/iheart.com", reach: "32M" },
+  { name: "Spotify", logo: "https://www.google.com/s2/favicons?domain=spotify.com&sz=128", reach: "500M" },
+  { name: "Apple Podcasts", logo: "https://www.google.com/s2/favicons?domain=apple.com&sz=128", reach: "500M" },
+  { name: "Amazon Music", logo: "https://www.google.com/s2/favicons?domain=amazon.com&sz=128", reach: "1B" },
+  { name: "iHeart", logo: "https://www.google.com/s2/favicons?domain=iheart.com&sz=128", reach: "32M" },
 ];
 
 const stats = [
@@ -300,10 +300,14 @@ export default function Press() {
                   <img
                     src={podcast.logo}
                     alt={podcast.name}
+                    loading="lazy"
                     className="h-12 w-12 object-contain grayscale hover:grayscale-0 transition-all"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                   <span className="font-semibold text-white">{podcast.name}</span>
-                  <span className="text-xs text-white/40">{podcast.reach} users</span>
+                  <span className="text-xs text-white/40">{podcast.reach} utilisateurs</span>
                 </motion.div>
               ))}
             </div>

@@ -1,4 +1,5 @@
 import { compareRecent } from "@/lib/blogSort";
+import { loadBlogIndex } from "@/lib/blogData";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Header } from "@/components/Header";
@@ -43,23 +44,19 @@ export default function Blog() {
     document.title = "Blog ACHZOD | Articles Musculation, Nutrition & Performance";
     const meta = document.querySelector('meta[name="description"]');
     if (meta) {
-      meta.setAttribute("content", "Blog ACHZOD ,  articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance. Par Achzod.");
+      meta.setAttribute("content", "Blog ACHZOD, articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance. Par Achzod.");
     }
     const ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) ogTitle.setAttribute("content", "Blog ACHZOD | Articles Musculation, Nutrition & Performance");
     const ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc) ogDesc.setAttribute("content", "Blog ACHZOD ,  articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance.");
+    if (ogDesc) ogDesc.setAttribute("content", "Blog ACHZOD, articles, guides et insights sur la musculation, nutrition, hormones, biohacking et performance.");
   }, []);
 
   useEffect(() => {
     let active = true;
     setIsLoading(true);
-    fetch("/blog-articles.json")
-      .then(async (res) => {
-        if (!res.ok) {
-          throw new Error("Impossible de charger les articles.");
-        }
-        const data = (await res.json()) as BlogArticle[];
+    loadBlogIndex()
+      .then((data) => {
         if (active) {
           setArticles(data);
           setLoadError(null);
@@ -290,6 +287,7 @@ export default function Blog() {
                             src={article.image || (article as any).imageUrl}
                             alt={article.title}
                             loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
                           />
                         </div>
@@ -336,6 +334,7 @@ export default function Blog() {
                 <input
                   type="text"
                   placeholder="Rechercher un article..."
+                  aria-label="Rechercher un article"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-9 py-2 bg-white/[0.03] border border-white/10 rounded-sm text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FCDD00]/50"
@@ -389,6 +388,7 @@ export default function Blog() {
                               src={article.image || (article as any).imageUrl}
                               alt={article.title}
                               loading="lazy"
+                              decoding="async"
                               className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
                             />
                           </div>
@@ -451,7 +451,7 @@ export default function Blog() {
                 </p>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <a href="/offers/peptides-engine" className="inline-flex items-center gap-3 px-8 py-4 bg-amber-500 text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-amber-400 transition-all rounded-sm shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-                    Decouvrir · 299€ <ArrowRight className="h-4 w-4" />
+                    Découvrir · 299€ <ArrowRight className="h-4 w-4" />
                   </a>
                   <span className="text-white/30 text-xs font-mono">Jusqu'à 2 bilans sanguins inclus</span>
                 </div>
@@ -506,6 +506,8 @@ export default function Blog() {
                 <img
                   src="https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg"
                   alt="ACHZOD Coaching"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-contain rotate-3 hover:rotate-0 transition-transform duration-500"
                 />
               </div>

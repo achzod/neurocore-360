@@ -20,7 +20,7 @@ export function Footer({ hideCoachingLink = false }: { hideCoachingLink?: boolea
               <span className="text-xl font-black tracking-tighter text-white">
                 APEX<span className="text-[#FCDD00]">LABS</span>
               </span>
-              <span className="font-mono text-[10px] text-[#525252] tracking-widest uppercase">by Achzod</span>
+              <span className="font-mono text-[10px] text-[#8a8a8a] tracking-widest uppercase">by Achzod</span>
             </Link>
             <p className="mt-4 max-w-md text-sm text-[#9CA3AF] font-light">
               L'analyse corporelle 360 la plus complète au monde. Rapport personnalisé par Achzod avec protocoles d'optimisation.

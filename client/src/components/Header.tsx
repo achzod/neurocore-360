@@ -77,7 +77,7 @@ export function Header({ hideCoachingLink = false }: { hideCoachingLink?: boolea
               <span className="text-xl font-black tracking-tighter text-white" data-testid="text-brand-name">
                 APEX<span className="text-[#FCDD00]">LABS</span>
               </span>
-              <span className="font-mono text-[10px] text-[#525252] tracking-widest uppercase">by Achzod</span>
+              <span className="font-mono text-[10px] text-[#8a8a8a] tracking-widest uppercase">by Achzod</span>
             </div>
           </Link>
 

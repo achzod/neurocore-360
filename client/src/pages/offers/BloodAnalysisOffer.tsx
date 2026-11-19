@@ -20,7 +20,7 @@ const PANELS: Panel[] = [
     title: "Hormones anaboliques",
     count: 10,
     bullets: [
-      "Testosterone totale/libre, SHBG, estradiol",
+      "Testostérone totale/libre, SHBG, estradiol",
       "LH, FSH, prolactine, DHEA-S",
       "Cortisol matin, IGF-1",
     ],
@@ -28,68 +28,68 @@ const PANELS: Panel[] = [
   {
     title: "Thyroide",
     count: 5,
-    bullets: ["TSH, T3 libre, T4 libre", "T3 reverse, anti-TPO", "Conversion et regulation endocrine"],
+    bullets: ["TSH, T3 libre, T4 libre", "T3 reverse, anti-TPO", "Conversion et régulation endocrine"],
   },
   {
-    title: "Metabolisme & lipides",
+    title: "Métabolisme & lipides",
     count: 9,
-    bullets: ["Glycemie, HbA1c, insuline, HOMA-IR", "TG, HDL, LDL", "ApoB, Lp(a)"],
+    bullets: ["Glycémie, HbA1c, insuline, HOMA-IR", "TG, HDL, LDL", "ApoB, Lp(a)"],
   },
   {
     title: "Inflammation & fer",
     count: 5,
-    bullets: ["CRP-us, homocysteine", "Ferritine, fer serique", "Saturation transferrine"],
+    bullets: ["CRP-us, homocystéine", "Ferritine, fer sérique", "Saturation transferrine"],
   },
   {
-    title: "Vitamines & mineraux",
+    title: "Vitamines & minéraux",
     count: 5,
-    bullets: ["Vitamine D, B12, folate", "Magnesium RBC", "Zinc"],
+    bullets: ["Vitamine D, B12, folate", "Magnésium RBC", "Zinc"],
   },
   {
-    title: "Hepatique & renal",
+    title: "Hépatique & rénal",
     count: 5,
-    bullets: ["ALT, AST, GGT", "Creatinine, eGFR", "Lecture foie + rein"],
+    bullets: ["ALT, AST, GGT", "Créatinine, eGFR", "Lecture foie + rein"],
   },
 ];
 
 const SOURCES = [
   { title: "Huberman Lab", detail: "Protocoles science-backed (sleep, hormones, nutrition)" },
-  { title: "Peter Attia MD", detail: "Longevite, cardio-metabolique, prevention" },
+  { title: "Peter Attia MD", detail: "Longevite, cardio-métabolique, prévention" },
   { title: "MPMD (Derek)", detail: "Hormones, biomarqueurs, optimisation" },
-  { title: "Examine.com", detail: "Supplements et evidence (etudes, dosages)" },
-  { title: "Chris Masterjohn", detail: "Micronutriments, methylation, metabolism" },
-  { title: "Renaissance Periodization", detail: "Nutrition/entrainement, adherence, progression" },
-  { title: "Stronger By Science", detail: "Science appliquee, entrainement, performance" },
+  { title: "Examine.com", detail: "Supplements et evidence (études, dosages)" },
+  { title: "Chris Masterjohn", detail: "Micronutriments, méthylation, metabolism" },
+  { title: "Renaissance Periodization", detail: "Nutrition/entraînement, adherence, progression" },
+  { title: "Stronger By Science", detail: "Science appliquée, entraînement, performance" },
 ];
 
 const FAQ = [
   {
     q: "Que comprend exactement le paiement unique de 99\u20ac ?",
-    a: "Il ajoute 2 credits Blood Analysis a ton compte, soit 2 analyses completes de bilan sanguin. Tes credits n'expirent pas et tu peux les utiliser quand tu veux. Chaque upload de PDF valide consomme 1 credit. Les prises de sang et les frais du laboratoire ne sont pas inclus.",
+    a: "Il ajoute 2 crédits Blood Analysis à ton compte, soit 2 analyses complètes de bilan sanguin. Tes crédits n'expirent pas et tu peux les utiliser quand tu veux. Chaque upload de PDF valide consomme 1 credit. Les prises de sang et les frais du laboratoire ne sont pas inclus.",
   },
   {
-    q: "Quand utiliser mes 2 credits ?",
-    a: "Le parcours recommande est d'utiliser le 1er credit pour analyser un bilan initial avant la mise en place de tes recommandations, puis le 2e credit pour un bilan de controle 2 a 3 mois apres leur mise en place. Tu peux toutefois utiliser tes credits au moment qui te convient.",
+    q: "Quand utiliser mes 2 crédits ?",
+    a: "Le parcours recommande est d'utiliser le 1er credit pour analyser un bilan initial avant la mise en place de tes recommandations, puis le 2e credit pour un bilan de contrôle 2 à 3 mois après leur mise en place. Tu peux toutefois utiliser tes crédits au moment qui te convient.",
   },
   {
     q: "Combien de biomarqueurs sont analyses ?",
-    a: "39 biomarqueurs repartis sur 6 panels : hormones anaboliques (testosterone, cortisol, IGF-1...), thyroide (TSH, T3, T4, anti-TPO), metabolisme et lipides (glycemie, HbA1c, insuline, ApoB, Lp(a)), inflammation et fer (CRP-us, ferritine, homocysteine), vitamines et mineraux (vitamine D, B12, magnesium, zinc), et hepatique/renal (ALT, AST, creatinine, eGFR).",
+    a: "39 biomarqueurs répartis sur 6 panels : hormones anaboliques (testostérone, cortisol, IGF-1...), thyroïde (TSH, T3, T4, anti-TPO), métabolisme et lipides (glycémie, HbA1c, insuline, ApoB, Lp(a)), inflammation et fer (CRP-us, ferritine, homocystéine), vitamines et minéraux (vitamine D, B12, magnésium, zinc), et hépatique/rénal (ALT, AST, créatinine, eGFR).",
   },
   {
-    q: "Est-ce que ca remplace un medecin ?",
-    a: "Non. C'est un compte-rendu educatif et actionnable base sur des ranges numeriques et de la litterature scientifique. Si un marqueur est hors des ranges critiques, je te le signale clairement et tu dois consulter un professionnel de sante. Mon analyse vient en complement de ton suivi medical, pas en remplacement.",
+    q: "Est-ce que ça remplace un médecin ?",
+    a: "Non. C'est un compte-rendu educatif et actionnable base sur des ranges numeriques et de la littérature scientifique. Si un marqueur est hors des ranges critiques, je te le signale clairement et tu dois consulter un professionnel de santé. Mon analyse vient en complément de ton suivi médical, pas en remplacement.",
   },
   {
-    q: "Mon PDF de labo est protege, je fais quoi ?",
-    a: "Il faut un PDF non-verrouille pour que l'extraction des valeurs fonctionne. Si ton labo protege le fichier, tu peux le convertir en PDF standard via un outil de deblocage en ligne, puis le re-uploader. La plupart des labos fournissent directement un PDF non-protege.",
+    q: "Mon PDF de labo est protégé, je fais quoi ?",
+    a: "Il faut un PDF non verrouillé pour que l'extraction des valeurs fonctionne. Si ton labo protege le fichier, tu peux le convertir en PDF standard via un outil de déblocage en ligne, puis le re-uploader. La plupart des labos fournissent directement un PDF non protégé.",
   },
   {
     q: "Combien de temps pour recevoir mon rapport ?",
-    a: "Ton rapport est genere automatiquement et delivre sous 24h par email apres l'upload de ton PDF. Tu recois un email des que ton rapport est pret avec un lien direct vers ton dashboard.",
+    a: "Ton rapport est généré automatiquement et délivré sous 24h par email après l'upload de ton PDF. Tu reçois un email dès que ton rapport est prêt avec un lien direct vers ton dashboard.",
   },
   {
-    q: "Je peux suivre l'evolution dans le temps ?",
-    a: "Oui. Tes 2 credits sont justement prevus pour comparer deux bilans. Chaque upload cree un bilan historise dans ton dashboard, ce qui te permet de mesurer l'evolution de tes marqueurs apres 2 a 3 mois de recommandations.",
+    q: "Je peux suivre l'évolution dans le temps ?",
+    a: "Oui. Tes 2 crédits sont justement prevus pour comparer deux bilans. Chaque upload cree un bilan historise dans ton dashboard, ce qui te permet de mesurer l'évolution de tes marqueurs après 2 à 3 mois de recommandations.",
   },
 ];
 
@@ -230,7 +230,7 @@ const PDFExtractionAnimation = () => {
       color="cyan"
       extraUI={
         <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-cyan-500/30 rounded-lg p-3 flex flex-col gap-1 z-30 items-end">
-          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Precision</span>
+          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Précision</span>
           <motion.span className="text-xl font-bold text-cyan-400" animate={{ opacity: [0.5, 1, 0.5] }} transition={t}>99.9%</motion.span>
         </div>
       }
@@ -322,14 +322,14 @@ const AnabolicScoreAnimation = () => {
 const InsulinResistanceAnimation = () => {
   return (
     <AnimationWrapper
-      title="Score Metabolique"
+      title="Score Métabolique"
       value="0.8"
-      status="HOMA-IR (Sensibilite Max)"
+      status="HOMA-IR (Sensibilité Max)"
       color="red"
       extraUI={
         <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md border border-red-500/30 rounded-lg p-3 flex flex-col gap-1 z-30 items-end">
           <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Resistance Insuline</span>
-          <span className="text-sm font-bold text-red-400">NEGATIVE</span>
+          <span className="text-sm font-bold text-red-400">NÉGATIVE</span>
         </div>
       }
     >
@@ -364,7 +364,7 @@ const InsulinResistanceAnimation = () => {
 // --- 4. Biomarker Matrix Animation ---
 const BiomarkerMatrixAnimation = () => {
   const biomarkers = [
-    "Testosterone Totale", "Testosterone Libre", "SHBG", "Estradiol (E2)", "Prolactine",
+    "Testostérone Totale", "Testostérone Libre", "SHBG", "Estradiol (E2)", "Prolactine",
     "IGF-1", "DHEA-S", "Cortisol", "TSH", "T3 Libre", "T4 Libre", "Insuline", "HbA1c",
     "Vitamine D3", "Zinc", "Magnesium", "Ferritine", "hs-CRP", "Homocysteine", "ALAT", "ASAT", "GGT",
   ];
@@ -450,7 +450,7 @@ const BodyMapAnimation = () => (
       <text x="77" y="41" fill="#ef4444" fontSize="3" className="font-mono font-bold">hs-CRP</text>
       <motion.circle cx="50" cy="60" r="3" fill="#22c55e" className="drop-shadow-[0_0_12px_rgba(34,197,94,1)]" animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity, delay: 1 }} />
       <motion.line x1="50" y1="60" x2="75" y2="65" stroke="#22c55e" strokeWidth="0.5" className="opacity-50" />
-      <text x="77" y="66" fill="#22c55e" fontSize="3" className="font-mono font-bold">METABOLISME</text>
+      <text x="77" y="66" fill="#22c55e" fontSize="3" className="font-mono font-bold">MÉTABOLISME</text>
       <motion.circle cx="38" cy="45" r="2.5" fill="#ef4444" className="drop-shadow-[0_0_10px_rgba(239,68,68,1)]" animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.4, 1] }} transition={{ duration: 1.8, repeat: Infinity, delay: 1.5 }} />
       <motion.circle cx="62" cy="45" r="2.5" fill="#ef4444" className="drop-shadow-[0_0_10px_rgba(239,68,68,1)]" animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.4, 1] }} transition={{ duration: 1.8, repeat: Infinity, delay: 1.5 }} />
       <motion.line x1="62" y1="45" x2="80" y2="50" stroke="#ef4444" strokeWidth="0.5" className="opacity-50" />
@@ -535,8 +535,8 @@ export default function BloodAnalysisOffer() {
   const ctaHref = "/blood-analysis";
   const trustRow = useMemo(
     () => [
-      "99€ = 2 analyses completes",
-      "Liste des marqueurs fournie apres achat",
+      "99€ = 2 analyses complètes",
+      "Liste des marqueurs fournie après achat",
       "Ranges optimaux evidence-based",
     ],
     []
@@ -579,7 +579,7 @@ export default function BloodAnalysisOffer() {
               </h1>
 
               <p className="text-white/70 text-lg leading-relaxed max-w-2xl">
-                Ton achat inclut 2 analyses completes, utilisables quand tu veux. Upload ton PDF de laboratoire :
+                Ton achat inclut 2 analyses complètes, utilisables quand tu veux. Upload ton PDF de laboratoire :
                 je decode tes biomarqueurs, compare les ranges normaux aux ranges optimaux, et te livre un plan
                 d'action priorise.
               </p>
@@ -590,7 +590,7 @@ export default function BloodAnalysisOffer() {
                   className="group inline-flex w-full sm:w-auto items-center justify-center gap-3 rounded-full px-7 py-3 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
                   style={{ backgroundColor: PRIMARY_BLUE }}
                 >
-                  Obtenir mes 2 analyses ,  99€
+                  Obtenir mes 2 analyses, 99€
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </div>
@@ -599,10 +599,10 @@ export default function BloodAnalysisOffer() {
                 className="max-w-2xl rounded-2xl border px-5 py-4"
                 style={{ background: "rgba(2,121,232,0.08)", borderColor: "rgba(2,121,232,0.35)" }}
               >
-                <p className="text-sm font-semibold text-white">Le parcours ideal avec tes 2 credits</p>
+                <p className="text-sm font-semibold text-white">Le parcours idéal avec tes 2 credits</p>
                 <p className="mt-1 text-sm leading-relaxed text-white/70">
-                  1er bilan avant la mise en place des recommandations, puis bilan de controle 2 a 3 mois apres.
-                  Aucun delai impose : tes credits n'expirent pas.
+                  1er bilan avant la mise en place des recommandations, puis bilan de contrôle 2 à 3 mois après.
+                  Aucun delai impose : tes crédits n'expirent pas.
                 </p>
               </div>
 
@@ -639,7 +639,7 @@ export default function BloodAnalysisOffer() {
               </div>
               <div className="pt-2 flex items-center gap-2 text-xs font-medium" style={{ color: PRIMARY_BLUE }}>
                 <FlaskConical className="h-3.5 w-3.5" />
-                Apres achat, tu recois la liste exacte des marqueurs a demander a ton medecin ou labo.
+                Après achat, tu recois la liste exacte des marqueurs a demander à ton médecin ou labo.
               </div>
             </motion.div>
 
@@ -659,15 +659,15 @@ export default function BloodAnalysisOffer() {
         <div className="mx-auto max-w-7xl">
           <FeatureRow
             title="Score Anabolique"
-            description="La testosterone totale ne veut rien dire seule. J'analyse ta Testosterone Libre, ta SHBG, ton Estradiol (E2) et ta Prolactine pour calculer ton veritable potentiel anabolique et ta capacite a construire du muscle."
+            description="La testostérone totale ne veut rien dire seule. J'analyse ta Testostérone Libre, ta SHBG, ton Estradiol (E2) et ta Prolactine pour calculer ton véritable potentiel anabolique et ta capacité a construire du muscle."
             icon={Flame}
             animation={AnabolicScoreAnimation}
             reverse={true}
             color="yellow"
           />
           <FeatureRow
-            title="Resistance a l'Insuline"
-            description="La fatigue chronique et le stockage de gras abdominal proviennent souvent d'une sensibilite a l'insuline detruite. Je traque ton HOMA-IR, ton HbA1c et ta glycemie a jeun pour relancer ton moteur metabolique."
+            title="Resistance à l'Insuline"
+            description="La fatigue chronique et le stockage de gras abdominal proviennent souvent d'une sensibilité à l'insuline detruite. Je traque ton HOMA-IR, ton HbA1c et ta glycémie a jeun pour relancer ton moteur métabolique."
             icon={Activity}
             animation={InsulinResistanceAnimation}
             reverse={false}
@@ -675,7 +675,7 @@ export default function BloodAnalysisOffer() {
           />
           <FeatureRow
             title="39 Molecules Decryptees"
-            description="Un panel sanguin d'elite. De la fonction thyroidienne (TSH, T3L, T4L) aux marqueurs d'inflammation silencieuse (hs-CRP, Homocysteine) en passant par les carences critiques (D3, Zinc, Magnesium)."
+            description="Un panel sanguin d'élite. De la fonction thyroïdienne (TSH, T3L, T4L) aux marqueurs d'inflammation silencieuse (hs-CRP, Homocystéine) en passant par les carences critiques (D3, Zinc, Magnésium)."
             icon={Dna}
             animation={BiomarkerMatrixAnimation}
             reverse={true}
@@ -683,7 +683,7 @@ export default function BloodAnalysisOffer() {
           />
           <FeatureRow
             title="Plan d'Action Personnalise"
-            description="Ton sang ne ment pas. Recois un protocole exact : nutrition ciblee, supplementation millimetree et ajustements d'entrainement bases sur TES datas pour debloquer ton drive et ton hypertrophie."
+            description="Ton sang ne ment pas. Recois un protocole exact : nutrition ciblée, supplémentation millimetree et ajustements d'entraînement bases sur TES datas pour debloquer ton drive et ton hypertrophie."
             icon={Shield}
             animation={BodyMapAnimation}
             reverse={false}
@@ -708,15 +708,15 @@ export default function BloodAnalysisOffer() {
               <span className="text-white/40 text-sm mb-2">paiement unique</span>
             </div>
             <p className="text-lg font-semibold mb-2" style={{ color: PRIMARY_BLUE }}>
-              2 credits = 2 analyses completes
+              2 crédits = 2 analyses complètes
             </p>
             <p className="text-white/50 text-sm mb-8">
-              Utilisables quand tu veux, sans expiration. Chaque rapport est livre sous 24h apres l'upload.
+              Utilisables quand tu veux, sans expiration. Chaque rapport est livre sous 24h après l'upload.
             </p>
             <ul className="space-y-3 mb-10">
               {[
                 "1er bilan avant les recommandations",
-                "2e bilan de controle 2 a 3 mois apres",
+                "2e bilan de contrôle 2 à 3 mois après",
                 "39 biomarqueurs analyses sur 6 panels",
                 "Ranges optimaux vs normaux (pas juste \u00abnormal\u00bb)",
                 "Plan d\u2019action personnalise et priorise",
@@ -735,7 +735,7 @@ export default function BloodAnalysisOffer() {
               className="group w-full inline-flex items-center justify-center gap-3 rounded-full px-7 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
               style={{ backgroundColor: PRIMARY_BLUE }}
             >
-              Obtenir mes 2 analyses ,  99€
+              Obtenir mes 2 analyses, 99€
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <p className="mt-4 text-center text-xs text-white/30">Paiement sécurisé par Stripe · Carte bancaire</p>
@@ -753,8 +753,8 @@ export default function BloodAnalysisOffer() {
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-semibold tracking-tight mb-3">Quels marqueurs demander a ton medecin ?</h2>
-              <p className="text-white/50 text-sm max-w-2xl mx-auto">Montre cette liste a ton medecin ou demande-la directement au laboratoire. La plupart sont rembourses sur prescription.</p>
+              <h2 className="text-3xl font-semibold tracking-tight mb-3">Quels marqueurs demander à ton médecin ?</h2>
+              <p className="text-white/50 text-sm max-w-2xl mx-auto">Montre cette liste à ton médecin ou demande-la directement au laboratoire. La plupart sont rembourses sur prescription.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/40 p-8">
               <div className="grid md:grid-cols-2 gap-6">
@@ -766,7 +766,7 @@ export default function BloodAnalysisOffer() {
                 ))}
               </div>
               <div className="mt-6 p-4 rounded-xl" style={{ background: "rgba(2,121,232,0.06)", borderColor: "rgba(2,121,232,0.2)" }}>
-                <p className="text-white/60 text-xs"><strong className="text-white/80">Astuce :</strong> Imprime cette page ou fais une capture d'ecran. Dis a ton medecin que tu veux un bilan complet pour optimisation de sante. Apres l'achat, je t'envoie aussi la liste par email.</p>
+                <p className="text-white/60 text-xs"><strong className="text-white/80">Astuce :</strong> Imprime cette page ou fais une capture d'écran. Dis à ton médecin que tu veux un bilan complet pour optimisation de santé. Après l'achat, je t'envoie aussi la liste par email.</p>
               </div>
             </div>
           </motion.div>
@@ -778,9 +778,9 @@ export default function BloodAnalysisOffer() {
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <p className="text-sm font-medium tracking-[0.2em] uppercase" style={{ color: PRIMARY_BLUE }}>
-              Comment ca marche
+              Comment ça marche
             </p>
-            <h2 className="mt-6 text-4xl md:text-5xl font-semibold tracking-tight">4 etapes. Simple.</h2>
+            <h2 className="mt-6 text-4xl md:text-5xl font-semibold tracking-tight">4 étapes. Simple.</h2>
           </div>
 
           <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -788,15 +788,15 @@ export default function BloodAnalysisOffer() {
               {
                 step: "01",
                 icon: Zap,
-                title: "Obtiens tes 2 credits",
-                desc: "Paiement unique de 99\u20ac par carte bancaire. Tes 2 credits sont ajoutes a ton dashboard et n'expirent pas.",
+                title: "Obtiens tes 2 crédits",
+                desc: "Paiement unique de 99\u20ac par carte bancaire. Tes 2 crédits sont ajoutés à ton dashboard et n'expirent pas.",
                 time: "< 1 min",
               },
               {
                 step: "02",
                 icon: FlaskConical,
                 title: "Recois ta liste de marqueurs",
-                desc: "Apres ton achat, je t'envoie la liste exacte des 39 marqueurs a demander a ton medecin ou directement au laboratoire. Tu n'as qu'a montrer la liste.",
+                desc: "Après ton achat, je t'envoie la liste exacte des 39 marqueurs a demander à ton médecin ou directement au laboratoire. Tu n'as qu'a montrer la liste.",
                 time: "Selon ton labo",
               },
               {
@@ -809,9 +809,9 @@ export default function BloodAnalysisOffer() {
               {
                 step: "04",
                 icon: Check,
-                title: "Mesure ton evolution",
-                desc: "Utilise idealement ton 2e credit 2 a 3 mois apres les recommandations pour comparer tes marqueurs.",
-                time: "2 a 3 mois",
+                title: "Mesure ton évolution",
+                desc: "Utilise idéalement ton 2e credit 2 à 3 mois après les recommandations pour comparer tes marqueurs.",
+                time: "2 à 3 mois",
               },
             ].map((item, idx) => (
               <motion.div
@@ -829,7 +829,7 @@ export default function BloodAnalysisOffer() {
                   </div>
                   <p className="mt-6 text-xl font-semibold tracking-tight">{item.title}</p>
                   <p className="mt-3 text-white/70 leading-relaxed text-sm">{item.desc}</p>
-                  <p className="mt-6 text-sm text-white/40">Duree: {item.time}</p>
+                  <p className="mt-6 text-sm text-white/40">Durée: {item.time}</p>
                 </div>
               </motion.div>
             ))}
@@ -843,7 +843,7 @@ export default function BloodAnalysisOffer() {
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">39 biomarqueurs · 6 panels</h2>
             <p className="mt-4 text-white/50 max-w-3xl mx-auto">
-              Un PDF standard contient rarement 80 biomarqueurs. Ici on couvre ce qui est realiste, exploitable, et actionnable.
+              Un PDF standard contient rarement 80 biomarqueurs. Ici on couvre ce qui est réaliste, exploitable, et actionnable.
               Roadmap: +11 marqueurs (NFS + ionogramme) pour atteindre 50.
             </p>
           </div>
@@ -885,7 +885,7 @@ export default function BloodAnalysisOffer() {
                 </span>
               </div>
               <p className="mt-6 text-sm text-white/70 leading-relaxed">
-                Ajout de 11 marqueurs frequents (hemoglobine, hematocrite, GR/GB, plaquettes, sodium/potassium/chlore, cholesterol total, ApoA1, uree).
+                Ajout de 11 marqueurs fréquents (hémoglobine, hématocrite, GR/GB, plaquettes, sodium/potassium/chlore, cholestérol total, ApoA1, uree).
               </p>
               <div className="mt-6 h-28 rounded-lg border border-white/15 bg-[radial-gradient(ellipse_at_center,_rgba(2,121,232,0.10)_0%,_transparent_70%)]" />
             </div>
@@ -898,7 +898,7 @@ export default function BloodAnalysisOffer() {
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Ranges optimaux vs normaux</h2>
             <p className="mt-4 text-white/50 max-w-3xl mx-auto">
-              "Normal" ne veut pas dire "optimal" si ton objectif est performance, composition corporelle, energie et longevite.
+              "Normal" ne veut pas dire "optimal" si ton objectif est performance, composition corporelle, énergie et longevite.
             </p>
           </div>
 
@@ -911,10 +911,10 @@ export default function BloodAnalysisOffer() {
                 <p className="text-2xl font-semibold tracking-tight">Ranges laboratoire (normaux)</p>
               </div>
               <p className="mt-4 text-white/70 leading-relaxed">
-                Base sur la moyenne population (95%). Cela inclut sedentarite, surpoids, pathologies silencieuses. Utile pour depistage, pas pour optimisation.
+                Base sur la moyenne population (95%). Cela inclut sédentarité, surpoids, pathologies silencieuses. Utile pour dépistage, pas pour optimisation.
               </p>
               <div className="mt-8 rounded-lg border border-white/15 bg-[#0a0a0a] p-5">
-                <p className="text-sm font-semibold">Exemple: testosterone totale</p>
+                <p className="text-sm font-semibold">Exemple: testostérone totale</p>
                 <p className="mt-2 text-sm text-white/70">Normal labo: 300-1000 ng/dL</p>
                 <p className="mt-4 text-sm text-white/70">
                   350 = "normal", mais souvent associe a fatigue, libido basse, progression lente.
@@ -930,13 +930,13 @@ export default function BloodAnalysisOffer() {
                 <p className="text-2xl font-semibold tracking-tight">Ranges optimaux (performance)</p>
               </div>
               <p className="mt-4 text-white/70 leading-relaxed">
-                Base sur top performers (litterature performance/longevite). Objectif: energie stable, meilleure recuperation, meilleure sensibilite metabolique.
+                Base sur top performers (littérature performance/longevite). Objectif: énergie stable, meilleure récupération, meilleure sensibilité métabolique.
               </p>
               <div className="mt-8 rounded-lg border border-white/15 bg-[#0a0a0a] p-5">
-                <p className="text-sm font-semibold">Exemple: testosterone totale</p>
+                <p className="text-sm font-semibold">Exemple: testostérone totale</p>
                 <p className="mt-2 text-sm text-white/70">Optimal: 600-900 ng/dL</p>
                 <p className="mt-4 text-sm text-white/70">
-                  700 = zone optimale: energie, libido et progression generalement meilleures.
+                  700 = zone optimale: énergie, libido et progression généralement meilleures.
                 </p>
               </div>
             </div>
@@ -948,7 +948,7 @@ export default function BloodAnalysisOffer() {
               className="inline-flex items-center gap-3 rounded-full px-7 py-3 text-sm font-semibold text-white hover:scale-[1.02] transition-all"
               style={{ backgroundColor: PRIMARY_BLUE }}
             >
-              Decouvrir mes ranges optimaux
+              Découvrir mes ranges optimaux
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -960,10 +960,10 @@ export default function BloodAnalysisOffer() {
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Bibliotheque de connaissances</h2>
             <p className="mt-4 text-white/50 max-w-3xl mx-auto">
-              7 sources expertes. Corrélations et protocoles construits sur de la litterature, pas un PDF genere au hasard.
+              7 sources expertes. Corrélations et protocoles construits sur de la littérature, pas un PDF généré au hasard.
             </p>
             <p className="mt-2 text-xs text-white/40">
-              Mise a jour reguliere. Objectif: rendre ton bilan compréhensible et actionnable.
+              Mise à jour régulière. Objectif: rendre ton bilan compréhensible et actionnable.
             </p>
           </div>
 
@@ -1000,24 +1000,24 @@ export default function BloodAnalysisOffer() {
               { name: "Foie/Rein", score: 92 },
             ]}
             alert={{
-              title: "Testosterone libre: 8.2 pg/mL",
-              detail: "Range optimal: 15-25 pg/mL. Sous le seuil optimal de 40%. Action recommandee.",
+              title: "Testostérone libre: 8.2 pg/mL",
+              detail: "Range optimal: 15-25 pg/mL. Sous le seuil optimal de 40%. Action recommandée.",
             }}
             biomarkers={[
-              { name: "Testosterone totale", value: "485 ng/dL", range: "600-900", status: "low" },
-              { name: "Testosterone libre", value: "8.2 pg/mL", range: "15-25", status: "critical" },
+              { name: "Testostérone totale", value: "485 ng/dL", range: "600-900", status: "low" },
+              { name: "Testostérone libre", value: "8.2 pg/mL", range: "15-25", status: "critical" },
               { name: "SHBG", value: "62 nmol/L", range: "20-50", status: "high" },
               { name: "Estradiol (E2)", value: "28 pg/mL", range: "20-35", status: "optimal" },
               { name: "Cortisol matin", value: "18.5 µg/dL", range: "10-20", status: "optimal" },
               { name: "IGF-1", value: "195 ng/mL", range: "200-350", status: "low" },
             ]}
             protocol={{
-              title: "Phase 1 ,  Semaines 1-4",
+              title: "Phase 1, Semaines 1-4",
               items: [
-                "Supplementation Vitamine D3: 4000 UI/jour avec repas gras",
-                "Magnesium bisglycinate: 400mg au coucher",
-                "Zinc picolinate: 30mg avec diner",
-                "Reduire stress chronique: protocole HRV + respiration",
+                "Supplémentation Vitamine D3: 4000 UI/jour avec repas gras",
+                "Magnésium bisglycinate: 400mg au coucher",
+                "Zinc picolinate: 30mg avec dîner",
+                "Réduire stress chronique: protocole HRV + respiration",
                 "Optimiser sommeil: 7-8h, coucher avant 23h",
               ],
             }}
@@ -1052,7 +1052,7 @@ export default function BloodAnalysisOffer() {
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Analyser ton bilan maintenant</h2>
           <p className="mt-4 text-white/50 max-w-2xl mx-auto">
-            99€ te donnent 2 analyses completes : un point de depart, puis une mesure concrete de ton evolution.
+            99€ te donnent 2 analyses complètes : un point de départ, puis une mesure concrete de ton évolution.
           </p>
           <div className="mt-8 flex justify-center">
             <Link
@@ -1060,7 +1060,7 @@ export default function BloodAnalysisOffer() {
               className="group inline-flex items-center gap-3 rounded-full px-8 py-4 text-sm font-semibold text-white transition-all hover:scale-[1.02]"
               style={{ backgroundColor: PRIMARY_BLUE }}
             >
-              Obtenir mes 2 analyses ,  99€
+              Obtenir mes 2 analyses, 99€
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>

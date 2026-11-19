@@ -194,7 +194,7 @@ function ScoreGaugeVisual() {
         >
           SCORE GLOBAL
         </motion.div>
-        <div className="text-white/40">Mis a jour en temps reel</div>
+        <div className="text-white/40">Mis à jour en temps réel</div>
       </div>
 
       {/* Floating indicators */}
@@ -404,7 +404,7 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8 }}
             >
               <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
-                Detection
+                Détection
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
                 Identifie ce qui te bloque vraiment.
@@ -472,12 +472,12 @@ export default function AuditGratuit() {
                 Un score global sur 100.
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Ton score reflète l'etat actuel de ton systeme. Plus il est bas,
-                plus tu as de leviers d'amelioration. Je te montre exactement
+                Ton score reflète l'état actuel de ton système. Plus il est bas,
+                plus tu as de leviers d'amélioration. Je te montre exactement
                 où tu perds des points et pourquoi.
               </p>
               <ul className="space-y-4">
-                {["Visualisation claire de tes forces", "Points faibles identifies", "Priorites d'action revelees"].map((item, i) => (
+                {["Visualisation claire de tes forces", "Points faibles identifies", "Priorités d'action révélées"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
                     {item}
@@ -508,8 +508,8 @@ export default function AuditGratuit() {
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
                 Pas de blabla. Un rapport clair qui te dit exactement ce qui
-                ne va pas. Chaque section explique tes resultats et ce qu'ils
-                signifient pour ta sante au quotidien.
+                ne va pas. Chaque section explique tes résultats et ce qu'ils
+                signifient pour ta santé au quotidien.
               </p>
               <ul className="space-y-4">
                 {["Synthèse claire", "Analyse par domaine", "Points d'attention prioritaires"].map((item, i) => (
@@ -549,13 +549,13 @@ export default function AuditGratuit() {
                 viewport={{ once: true }}
               >
                 <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
-                  Analyse Complete
+                  Analyse Complète
                 </p>
                 <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
-                  Chaque aspect de ta sante, decode.
+                  Chaque aspect de ta santé, décodé.
                 </h2>
                 <p className="text-white/50 text-lg leading-relaxed">
-                  J'analyse tes reponses pour identifier les desequilibres
+                  J'analyse tes réponses pour identifier les déséquilibres
                   caches qui limitent ta performance.
                 </p>
               </motion.div>
@@ -564,13 +564,13 @@ export default function AuditGratuit() {
             {/* Right - Scrollable List */}
             <div className="space-y-6">
               {[
-                { title: "Energie & Vitalite", desc: "Niveaux d'energie, fatigue chronique, cycles circadiens" },
-                { title: "Sommeil & Recuperation", desc: "Qualite du sommeil, phases de recuperation, insomnies" },
-                { title: "Hormones", desc: "Testosterone, cortisol, thyroide, insuline" },
+                { title: "Énergie & Vitalité", desc: "Niveaux d'énergie, fatigue chronique, cycles circadiens" },
+                { title: "Sommeil & Récupération", desc: "Qualité du sommeil, phases de récupération, insomnies" },
+                { title: "Hormones", desc: "Testostérone, cortisol, thyroïde, insuline" },
                 { title: "Metabolisme", desc: "Digestion, absorption, microbiome, sensibilites" },
-                { title: "Stress & Mental", desc: "Charge mentale, anxiete, burnout, resilience" },
-                { title: "Biomecanique", desc: "Posture, douleurs, mobilite, compensations" },
-                { title: "Performance", desc: "Force, endurance, recuperation musculaire" },
+                { title: "Stress & Mental", desc: "Charge mentale, anxiété, burnout, résilience" },
+                { title: "Biomecanique", desc: "Posture, douleurs, mobilité, compensations" },
+                { title: "Performance", desc: "Force, endurance, récupération musculaire" },
               ].map((item, i) => (
                 <motion.div
                   key={i}
@@ -743,8 +743,8 @@ export default function AuditGratuit() {
             protocol={{
               title: "Prochaines étapes",
               items: [
-                "Instaurer un rituel sommeil: coucher avant 23h, pas d'ecran 1h avant",
-                "Integrer 30g de proteines au petit-dejeuner pour stabiliser le cortisol matin",
+                "Instaurer un rituel sommeil: coucher avant 23h, pas d'écran 1h avant",
+                "Intégrer 30g de protéines au petit-déjeuner pour stabiliser le cortisol matin",
                 "Compléter avec l'Anabolic Bioscan pour les protocoles d'action complets",
               ],
             }}
@@ -782,7 +782,7 @@ export default function AuditGratuit() {
           className="max-w-4xl mx-auto text-center"
         >
           <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
-            Pret a decouvrir
+            Prêt à découvrir
             <br />
             <span className="text-[#FCDD00]">tes blocages ?</span>
           </h2>

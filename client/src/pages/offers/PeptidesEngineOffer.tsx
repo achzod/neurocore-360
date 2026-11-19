@@ -311,7 +311,7 @@ const CREDIBILITY = [
   { stat: "86K", label: "abonnes YouTube" },
   { stat: "12", label: "masterclasses peptides" },
   { stat: "74", label: "molécules dans le catalogue" },
-  { stat: "COA", label: "verifie par labo independant" },
+  { stat: "COA", label: "vérifie par labo indépendant" },
 ];
 
 const STEPS = [
@@ -319,7 +319,7 @@ const STEPS = [
     step: "01",
     icon: Brain,
     title: "Réponds au questionnaire",
-    desc: "35 questions sur tes objectifs, ton historique, ta biologie et ta tolerance. Sauvegarde auto.",
+    desc: "35 questions sur tes objectifs, ton historique, ta biologie et ta tolérance. Sauvegarde auto.",
     time: "10-15 min",
   },
   {
@@ -332,7 +332,7 @@ const STEPS = [
   {
     step: "03",
     icon: Mail,
-    title: "Tu recois tout par email",
+    title: "Tu reçois tout par email",
     desc: "Rapport complet, codes Blood Analysis, liste de courses, guides d'injection et de sécurité.",
     time: "Email direct",
   },
@@ -342,47 +342,47 @@ const DELIVERABLES = [
   {
     icon: Syringe,
     title: "Protocole personnalise selon tes axes",
-    desc: "Uniquement les molecules justifiees par ton profil, avec dosages ajustes a ton poids, timing AM/PM, duree et structure du cycle.",
+    desc: "Uniquement les molecules justifiees par ton profil, avec dosages ajustes à ton poids, timing AM/PM, durée et structure du cycle.",
   },
   {
     icon: FlaskConical,
     title: "Guide de reconstitution CALCULE",
-    desc: "BAC water en ml, concentration cible, unites seringue par peptide. Zero calcul de ta part.",
+    desc: "BAC water en ml, concentration cible, unités seringue par peptide. Zéro calcul de ta part.",
   },
   {
     icon: Calendar,
     title: "Calendrier hebdomadaire AM/PM",
-    desc: "Jour par jour, sites de rotation, timing precis. Imprimable et pret a l'emploi.",
+    desc: "Jour par jour, sites de rotation, timing précis. Imprimable et prêt à l'emploi.",
   },
   {
     icon: ShoppingCart,
-    title: "Liste de courses complete",
+    title: "Liste de courses complète",
     desc: "Liens directs fournisseur + coût total estimé. Tu sais exactement ce que le cycle va coûter.",
   },
   {
     icon: Activity,
     title: "Jusqu'à 2 Blood Analyses incluses",
-    desc: "Valeur 198€. Pre-cycle (baseline) + mi-cycle (mesurer l'impact reel sur tes marqueurs cibles).",
+    desc: "Valeur 198€. Pre-cycle (baseline) + mi-cycle (mesurer l'impact réel sur tes marqueurs cibles).",
   },
   {
     icon: Eye,
     title: "Guide injection SC",
-    desc: "Technique sous-cutanee, sites d'injection, rotation, choix des aiguilles. Avec illustrations.",
+    desc: "Technique sous-cutanée, sites d'injection, rotation, choix des aiguilles. Avec illustrations.",
   },
   {
     icon: AlertTriangle,
-    title: "Guide securite",
-    desc: "Red flags a surveiller, quand reduire la dose, quand stopper immediatement.",
+    title: "Guide sécurité",
+    desc: "Red flags a surveiller, quand réduire la dose, quand stopper immédiatement.",
   },
   {
     icon: Pill,
-    title: "Stack supplements complementaire",
-    desc: "Zinc, magnesium, B6, D3. Les nutrients de support pour optimiser la reponse peptidique.",
+    title: "Stack supplements complémentaire",
+    desc: "Zinc, magnésium, B6, D3. Les nutrients de support pour optimiser la réponse peptidique.",
   },
   {
     icon: Mail,
     title: "Support email 30 jours",
-    desc: "Questions post-livraison sur ton protocole. Reponse sous 48h ouvrables.",
+    desc: "Questions post-livraison sur ton protocole. Réponse sous 48h ouvrables.",
   },
 ];
 
@@ -391,7 +391,7 @@ const OBJECTIVES = [
     icon: Heart,
     title: "Recovery & Healing",
     peptides: "BPC-157, TB-500",
-    detail: "Reparation tendineuse, cicatrisation, reduction inflammation chronique.",
+    detail: "Réparation tendineuse, cicatrisation, réduction inflammation chronique.",
   },
   {
     icon: Zap,
@@ -403,37 +403,37 @@ const OBJECTIVES = [
     icon: Flame,
     title: "Fat Loss",
     peptides: "Tesamorelin, AOD-9604",
-    detail: "Lipolyse ciblee, reduction graisse viscerale, preservation musculaire.",
+    detail: "Lipolyse ciblée, réduction graisse viscérale, préservation musculaire.",
   },
   {
     icon: Moon,
     title: "Deep Sleep",
     peptides: "DSIP",
-    detail: "Qualite du sommeil, recuperation nocturne, reset circadien.",
+    detail: "Qualité du sommeil, récupération nocturne, reset circadien.",
   },
   {
     icon: Brain,
     title: "Cognitive",
     peptides: "Semax, Selank",
-    detail: "Focus, reduction anxiete, neuroprotection et memoire de travail.",
+    detail: "Focus, réduction anxiété, neuroprotection et mémoire de travail.",
   },
   {
     icon: Activity,
     title: "Libido",
     peptides: "PT-141",
-    detail: "Melanocortine centralement active, reponse sexuelle homme et femme.",
+    detail: "Melanocortine centralement active, réponse sexuelle homme et femme.",
   },
   {
     icon: Shield,
     title: "Skin & Hair",
     peptides: "GHK-Cu",
-    detail: "Synthese collagene, epaississement cheveux, cicatrisation cutanee.",
+    detail: "Synthèse collagène, epaississement cheveux, cicatrisation cutanée.",
   },
   {
     icon: Zap,
     title: "Endurance",
     peptides: "SS-31, MOTS-c",
-    detail: "Protection mitochondriale, reduction stress oxydatif, performance cardio.",
+    detail: "Protection mitochondriale, réduction stress oxydatif, performance cardio.",
   },
 ];
 
@@ -830,7 +830,7 @@ const FEATURE_CARDS = [
     id: "reconstitution",
     title: "PROTOCOLES & RECONSTITUTION",
     description:
-      "Une erreur de calcul et tu ruines ton cycle. Fini les calculs hasardeux. Je te fournis les calculateurs exacts : volume d'eau bacteriostatique precis, conversion mg/mcg, et graduation millimetree sur seringue a insuline pour chaque peptide.",
+      "Une erreur de calcul et tu ruines ton cycle. Fini les calculs hasardeux. Je te fournis les calculateurs exacts : volume d'eau bacteriostatique précis, conversion mg/mcg, et graduation millimetree sur seringue a insuline pour chaque peptide.",
     icon: Calculator,
     animation: ReconstitutionAnimation,
     color: "yellow" as const,
@@ -840,7 +840,7 @@ const FEATURE_CARDS = [
     id: "synergy",
     title: "SYNERGIE & TIMINGS",
     description:
-      "Savoir quoi prendre ne suffit pas. Il faut savoir QUAND. Protocoles a jeun, fenetres post-workout, gestion stricte de la demi-vie et cycles de desensibilisation pour eviter la saturation des recepteurs. Je supervise tes cycles pour maximiser tes resultats.",
+      "Savoir quoi prendre ne suffit pas. Il faut savoir QUAND. Protocoles a jeun, fenêtres post-workout, gestion stricte de la demi-vie et cycles de desensibilisation pour éviter la saturation des récepteurs. Je supervise tes cycles pour maximiser tes résultats.",
     icon: GitMerge,
     animation: SynergyAnimation,
     color: "red" as const,
@@ -895,10 +895,10 @@ function AnimatedFeaturesSection() {
         >
           <SectionLabel>Ce que contient ton protocole</SectionLabel>
           <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">
-            La science derriere chaque decision
+            La science derrière chaque décision
           </h2>
           <p className="mt-4 text-[#6E6E73] max-w-2xl mx-auto">
-            Chaque element de ton protocole est documente, calcule et verifie. Pas d'improvisation.
+            Chaque element de ton protocole est documente, calcule et vérifie. Pas d'improvisation.
           </p>
         </motion.div>
 
@@ -997,7 +997,7 @@ function COASection() {
             </div>
             <div className="text-center">
               <p className="text-[#1D1D1F] font-bold mb-1">Documents de lot</p>
-              <p className="text-[#86868B] text-xs">Liens et controles detailles fournis dans le rapport personnalise</p>
+              <p className="text-[#86868B] text-xs">Liens et contrôles détaillés fournis dans le rapport personnalise</p>
             </div>
           </motion.div>
         </div>
@@ -1070,7 +1070,7 @@ function HowItWorks() {
           className="mb-14 text-center"
         >
           <SectionLabel>Processus</SectionLabel>
-          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">3 etapes, 48h</h2>
+          <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-4xl">3 étapes, 48h</h2>
         </motion.div>
 
         <div className="relative">
@@ -1136,7 +1136,7 @@ function ObjectivesSection() {
             8 catégories. 74 molécules disponibles.
           </h2>
           <p className="mt-4 text-[#6E6E73]">
-            Le questionnaire identifie ton objectif principal et adapte le stack en consequence.
+            Le questionnaire identifie ton objectif principal et adapte le stack en conséquence.
           </p>
         </motion.div>
 
@@ -1217,11 +1217,11 @@ function ScarcityGuarantee() {
           >
             <div className="mb-4 flex items-center gap-3">
               <Users className="h-5 w-5" style={{ color: PRIMARY }} />
-              <SectionLabel>Disponibilite</SectionLabel>
+              <SectionLabel>Disponibilité</SectionLabel>
             </div>
             <p className="mb-3 text-2xl font-bold text-[#1D1D1F]">15 protocoles par mois</p>
             <p className="text-sm text-[#6E6E73]">
-              Chaque protocole est verifie manuellement avant envoi. La limite mensuelle garantit la qualite de chaque livrable.
+              Chaque protocole est vérifie manuellement avant envoi. La limite mensuelle garantit la qualité de chaque livrable.
             </p>
           </motion.div>
 
@@ -1235,7 +1235,7 @@ function ScarcityGuarantee() {
           >
             <div className="mb-4 flex items-center gap-3">
               <Shield className="h-5 w-5" style={{ color: PRIMARY }} />
-              <SectionLabel>Gage de qualite</SectionLabel>
+              <SectionLabel>Gage de qualité</SectionLabel>
             </div>
             <p className="mb-3 text-xl font-bold text-[#1D1D1F] leading-snug">
               Je construis ton protocole personnellement
@@ -1263,7 +1263,7 @@ function ScarcityGuarantee() {
               <p className="text-xs font-mono uppercase tracking-widest text-[#0071E3] mb-2">Peptides + Coaching</p>
               <p className="text-xl font-bold text-[#1D1D1F] mb-3">Ton montant Peptides Engine (199€, 299€ ou 399€) est intégralement déduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 semaines.</p>
               <p className="text-sm text-[#6E6E73] leading-relaxed mb-4">
-                Tu peux commander tes peptides maintenant, prendre un coaching Achzod, et commencer le suivi une fois que tu as recu tes peptides. Le crédit déduction est valable 8 semaines à compter de la livraison de ton rapport.
+                Tu peux commander tes peptides maintenant, prendre un coaching Achzod, et commencer le suivi une fois que tu as reçu tes peptides. Le crédit déduction est valable 8 semaines à compter de la livraison de ton rapport.
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
@@ -1444,10 +1444,10 @@ function TrustSection() {
           <div className="w-14 h-14 rounded-2xl bg-[#0071E3]/10 flex items-center justify-center mx-auto mb-4">
             <Mail className="w-7 h-7 text-[#0071E3]" />
           </div>
-          <h3 className="text-xl font-bold text-[#1D1D1F] mb-2">Je reponds personnellement a chaque message</h3>
+          <h3 className="text-xl font-bold text-[#1D1D1F] mb-2">Je réponds personnellement à chaque message</h3>
           <p className="text-[#6E6E73] text-sm max-w-lg mx-auto mb-4">
             Une question sur ton protocole, un doute sur un dosage, besoin d'un ajustement ? Ecris-moi directement.
-            Je reponds sous 24h, personnellement. Pas un assistant, pas un bot. Moi.
+            Je réponds sous 24h, personnellement. Pas un assistant, pas un bot. Moi.
           </p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <PeptidesWhatsAppLink
@@ -1480,7 +1480,7 @@ function TrustSection() {
           </div>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4" />
-            <span>COA verifie par labo HPLC</span>
+            <span>COA vérifie par labo HPLC</span>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />
@@ -1622,7 +1622,7 @@ const PRICING_TIERS = [
     ],
     description:
       "Le protocole expert, livré clé en main. Pour celui qui a déjà un bilan récent ou qui se chargera du suivi en autonomie.",
-    ctaLabel: "Choisir Solo , 199€",
+    ctaLabel: "Choisir Solo, 199€",
     href: "/peptides-engine?tier=solo",
   },
   {
@@ -1643,7 +1643,7 @@ const PRICING_TIERS = [
     ],
     description:
       "La protection métabolique pendant le démarrage du cycle. Tu choisis quand utiliser ton bilan sanguin, et tu as accès direct à mon support écrit pendant 30 jours.",
-    ctaLabel: "Choisir Coached , 299€",
+    ctaLabel: "Choisir Coached, 299€",
     href: "/peptides-engine?tier=coached",
   },
   {
@@ -1665,7 +1665,7 @@ const PRICING_TIERS = [
     ],
     description:
       "Le track end-to-end : tu rentres avec une baseline mesurée, tu sors avec une comparaison avant/après. Et si ta situation change (blessure, opération), je réécris ton protocole une fois sans surcoût.",
-    ctaLabel: "Choisir Tracked , 399€",
+    ctaLabel: "Choisir Tracked, 399€",
     href: "/peptides-engine?tier=tracked",
   },
 ] as const;

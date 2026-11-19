@@ -1,5 +1,3 @@
-@import url("https://fonts.cdnfonts.com/css/graphik");
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap");
 @import './styles/typography.css';
 @import './styles/blood-theme.css';
 @import './styles/layout.css';
@@ -59,7 +57,7 @@
 /* Decimal Pro - For Headlines */
 @font-face {
   font-family: 'Decimal';
-  src: url('/fonts/Decimal-XBlack-Pro.otf') format('opentype');
+  src: url('/fonts/Decimal-XBlack-Pro.woff2') format('woff2'), url('/fonts/Decimal-XBlack-Pro.otf') format('opentype');
   font-weight: 900;
   font-style: normal;
   font-display: swap;
@@ -67,7 +65,7 @@
 
 @font-face {
   font-family: 'Decimal';
-  src: url('/fonts/Decimal-Ultra-Pro.otf') format('opentype');
+  src: url('/fonts/Decimal-Ultra-Pro.woff2') format('woff2'), url('/fonts/Decimal-Ultra-Pro.otf') format('opentype');
   font-weight: 800;
   font-style: normal;
   font-display: swap;
@@ -75,7 +73,7 @@
 
 @font-face {
   font-family: 'Decimal';
-  src: url('/fonts/Decimal-XLight-Pro.otf') format('opentype');
+  src: url('/fonts/Decimal-XLight-Pro.woff2') format('woff2'), url('/fonts/Decimal-XLight-Pro.otf') format('opentype');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -83,7 +81,7 @@
 
 @font-face {
   font-family: 'Decimal';
-  src: url('/fonts/Decimal-Thin-Pro.otf') format('opentype');
+  src: url('/fonts/Decimal-Thin-Pro.woff2') format('woff2'), url('/fonts/Decimal-Thin-Pro.otf') format('opentype');
   font-weight: 100;
   font-style: normal;
   font-display: swap;
@@ -92,7 +90,7 @@
 /* Helvetica Neue - For Body Text */
 @font-face {
   font-family: 'Helvetica Neue';
-  src: url('/fonts/HELVETICA-NEUE.TTF') format('truetype');
+  src: url('/fonts/HELVETICA-NEUE.woff2') format('woff2'), url('/fonts/HELVETICA-NEUE.TTF') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -100,7 +98,7 @@
 
 @font-face {
   font-family: 'Helvetica Neue';
-  src: url('/fonts/HELVETICA-NEUE-LIGHT.TTF') format('truetype');
+  src: url('/fonts/HELVETICA-NEUE-LIGHT.woff2') format('woff2'), url('/fonts/HELVETICA-NEUE-LIGHT.TTF') format('truetype');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -108,7 +106,7 @@
 
 @font-face {
   font-family: 'Helvetica Neue';
-  src: url('/fonts/HELVETICA-NEUE-BOLD.TTF') format('truetype');
+  src: url('/fonts/HELVETICA-NEUE-BOLD.woff2') format('woff2'), url('/fonts/HELVETICA-NEUE-BOLD.TTF') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -116,7 +114,7 @@
 
 @font-face {
   font-family: 'Helvetica Neue';
-  src: url('/fonts/HELVETICA-NEUE-ULTRALIGHT.TTF') format('truetype');
+  src: url('/fonts/HELVETICA-NEUE-ULTRALIGHT.woff2') format('woff2'), url('/fonts/HELVETICA-NEUE-ULTRALIGHT.TTF') format('truetype');
   font-weight: 200;
   font-style: normal;
   font-display: swap;
@@ -124,7 +122,7 @@
 
 @font-face {
   font-family: 'Helvetica Neue';
-  src: url('/fonts/HELVETICA-NEUE-ITALIC.TTF') format('truetype');
+  src: url('/fonts/HELVETICA-NEUE-ITALIC.woff2') format('woff2'), url('/fonts/HELVETICA-NEUE-ITALIC.TTF') format('truetype');
   font-weight: 400;
   font-style: italic;
   font-display: swap;
@@ -235,7 +233,7 @@
 
 @font-face {
   font-family: 'Helvetica Neue';
-  src: url('/fonts/HELVETICA-NEUE-BOLD-ITALIC.TTF') format('truetype');
+  src: url('/fonts/HELVETICA-NEUE-BOLD-ITALIC.woff2') format('woff2'), url('/fonts/HELVETICA-NEUE-BOLD-ITALIC.TTF') format('truetype');
   font-weight: 700;
   font-style: italic;
   font-display: swap;

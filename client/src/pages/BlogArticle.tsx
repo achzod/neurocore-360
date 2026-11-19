@@ -17,6 +17,7 @@ import { BLOG_CATEGORIES, type BlogArticle } from "@/data/blogTypes";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useEffect, useMemo, useState } from "react";
+import { loadBlogArticleWithIndex } from "@/lib/blogData";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { trackBlogCtaClick, trackWhatsAppClick } from "@/lib/analytics";
 
@@ -52,8 +53,8 @@ type BlogConversion = {
 const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   musculation: {
     eyebrow: "Plan personnalise",
-    title: "Tu veux ce plan adapte a ton niveau, ton rythme et ton objectif ?",
-    body: "Le coaching AchZod transforme la theorie en plan d'entrainement et nutrition ajuste chaque semaine selon ta progression.",
+    title: "Tu veux ce plan adapte à ton niveau, ton rythme et ton objectif ?",
+    body: "Le coaching AchZod transforme la théorie en plan d'entraînement et nutrition ajuste chaque semaine selon ta progression.",
     href: COACHING_URL,
     cta: "Voir les suivis coaching",
     offer: "Coaching AchZod",
@@ -63,7 +64,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   sarms: {
     eyebrow: "Cadre avance",
     title: "Avant de toucher aux PEDs, lis ton contexte complet.",
-    body: "Le Peptides Engine et les analyses APEXLABS aident a cadrer les decisions avancees avec donnees, prudence et orientation claire.",
+    body: "Le Peptides Engine et les analyses APEXLABS aident a cadrer les décisions avancées avec données, prudence et orientation claire.",
     href: "/peptides-preview",
     cta: "Tester l'aperçu gratuit",
     offerHref: "/offers/peptides-engine",
@@ -73,9 +74,9 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
     sideLabel: "molecules",
   },
   supplements: {
-    eyebrow: "Priorites d'abord",
-    title: "Ne rajoute pas un supplement si le vrai frein est ailleurs.",
-    body: "Commence par verifier sommeil, stress, digestion, nutrition et entrainement pour savoir ce qui merite vraiment d'etre corrige.",
+    eyebrow: "Priorités d'abord",
+    title: "Ne rajoute pas un supplément si le vrai frein est ailleurs.",
+    body: "Commence par vérifier sommeil, stress, digestion, nutrition et entraînement pour savoir ce qui mérite vraiment d'être corrige.",
     href: "/offers/discovery-scan",
     cta: "Faire le scan gratuit",
     offer: "Discovery Scan",
@@ -84,7 +85,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   },
   hormones: {
     eyebrow: "Signal hormonal",
-    title: "Energie, libido, recuperation : arrete de deviner.",
+    title: "Énergie, libido, récupération : arrête de deviner.",
     body: "L'Anabolic Bioscan route les signaux hormonaux, le contexte lifestyle et les blocages de performance vers une lecture claire.",
     href: "/offers/anabolic-bioscan",
     cta: "Analyser mon signal",
@@ -95,7 +96,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   sommeil: {
     eyebrow: "Sommeil & recovery",
     title: "Si ton sommeil bloque, ton physique bloque aussi.",
-    body: "Le Discovery Scan met en relation sommeil, stress, energie, faim, digestion et performance pour isoler le levier prioritaire.",
+    body: "Le Discovery Scan met en relation sommeil, stress, énergie, faim, digestion et performance pour isoler le levier prioritaire.",
     href: "/offers/ultimate-scan",
     cta: "Tester mes signaux",
     offer: "Discovery Scan",
@@ -104,8 +105,8 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   },
   stress: {
     eyebrow: "Stress & HRV",
-    title: "Ton systeme nerveux peut etre le frein invisible.",
-    body: "APEXLABS relie HRV, sommeil, charge mentale, entrainement et recuperation pour eviter de pousser le mauvais levier.",
+    title: "Ton système nerveux peut être le frein invisible.",
+    body: "APEXLABS relie HRV, sommeil, charge mentale, entraînement et récupération pour éviter de pousser le mauvais levier.",
     href: "/offers/ultimate-scan",
     cta: "Voir ce qui bloque",
     offer: "Discovery Scan",
@@ -115,17 +116,17 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   nutrition: {
     eyebrow: "Nutrition utile",
     title: "Avant de baisser les calories, identifie le vrai levier.",
-    body: "Le scan APEXLABS te montre si le probleme vient de la faim, du timing, de l'adherence, de la recuperation ou du metabolisme.",
+    body: "Le scan APEXLABS te montre si le problème vient de la faim, du timing, de l'adherence, de la récupération ou du métabolisme.",
     href: "/offers/ultimate-scan",
-    cta: "Faire une lecture complete",
+    cta: "Faire une lecture complète",
     offer: "Ultimate Scan",
     sideStat: "79€",
     sideLabel: "complet",
   },
   performance: {
     eyebrow: "Performance",
-    title: "Plus d'effort ne suffit pas si la recuperation ne suit pas.",
-    body: "Ultimate Scan croise entrainement, sommeil, HRV, nutrition et fatigue pour choisir le bon ajustement.",
+    title: "Plus d'effort ne suffit pas si la récupération ne suit pas.",
+    body: "Ultimate Scan croise entraînement, sommeil, HRV, nutrition et fatigue pour choisir le bon ajustement.",
     href: "/offers/ultimate-scan",
     cta: "Analyser ma performance",
     offer: "Ultimate Scan",
@@ -135,9 +136,9 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   metabolisme: {
     eyebrow: "Metabolisme",
     title: "Si ton moteur ralentit, il faut le lire avant de couper plus.",
-    body: "Ultimate Scan analyse energie, NEAT, faim, glycemie percue, digestion, sommeil et contexte pour prioriser la correction.",
+    body: "Ultimate Scan analyse énergie, NEAT, faim, glycémie perçue, digestion, sommeil et contexte pour prioriser la correction.",
     href: "/offers/ultimate-scan",
-    cta: "Lire mon metabolisme",
+    cta: "Lire mon métabolisme",
     offer: "Ultimate Scan",
     sideStat: "16",
     sideLabel: "domaines",
@@ -145,7 +146,7 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   longevite: {
     eyebrow: "Biomarqueurs",
     title: "On ne pilote pas la longevite avec des impressions.",
-    body: "Blood Analysis transforme tes marqueurs en priorites actionnables pour performance, sante metabolique et prevention.",
+    body: "Blood Analysis transforme tes marqueurs en priorités actionnables pour performance, santé métabolique et prévention.",
     href: "/offers/blood-analysis",
     cta: "Analyser mes marqueurs",
     offer: "Blood Analysis",
@@ -154,18 +155,18 @@ const CATEGORY_CONVERSION: Record<string, Omit<BlogConversion, "intent">> = {
   },
   biohacking: {
     eyebrow: "Data utile",
-    title: "Le tracking ne sert a rien sans decision derriere.",
+    title: "Le tracking ne sert a rien sans décision derrière.",
     body: "APEXLABS transforme les signaux wearable, lifestyle et performance en prochaines actions au lieu d'accumuler des chiffres.",
     href: "/offers/ultimate-scan",
-    cta: "Transformer mes donnees",
+    cta: "Transformer mes données",
     offer: "Ultimate Scan",
     sideStat: "data",
     sideLabel: "action",
   },
   femmes: {
     eyebrow: "Physiologie feminine",
-    title: "Cycle, energie, sommeil : ton plan doit respecter ton contexte.",
-    body: "Le Discovery Scan aide a poser les priorites avant de choisir nutrition, entrainement ou accompagnement.",
+    title: "Cycle, énergie, sommeil : ton plan doit respecter ton contexte.",
+    body: "Le Discovery Scan aide a poser les priorités avant de choisir nutrition, entraînement ou accompagnement.",
     href: "/offers/discovery-scan",
     cta: "Faire le point",
     offer: "Discovery Scan",
@@ -280,7 +281,7 @@ export function getBlogIntentConversion(article: BlogArticle): BlogConversion {
       intent: "formcheck",
       eyebrow: "Execution",
       title: "Si le blocage vient du mouvement, il faut voir l'execution.",
-      body: "FormCheck donne une lecture biomecanique sur video avec les corrections prioritaires a appliquer des la prochaine seance.",
+      body: "FormCheck donne une lecture biomecanique sur vidéo avec les corrections prioritaires a appliquer des la prochaine séance.",
       href: "/offers/formcheck",
       cta: "Faire analyser ma technique",
       offer: "FormCheck",
@@ -307,12 +308,8 @@ export default function BlogArticlePage() {
   useEffect(() => {
     let active = true;
     setIsLoading(true);
-    fetch("/blog-articles.json")
-      .then(async (res) => {
-        if (!res.ok) {
-          throw new Error("Impossible de charger les articles.");
-        }
-        const data = (await res.json()) as BlogArticle[];
+    loadBlogArticleWithIndex(params.slug || "")
+      .then((data) => {
         if (active) {
           setArticles(data);
           setLoadError(null);
@@ -330,7 +327,7 @@ export default function BlogArticlePage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [params.slug]);
 
   const article = useMemo(
     () => articles.find((entry) => entry.slug === (params.slug || "")) || null,
@@ -519,7 +516,7 @@ export default function BlogArticlePage() {
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const heroImage = article.image || article.imageUrl || "https://placehold.co/1200x600/0a0a0a/ffffff?text=APEXLABS";
   const conversion = getBlogIntentConversion(article);
-  const whatsappMessage = `Salut Achzod, je viens de lire l'article "${article.title}" sur APEXLABS. Je veux ton avis : est-ce que mon cas releve plutot d'un scan, d'une analyse avancee ou d'un coaching ?`;
+  const whatsappMessage = `Salut Achzod, je viens de lire l'article "${article.title}" sur APEXLABS. Je veux ton avis : est-ce que mon cas relève plutôt d'un scan, d'une analyse avancée ou d'un coaching ?`;
   const whatsappUrl = buildWhatsAppUrl(whatsappMessage);
 
   return (
@@ -811,9 +808,10 @@ export default function BlogArticlePage() {
                           "_blank"
                         )
                       }
+                      aria-label="Partager sur X (Twitter)"
                       className="p-2 rounded-sm bg-white/[0.03] border border-white/10 text-white/70 hover:text-[#FCDD00] hover:border-[#FCDD00]/30 transition-colors"
                     >
-                      <Twitter className="h-4 w-4" />
+                      <Twitter className="h-4 w-4" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() =>
@@ -822,17 +820,19 @@ export default function BlogArticlePage() {
                           "_blank"
                         )
                       }
+                      aria-label="Partager sur LinkedIn"
                       className="p-2 rounded-sm bg-white/[0.03] border border-white/10 text-white/70 hover:text-[#FCDD00] hover:border-[#FCDD00]/30 transition-colors"
                     >
-                      <Linkedin className="h-4 w-4" />
+                      <Linkedin className="h-4 w-4" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(shareUrl);
                       }}
+                      aria-label="Partager cet article"
                       className="p-2 rounded-sm bg-white/[0.03] border border-white/10 text-white/70 hover:text-[#FCDD00] hover:border-[#FCDD00]/30 transition-colors"
                     >
-                      <Share2 className="h-4 w-4" />
+                      <Share2 className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -973,6 +973,8 @@ export default function BlogArticlePage() {
                   <img
                     src="https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg"
                     alt="ACHZOD Coaching"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-contain rotate-3 hover:rotate-0 transition-transform duration-500"
                   />
                 </div>

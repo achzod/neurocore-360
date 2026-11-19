@@ -187,11 +187,11 @@ export default function AuditPremium() {
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   const protocols = [
-    { name: "Protocole Matin Anti-Cortisol", desc: "Ta routine du matin pour reduire le cortisol et maximiser ton energie", icon: Zap },
-    { name: "Protocole Soir Verrouillage Sommeil", desc: "Ta sequence de relaxation pour un sommeil profond et reparateur", icon: Moon },
+    { name: "Protocole Matin Anti-Cortisol", desc: "Ta routine du matin pour réduire le cortisol et maximiser ton énergie", icon: Zap },
+    { name: "Protocole Soir Verrouillage Sommeil", desc: "Ta séquence de relaxation pour un sommeil profond et réparateur", icon: Moon },
     { name: "Protocole Digestion 14 Jours", desc: "Ton reset digestif complet pour optimiser l'absorption", icon: Pill },
-    { name: "Protocole Bureau Anti-Sedentarite", desc: "Tes micro-routines anti-sedentarite pour contrer les heures assis", icon: Calendar },
-    { name: "Protocole Entrainement Personnalise", desc: "Ton programme adapte a tes objectifs, ton niveau et ta recuperation", icon: TrendingUp },
+    { name: "Protocole Bureau Anti-Sédentarité", desc: "Tes micro-routines anti-sédentarité pour contrer les heures assis", icon: Calendar },
+    { name: "Protocole Entraînement Personnalise", desc: "Ton programme adapte à tes objectifs, ton niveau et ta récupération", icon: TrendingUp },
   ];
 
   return (
@@ -242,8 +242,8 @@ export default function AuditPremium() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            ~137 questions sur 16 sections: nutrition detaillee, profil hormonal,
-            axes cliniques (thyroide, diabete, SII), supplements, biomarqueurs, composition corporelle.
+            ~137 questions sur 16 sections: nutrition détaillée, profil hormonal,
+            axes cliniques (thyroïde, diabète, SII), supplements, biomarqueurs, composition corporelle.
           </motion.p>
 
           <motion.div
@@ -305,8 +305,8 @@ export default function AuditPremium() {
                 <span className="text-[#FCDD00]">Un plan d'action.</span>
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Je te donne les protocoles exacts a suivre. Pas de conseils generiques.
-                Des actions concretes basees sur TES resultats.
+                Je te donne les protocoles exacts à suivre. Pas de conseils génériques.
+                Des actions concrètes basées sur TES résultats.
               </p>
               <div className="space-y-4">
                 {protocols.map((protocol, i) => (
@@ -371,7 +371,7 @@ export default function AuditPremium() {
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
                 Un roadmap clair.
                 <br />
-                <span className="text-[#FCDD00]">Zero confusion.</span>
+                <span className="text-[#FCDD00]">Zéro confusion.</span>
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
                 Je te dis exactement quoi faire, semaine par semaine.
@@ -379,7 +379,7 @@ export default function AuditPremium() {
               </p>
               <ul className="space-y-4">
                 {[
-                  "J1-30 : Reset - Eliminer les blocages prioritaires",
+                  "J1-30 : Reset - Éliminer les blocages prioritaires",
                   "J31-60 : Build - Construire les nouvelles habitudes",
                   "J61-90 : Peak - Optimiser et consolider les gains",
                 ].map((item, i) => (
@@ -421,12 +421,12 @@ export default function AuditPremium() {
                 "Protocole Matin Anti-Cortisol",
                 "Protocole Soir Verrouillage Sommeil",
                 "Protocole Digestion 14 Jours",
-                "Protocole Bureau Anti-Sedentarite",
-                "Protocole Entrainement Personnalise",
+                "Protocole Bureau Anti-Sédentarité",
+                "Protocole Entraînement Personnalise",
                 "Stack Supplements optimise",
                 "Plan semaine par semaine 30-60-90",
                 "KPI et Tableau de Bord",
-                "Synthese et Prochaines Etapes",
+                "Synthèse et Prochaines Étapes",
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Check className="w-5 h-5 text-[#FCDD00] flex-shrink-0" />
@@ -475,21 +475,21 @@ export default function AuditPremium() {
             ]}
             alert={{
               title: "Sommeil: score 55/100",
-              detail: "recuperation insuffisante, cortisol eleve le soir",
+              detail: "récupération insuffisante, cortisol eleve le soir",
             }}
             protocol={{
               title: "Protocole Matin Anti-Cortisol",
               items: [
-                "Exposition lumiere naturelle dans les 30min apres le reveil",
-                "20g proteines au reveil (whey ou oeufs) pour stabiliser la glycemie",
-                "Ashwagandha KSM-66 600mg avec le petit-dejeuner",
-                "10 min de marche legere avant toute activite cognitive",
+                "Exposition lumière naturelle dans les 30min après le réveil",
+                "20g protéines au réveil (whey ou oeufs) pour stabiliser la glycémie",
+                "Ashwagandha KSM-66 600mg avec le petit-déjeuner",
+                "10 min de marche légère avant toute activité cognitive",
               ],
             }}
             extras={[
               {
                 title: "Stack Supplements",
-                detail: "Magnesium 300mg, Ashwagandha 600mg, Zinc 30mg",
+                detail: "Magnésium 300mg, Ashwagandha 600mg, Zinc 30mg",
               },
             ]}
           />
@@ -505,11 +505,11 @@ export default function AuditPremium() {
           </motion.div>
           <div className="divide-y divide-white/10">
             {[
-              { q: "Combien de temps prend le questionnaire ?", a: "Environ 15-20 minutes. 137 questions sur 16 domaines : profil, sante, sommeil, stress, energie, digestion, entrainement, nutrition de base, lifestyle, mindset, nutrition detaillee, hormones, axes cliniques, supplements, biomarqueurs, composition corporelle. Ta progression est sauvegardee automatiquement ,  tu peux fermer et reprendre plus tard." },
-              { q: "Que contient le rapport de 20+ pages ?", a: "16 sections completes : executive summary avec score global, 6 analyses approfondies (entrainement et periodisation, systeme cardiovasculaire, metabolisme et nutrition, sommeil et recuperation, digestion et microbiote, axes hormonaux), 5 protocoles d'action (matin anti-cortisol, soir verrouillage sommeil, digestion 14 jours, bureau anti-sedentarite, entrainement personnalise), stack supplements optimise, plan semaine par semaine 30-60-90 jours, KPI et tableau de bord, synthese et prochaines etapes." },
-              { q: "Quelle est la difference avec l'Ultimate Scan ?", a: "L'Anabolic Bioscan couvre 16 sections de rapport sans photos. L'Ultimate Scan (79\u20ac) ajoute 2 sections exclusives basees sur 3 photos (face, dos, profil) : analyse visuelle et posturale complete + analyse biomecanique et sangle profonde. Total : 18 sections, ~183 questions, rapport de 40-50 pages." },
-              { q: "Les 5 protocoles sont-ils vraiment personnalises ?", a: "Oui. Chaque protocole est genere par mon moteur IA en fonction de TES reponses. Le protocole matin anti-cortisol, le protocole soir verrouillage sommeil, le protocole digestion 14 jours, le protocole bureau anti-sedentarite et le protocole entrainement personnalise sont tous adaptes a ton profil, tes desequilibres et tes objectifs specifiques." },
-              { q: "Combien de temps pour recevoir mon rapport ?", a: "Ton rapport complet de 20+ pages est genere par mon moteur IA et delivre sous 24h par email. Tu recois un email des que ton rapport est pret avec un lien direct vers ton dashboard." },
+              { q: "Combien de temps prend le questionnaire ?", a: "Environ 15-20 minutes. 137 questions sur 16 domaines : profil, santé, sommeil, stress, énergie, digestion, entraînement, nutrition de base, lifestyle, mindset, nutrition détaillée, hormones, axes cliniques, supplements, biomarqueurs, composition corporelle. Ta progression est sauvegardee automatiquement, tu peux fermer et reprendre plus tard." },
+              { q: "Que contient le rapport de 20+ pages ?", a: "16 sections complètes : executive summary avec score global, 6 analyses approfondies (entraînement et périodisation, système cardiovasculaire, métabolisme et nutrition, sommeil et récupération, digestion et microbiote, axes hormonaux), 5 protocoles d'action (matin anti-cortisol, soir verrouillage sommeil, digestion 14 jours, bureau anti-sédentarité, entraînement personnalise), stack supplements optimise, plan semaine par semaine 30-60-90 jours, KPI et tableau de bord, synthèse et prochaines étapes." },
+              { q: "Quelle est la différence avec l'Ultimate Scan ?", a: "L'Anabolic Bioscan couvre 16 sections de rapport sans photos. L'Ultimate Scan (79\u20ac) ajoute 2 sections exclusives basées sur 3 photos (face, dos, profil) : analyse visuelle et posturale complète + analyse biomecanique et sangle profonde. Total : 18 sections, ~183 questions, rapport de 40-50 pages." },
+              { q: "Les 5 protocoles sont-ils vraiment personnalises ?", a: "Oui. Chaque protocole est généré par mon moteur IA en fonction de TES réponses. Le protocole matin anti-cortisol, le protocole soir verrouillage sommeil, le protocole digestion 14 jours, le protocole bureau anti-sédentarité et le protocole entraînement personnalise sont tous adaptés à ton profil, tes déséquilibres et tes objectifs spécifiques." },
+              { q: "Combien de temps pour recevoir mon rapport ?", a: "Ton rapport complet de 20+ pages est généré par mon moteur IA et délivré sous 24h par email. Tu reçois un email dès que ton rapport est prêt avec un lien direct vers ton dashboard." },
             ].map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} index={i} />
             ))}
@@ -526,16 +526,16 @@ export default function AuditPremium() {
           className="max-w-4xl mx-auto text-center"
         >
           <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
-            Pret a passer
+            Prêt a passer
             <br />
-            <span className="text-[#FCDD00]">au niveau superieur ?</span>
+            <span className="text-[#FCDD00]">au niveau supérieur ?</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
-            Diagnostic + protocoles + plan d'action. Tout ce qu'il te faut pour transformer ta sante.
+            Diagnostic + protocoles + plan d'action. Tout ce qu'il te faut pour transformer ta santé.
           </p>
           <Link href="/questionnaire?plan=anabolic">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
-              Lancer mon Anabolic Bioscan ,  59€ d'acompte
+              Lancer mon Anabolic Bioscan, 59€ d'acompte
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
           </Link>

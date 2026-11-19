@@ -223,6 +223,7 @@ export default function FormCheckUpload() {
                   value={accessEmail}
                   onChange={(e) => setAccessEmail(e.target.value)}
                   placeholder="toi@email.com"
+                  aria-label="Ton adresse email"
                   className="flex-1 rounded-sm border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-[#FCDD00] focus:outline-none"
                 />
                 <button onClick={requestAccess} className="px-6 py-3 font-bold text-black" style={{ backgroundColor: ACCENT }}>

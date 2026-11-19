@@ -1,5 +1,4 @@
-/* Import fonts */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+/* Fonts (JetBrains Mono, IBM Plex Sans) are loaded once from client/index.html. */
 
 :root {
   --font-display: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;

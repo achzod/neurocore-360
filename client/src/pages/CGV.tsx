@@ -46,51 +46,51 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 1 - Champ d'application</h2>
             <p className="text-white/60 leading-relaxed">
-              Les presentes Conditions Generales de Vente s'appliquent a toutes commandes passees sur
+              Les présentes Conditions Générales de Vente s'appliquent à toutes commandes passées sur
               le site APEXLABS, service propose par AchzodCoaching.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
-              Est considere comme "client" toute personne physique ou morale realisant aupres de ce
-              site une commande validee par ma plateforme de paiement securisee.
+              Est considéré comme "client" toute personne physique ou morale réalisant auprès de ce
+              site une commande validée par ma plateforme de paiement securisee.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
-              AchzodCoaching se reserve la possibilite d'adapter ou de modifier les presentes Conditions
-              Generales de Vente. En cas de modification, il sera applique a chaque commande les Conditions
-              Generales de Vente en vigueur au jour de la commande.
+              AchzodCoaching se réserve la possibilité d'adapter ou de modifier les présentes Conditions
+              Générales de Vente. En cas de modification, il sera applique à chaque commande les Conditions
+              Générales de Vente en vigueur au jour de la commande.
             </p>
           </section>
 
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 2 - Description des Services</h2>
             <p className="text-white/60 leading-relaxed">
-              APEXLABS propose un audit complet couvrant Hormones, Metabolisme, Biohacking,
-              Biomecanique et Neurotransmetteurs. 180 questions reparties en 15 domaines. Les services proposes sont :
+              APEXLABS propose un audit complet couvrant Hormones, Métabolisme, Biohacking,
+              Biomecanique et Neurotransmetteurs. 180 questions réparties en 15 domaines. Les services proposés sont :
             </p>
             <div className="mt-6 space-y-4">
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
                 <h4 className="font-semibold text-white">Discovery Scan (Gratuit)</h4>
                 <p className="mt-1 text-sm text-white/50">
-                  Rapport de base avec score global et resume des domaines analyses.
+                  Rapport de base avec score global et résumé des domaines analyses.
                 </p>
               </div>
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
                 <h4 className="font-semibold text-white">Audit Anabolic Bioscan (59€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
                   Rapport complet de 20+ pages avec recommandations personnalisees, plan d'action 30 jours,
-                  et analyse detaillee de chaque domaine.
+                  et analyse détaillée de chaque domaine.
                 </p>
               </div>
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
                 <h4 className="font-semibold text-white">Audit Ultimate Scan (79€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
-                  Tous les avantages Anabolic Bioscan + analyse photo posturale complete +
-                  protocoles avances 30-60-90 jours.
+                  Tous les avantages Anabolic Bioscan + analyse photo posturale complète +
+                  protocoles avancés 30-60-90 jours.
                 </p>
               </div>
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
                 <h4 className="font-semibold text-white">Blood Analysis (99€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
-                  Deux credits sans expiration, soit deux analyses completes de bilan sanguin avec rapports
+                  Deux crédits sans expiration, soit deux analyses complètes de bilan sanguin avec rapports
                   personnalises, protocoles d'optimisation et suivi des marqueurs biologiques. Chaque upload
                   de bilan valide consomme un credit. Les frais de laboratoire ne sont pas inclus.
                 </p>
@@ -98,11 +98,11 @@ export default function CGV() {
               <div className="rounded-sm border border-[#FCDD00]/30 bg-[#FCDD00]/5 p-4">
                 <h4 className="font-semibold text-white">Peptides Engine (299€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
-                  Protocole peptides personnalise redige sur-mesure par Achzod a partir d'un questionnaire
-                  individuel (profil, objectifs, antecedents, budget). Le rapport est transmis sous 24 a 48h
-                  apres paiement et inclut : selection des peptides, dosages calcules pour le profil du client,
+                  Protocole peptides personnalise redige sur-mesure par Achzod à partir d'un questionnaire
+                  individuel (profil, objectifs, antécédents, budget). Le rapport est transmis sous 24 à 48h
+                  après paiement et inclut : sélection des peptides, dosages calcules pour le profil du client,
                   guide de reconstitution, calendrier d'injection, liste de courses avec sources verifiees,
-                  2 credits Blood Analysis APEXLABS et code de deduction coaching valable 12 mois.
+                  2 crédits Blood Analysis APEXLABS et code de deduction coaching valable 12 mois.
                 </p>
                 <p className="mt-3 text-xs font-semibold text-red-400">
                   Produit personnalise non remboursable des livraison du rapport (article L221-28 du Code de
@@ -154,29 +154,29 @@ export default function CGV() {
               commande enregistree.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
-              Le client s'engage a fournir une adresse email valide afin de pouvoir recevoir l'acces
-              a son audit. Toute commande vaut acceptation des presentes Conditions Generales de Vente.
+              Le client s'engage a fournir une adresse email valide afin de pouvoir recevoir l'accès
+              à son audit. Toute commande vaut acceptation des présentes Conditions Générales de Vente.
             </p>
           </section>
 
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 5 - Prix et Paiement</h2>
             <p className="text-white/60 leading-relaxed">
-              Les prix indiques en euros sont TTC. Le paiement est exigible immediatement a la commande
-              via Stripe (carte bancaire). Le paiement securise en ligne est realise par l'intermediaire
-              de Stripe. Les informations transmises sont chiffrees selon les standards de securite les
+              Les prix indiqués en euros sont TTC. Le paiement est exigible immédiatement à la commande
+              via Stripe (carte bancaire). Le paiement securise en ligne est réalisé par l'intermédiaire
+              de Stripe. Les informations transmises sont chiffrees selon les standards de sécurité les
               plus eleves.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
-              AchzodCoaching se reserve le droit de modifier les tarifs a tout moment.
+              AchzodCoaching se réserve le droit de modifier les tarifs a tout moment.
             </p>
           </section>
 
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 6 - Livraison</h2>
             <p className="text-white/60 leading-relaxed">
-              Les audits sont delivres sous forme numerique. L'acces au rapport complet est immediat
-              apres validation du paiement. Le client accede a son rapport via son espace personnel
+              Les audits sont delivres sous forme numerique. L'accès au rapport complet est immédiat
+              après validation du paiement. Le client accede a son rapport via son espace personnel
               (Dashboard) sur le site.
             </p>
           </section>
@@ -184,15 +184,15 @@ export default function CGV() {
           <section className="rounded-sm border border-red-500/30 bg-red-500/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-red-400">Article 7 - Droit de Retractation</h2>
             <p className="text-white/60 leading-relaxed">
-              Conformement aux articles L221-18 et suivants du Code de la consommation, le client dispose d'un delai
+              Conformément aux articles L221-18 et suivants du Code de la consommation, le client dispose d'un delai
               de 14 jours a compter de la conclusion du contrat pour exercer son droit de retractation, sans avoir a
               justifier de motifs ni a payer de penalites.
             </p>
             <div className="rounded-sm border border-red-500/20 bg-red-500/5 p-4 mt-4 mb-4">
               <h4 className="font-semibold text-red-400">Exception pour les contenus numeriques</h4>
               <p className="mt-2 text-sm text-white/60">
-                Conformement a l'article L221-28 du Code de la consommation, le droit de retractation ne peut etre
-                exerce pour les contrats de fourniture de contenu numerique non fourni sur support materiel dont
+                Conformément à l'article L221-28 du Code de la consommation, le droit de retractation ne peut être
+                exerce pour les contrats de fourniture de contenu numerique non fourni sur support matériel dont
                 l'execution a commence avec l'accord prealable expres du consommateur et son renoncement expres a son
                 droit de retractation.
               </p>
@@ -203,15 +203,15 @@ export default function CGV() {
             <ul className="mt-4 space-y-2 text-white/60">
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-                <span>Demande expressement que l'execution du service commence immediatement apres paiement.</span>
+                <span>Demande expressement que l'execution du service commence immédiatement après paiement.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-                <span>Reconnait que les prestations fournies sont des contenus numeriques delivres integralement des validation du paiement.</span>
+                <span>Reconnaît que les prestations fournies sont des contenus numeriques delivres integralement des validation du paiement.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-                <span>Renonce expressement a son droit de retractation conformement a l'article L221-28 du Code de la consommation.</span>
+                <span>Renonce expressement a son droit de retractation conformément à l'article L221-28 du Code de la consommation.</span>
               </li>
             </ul>
             <p className="mt-4 text-white/60 leading-relaxed">
@@ -222,31 +222,31 @@ export default function CGV() {
               <h4 className="font-semibold text-red-400">Cas particulier : Peptides Engine</h4>
               <p className="mt-2 text-sm text-white/60">
                 Le rapport Peptides Engine est un document personnalise qu'Achzod redige sur-mesure pour le
-                profil du client a partir des reponses fournies au questionnaire. La preparation du rapport
-                debute immediatement apres paiement. En validant son achat et en cochant la case de
+                profil du client à partir des réponses fournies au questionnaire. La préparation du rapport
+                debute immédiatement après paiement. En validant son achat et en cochant la case de
                 consentement dediee sur la page de paiement, le client :
               </p>
               <ul className="mt-3 space-y-2 text-sm text-white/60">
                 <li className="flex items-start gap-2">
                   <span className="w-1 h-1 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-                  <span>Demande expressement qu'Achzod commence la preparation de son rapport personnalise immediatement apres paiement.</span>
+                  <span>Demande expressement qu'Achzod commence la préparation de son rapport personnalise immédiatement après paiement.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1 h-1 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-                  <span>Reconnait que le rapport est un contenu numerique entierement personnalise, executable une seule fois pour son profil unique.</span>
+                  <span>Reconnaît que le rapport est un contenu numerique entièrement personnalise, executable une seule fois pour son profil unique.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1 h-1 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-                  <span>Renonce expressement et de maniere irrevocable a son droit de retractation conformement a l'article L221-28 du Code de la consommation.</span>
+                  <span>Renonce expressement et de manière irrevocable a son droit de retractation conformément à l'article L221-28 du Code de la consommation.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1 h-1 rounded-full bg-red-400 mt-2 flex-shrink-0" />
-                  <span>Accepte qu'aucun remboursement n'est possible apres livraison du rapport, sauf cas de force majeure dument justifie.</span>
+                  <span>Accepte qu'aucun remboursement n'est possible après livraison du rapport, sauf cas de force majeure dument justifie.</span>
                 </li>
               </ul>
               <p className="mt-3 text-sm text-white/60">
                 Cette acceptation est horodatee cote serveur et conservee en preuve. En cas de litige
-                introduit aupres de Stripe ou de tout autre prestataire de paiement, cette preuve
+                introduit auprès de Stripe ou de tout autre prestataire de paiement, cette preuve
                 d'acceptation explicite (version du texte, date, heure, adresse IP, user-agent) sera transmise
                 au prestataire et opposable au client.
               </p>
@@ -256,16 +256,16 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 8 - Acceptation du Client</h2>
             <p className="text-white/60 leading-relaxed">
-              Le client declare avoir pris connaissance de l'ensemble des presentes Conditions Generales
-              de Vente et les accepter sans restriction ni reserve.
+              Le client déclare avoir pris connaissance de l'ensemble des présentes Conditions Générales
+              de Vente et les accepter sans restriction ni réserve.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
-              Le client reconnait et accepte expressement que :
+              Le client reconnaît et accepte expressement que :
             </p>
             <ul className="mt-4 space-y-2 text-white/60">
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FCDD00] mt-2 flex-shrink-0" />
-                <span>Le droit de retractation ne s'applique pas une fois le contenu numerique livre, conformement a l'article L221-28 du Code de la consommation.</span>
+                <span>Le droit de retractation ne s'applique pas une fois le contenu numerique livre, conformément à l'article L221-28 du Code de la consommation.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FCDD00] mt-2 flex-shrink-0" />
@@ -277,13 +277,13 @@ export default function CGV() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FCDD00] mt-2 flex-shrink-0" />
-                <span>Il a recu toutes les informations necessaires pour s'assurer de l'adequation de l'offre a ses besoins.</span>
+                <span>Il a reçu toutes les informations nécessaires pour s'assurer de l'adequation de l'offre a ses besoins.</span>
               </li>
             </ul>
           </section>
 
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
-            <h2 className="mb-4 text-xl font-bold text-white">Article 9 - Propriete Intellectuelle</h2>
+            <h2 className="mb-4 text-xl font-bold text-white">Article 9 - Propriété Intellectuelle</h2>
             <p className="text-white/60 leading-relaxed">
               L'ensemble des textes, illustrations, algorithmes, rapports et contenus fournis par
               APEXLABS sont proteges par le droit d'auteur. Toute reproduction, diffusion ou
@@ -297,25 +297,25 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 10 - Responsabilite</h2>
             <p className="text-white/60 leading-relaxed">
-              L'audit APEXLABS fournit des recommandations basees sur les reponses du client.
-              Ces recommandations sont a titre informatif et ne remplacent pas un avis medical professionnel.
+              L'audit APEXLABS fournit des recommandations basées sur les réponses du client.
+              Ces recommandations sont a titre informatif et ne remplacent pas un avis médical professionnel.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
-              Le client est seul responsable de l'utilisation et de l'interpretation des resultats.
-              AchzodCoaching ne pourra etre tenu responsable de tout dommage direct ou indirect
+              Le client est seul responsable de l'utilisation et de l'interprétation des résultats.
+              AchzodCoaching ne pourra être tenu responsable de tout dommage direct ou indirect
               resultant de l'utilisation des informations fournies.
             </p>
           </section>
 
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
-            <h2 className="mb-4 text-xl font-bold text-white">Article 11 - Protection des Donnees</h2>
+            <h2 className="mb-4 text-xl font-bold text-white">Article 11 - Protection des Données</h2>
             <p className="text-white/60 leading-relaxed">
-              Conformement a la Loi Informatique et Libertes du 6 janvier 1978 et au RGPD, vous disposez
-              des droits d'interrogation, d'acces, de modification, d'opposition et de rectification
-              sur les donnees personnelles vous concernant.
+              Conformément à la Loi Informatique et Libertes du 6 janvier 1978 et au RGPD, vous disposez
+              des droits d'interrogation, d'accès, de modification, d'opposition et de rectification
+              sur les données personnelles vous concernant.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
-              Vos donnees sont stockees de maniere securisee et ne sont jamais partagees avec des tiers
+              Vos données sont stockées de manière securisee et ne sont jamais partagees avec des tiers
               sans votre consentement explicite.
             </p>
           </section>
@@ -323,17 +323,17 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 12 - Droit Applicable et Litiges</h2>
             <p className="text-white/60 leading-relaxed">
-              Les presentes conditions sont soumises au droit francais. Pour les consommateurs residant dans l'Union
-              europeenne, les dispositions imperatives du droit de la consommation de leur pays de residence s'appliquent.
+              Les presentes conditions sont soumises au droit français. Pour les consommateurs residant dans l'Union
+              européenne, les dispositions imperatives du droit de la consommation de leur pays de residence s'appliquent.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
-              En cas de litige, le client s'adressera en priorite a AchzodCoaching pour obtenir une
+              En cas de litige, le client s'adressera en priorité a AchzodCoaching pour obtenir une
               solution amiable par email a : <a href="mailto:coaching@achzodcoaching.com" className="text-[#FCDD00] hover:underline">coaching@achzodcoaching.com</a>
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
-              Conformement aux articles L611-1 et suivants du Code de la consommation, en cas d'echec de la tentative de
-              resolution amiable, le client peut recourir gratuitement au service de mediation. Le client peut egalement
-              utiliser la plateforme de reglement en ligne des litiges de la Commission europeenne :{" "}
+              Conformément aux articles L611-1 et suivants du Code de la consommation, en cas d'échec de la tentative de
+              résolution amiable, le client peut recourir gratuitement au service de mediation. Le client peut également
+              utiliser la plateforme de règlement en ligne des litiges de la Commission européenne :{" "}
               <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" className="text-[#FCDD00] hover:underline">
                 https://ec.europa.eu/consumers/odr
               </a>
