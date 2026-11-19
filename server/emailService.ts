@@ -23,6 +23,16 @@ import {
   shouldBlockForMarketingUnsubscribe,
 } from "./emailDeliveryPolicy";
 import { evaluateEmailSuppression, loadSuppressionContext } from "./emailSuppression";
+import {
+  DISCOVERY_OFFER_DESCRIPTIONS,
+  DISCOVERY_OFFER_LABELS,
+  discoveryOfferCtaLabel,
+  discoveryOfferDeduction,
+  discoveryOfferHref,
+  discoveryOfferWhy,
+  discoveryOtherFormulasHref,
+  type DiscoveryOfferRecommendation,
+} from "@shared/discoveryOfferRecommendation";
 
 const SENDPULSE_USER_ID =
   process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
@@ -1298,11 +1308,65 @@ function getCoachingSection(
   `;
 }
 
+// Discovery: ONE recommended offer (same rule as the report page), its
+// coaching deduction up front, the other formulas behind a discreet link.
+export function buildDiscoveryOfferEmailSection(input: {
+  recommendation: DiscoveryOfferRecommendation;
+  baseUrl: string;
+  openWindow: { untilIso: string; label: string } | null;
+  color: string;
+  trackLink?: (url: string) => string;
+}): string {
+  const { recommendation, baseUrl, openWindow, color } = input;
+  const trackLink = input.trackLink || ((url: string) => url);
+  const offer = recommendation.offer;
+  const deduction = discoveryOfferDeduction(offer, {
+    openWindow,
+    anabolicDeductionEuros: getDeductionAmount("ANABOLIC_BIOSCAN"),
+  });
+  const linkInput = { openWindow, medium: "email", origin: baseUrl };
+  const offerHref = trackLink(discoveryOfferHref(offer, { ...linkInput, content: "report_ready_offer" }));
+  const otherHref = trackLink(discoveryOtherFormulasHref({ ...linkInput, content: "report_ready_other_formulas" }));
+  const whatsappMessage = "Salut Achzod, je viens de recevoir mon Discovery Scan. J'ai une question sur la formule que tu me recommandes.";
+  const deductionBlock = deduction ? `
+      <div style="margin: 20px 0; padding: 16px; border: 2px dashed ${color}; border-radius: 12px; text-align: center; background: ${color}10;">
+        <p style="color: ${color}; font-size: 16px; font-weight: 700; margin: 0;">${escapeEmailHtml(deduction.title)}</p>
+        <p style="color: ${COLORS.text}; font-size: 13px; line-height: 1.6; margin: 8px 0 0;">${escapeEmailHtml(deduction.detail)}</p>
+        ${deduction.code ? `<p style="color: ${color}; font-size: 24px; font-weight: 700; letter-spacing: 3px; margin: 10px 0 0;">${escapeEmailHtml(deduction.code)}</p>` : ""}
+      </div>
+  ` : "";
+  return `
+    <div style="padding: 28px; background: linear-gradient(135deg, ${color}15 0%, ${color}08 100%); border-radius: 12px; border: 1px solid ${color}30;">
+      <div style="text-align: center; margin-bottom: 16px;">
+        <span style="display: inline-block; background: ${color}; color: #000; padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+          Ma recommandation pour toi
+        </span>
+      </div>
+      <h3 style="color: ${COLORS.text}; font-size: 22px; font-weight: 700; margin: 0 0 12px; text-align: center; letter-spacing: -0.5px;">
+        ${escapeEmailHtml(DISCOVERY_OFFER_LABELS[offer])}
+      </h3>
+      <p style="color: ${COLORS.text}; font-size: 15px; line-height: 1.7; margin: 0 0 8px; text-align: center;">
+        ${escapeEmailHtml(discoveryOfferWhy(recommendation))}
+      </p>
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 0; text-align: center;">
+        ${escapeEmailHtml(DISCOVERY_OFFER_DESCRIPTIONS[offer])}
+      </p>
+      ${deductionBlock}
+      ${getPrimaryButton(escapeEmailHtml(discoveryOfferCtaLabel(offer, Boolean(deduction?.code))), offerHref, color)}
+      <p style="margin: 0 0 6px; text-align: center;">
+        <a href="${otherHref}" style="color: ${COLORS.textMuted}; font-size: 12px; text-decoration: underline;">Voir les autres formules</a>
+      </p>
+      ${getWhatsAppContactButton("Me poser une question sur WhatsApp", whatsappMessage)}
+    </div>
+  `;
+}
+
 export async function sendReportReadyEmail(
   email: string,
   auditId: string,
   auditType: string,
-  baseUrl: string
+  baseUrl: string,
+  discoveryRecommendation: DiscoveryOfferRecommendation | null = null,
 ): Promise<boolean> {
   try {
     const token = await getAccessToken();
@@ -1406,7 +1470,9 @@ export async function sendReportReadyEmail(
 
       ${getReviewSection(reportLink, trackedReviewLink)}
 
-      ${getCoachingSection(auditType, planColor, trackLink, discoveryOffer)}
+      ${auditType === "GRATUIT" && discoveryRecommendation
+        ? buildDiscoveryOfferEmailSection({ recommendation: discoveryRecommendation, baseUrl, openWindow: discoveryWindow, color: planColor, trackLink })
+        : getCoachingSection(auditType, planColor, trackLink, discoveryOffer)}
 
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:28px;">
         <tr>

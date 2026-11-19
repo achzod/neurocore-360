@@ -38,6 +38,7 @@
     "test:recovery-cta-click": "tsx scripts/test-recovery-cta-click-followup.ts",
     "test:peptides-preview-followup": "tsx --test server/peptidesPreviewFollowup.test.ts",
     "test:sendpulse:webhook": "tsx --test server/sendpulseWebhookEvents.test.ts",
+    "test:discovery:offre": "tsx --test shared/discoveryOfferRecommendation.test.ts client/src/components/DiscoveryRecommendedOffer.test.tsx client/src/lib/discoveryFunnelTracking.test.ts server/discoveryOfferEmail.test.ts",
     "check:secret-source": "tsx scripts/check-secret-source-leaks.ts",
     "test:blood:regression": "tsx scripts/validate-blood-score-regression.ts",
     "qa:blood:dashboard": "tsx scripts/qa-blood-dashboard.ts",
