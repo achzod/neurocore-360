@@ -74,7 +74,13 @@ function renderArticleBodyHtml(content: string | undefined, articleTitle?: strin
       markdown = markdown.replace(new RegExp(`^\\s*#\\s+${escapedTitle}\\s*\\n+`, "i"), "");
     }
     const html = marked.parse(markdown, { async: false }) as string;
-    return html.replace(/^\s*<h1\b[\s\S]*?<\/h1>\s*/i, "");
+    return html
+      .replace(/^\s*<h1\b[\s\S]*?<\/h1>\s*/i, "")
+      // Affiliate links (iHerb referral) are flagged as sponsored for crawlers.
+      .replace(
+        /<a href="(https?:\/\/(?:[a-z0-9-]+\.)*iherb\.com\/[^"]*)"/gi,
+        '<a href="$1" rel="sponsored nofollow noopener noreferrer"',
+      );
   } catch {
     return `<p>${esc(content).slice(0, 2000)}</p>`;
   }
@@ -776,7 +782,10 @@ ${links ? `<nav aria-label="Pages principales"><ul>${links}</ul></nav>` : ""}
     const title = article.seoTitle || article.title;
     const description = esc(buildMetaDescription(article));
     const url = `${BASE_URL}/blog/${encodePathSegment(article.slug)}`;
-    const image = article.image || article.imageUrl || DEFAULT_OG_IMAGE;
+    const rawImage = article.image || article.imageUrl || DEFAULT_OG_IMAGE;
+    // Self-hosted article images are stored as site-relative paths; social
+    // cards and JSON-LD need an absolute URL.
+    const image = rawImage.startsWith("/") ? `${BASE_URL}${rawImage}` : rawImage;
     const author = esc(article.author || "ACHZOD");
     const date = article.date || "2026-01-01";
     const category = normalizeBlogCategory(article.category);
