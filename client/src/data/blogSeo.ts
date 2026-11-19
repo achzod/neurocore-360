@@ -24,6 +24,7 @@ export const BLOG_ARTICLE_REDIRECTS = {
   "surcharge-progressive": "surcharge-progressive-guide",
   "quest-ce-qui-cause-la-croissance": "causes-croissance-musculaire",
   "excentriques-et-croissance": "excentriques-croissance-musculaire",
+  "entrainement-malade": "entrainement-pendant-la-maladie",
   "yam-the-new-era-of-supplements-mcu-20-ACHZOD-748":
     "yam-the-new-era-of-supplements-mcu-20-achzod-748",
 } as const;

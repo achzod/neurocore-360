@@ -163,7 +163,7 @@ En plus de cette question de types de fibres, on retrouve la loi d'accommodation
 
 La périodisation non linéaire règle ce problème en faisant varier sans cesse le volume, ce qui permet à chaque séance d'apporter un nouveau stimulus (2). Périodiser son entraînement est l'une des méthodes les plus efficaces pour progresser, mais aussi l'une des plus complexes. Le plus simple est de faire varier le volume à chaque fois que vous travaillez un groupe musculaire.
 
-Cet article n'a pas pour but de faire honte à ceux qui ont commis ou commettent ces erreurs : tout le monde est passé par là. L'objectif est de mettre en lumière des aspects de la musculation qui freinent souvent les gens. Et c'est rarement un manque d'effort, plutôt un manque de connaissances ou d'encadrement. Suivez ACHZOD et rejoignez l'Académie de Generation Iron Plus pour continuer à apprendre et à progresser.
+Cet article n'a pas pour but de faire honte à ceux qui ont commis ou commettent ces erreurs : tout le monde est passé par là. L'objectif est de mettre en lumière des aspects de la musculation qui freinent souvent les gens. Et c'est rarement un manque d'effort, plutôt un manque de connaissances ou d'encadrement. Continuez à apprendre, et vous continuerez à progresser.
 
 - Antonio, J., Ellerbroek, A., Silver, T., Orris, S., Scheiner, M., Gonzalez, A. et Peacock, CA (2015). Un régime riche en protéines (3,4 g/kg/j) combiné à un programme d'entraînement en résistance intense améliore la composition corporelle chez les hommes et les femmes entraînés en bonne santé - une enquête de suivi. Journal de la Société internationale de nutrition sportive, 12(1), 39.
 
@@ -184,8 +184,6 @@ Cet article n'a pas pour but de faire honte à ceux qui ont commis ou commettent
 - Westerterp, KR, Wilson, SAJ et Rolland, V. (1999). Thermogenèse induite par l'alimentation mesurée sur 24h en chambre respiratoire : effet de la composition alimentaire. Journal international de l'obésité, 23(3), 287.
 
 - Witard, OC, Jackman, SR, Breen, L., Smith, K., Selby, A. et Tipton, KD (2013). Taux de synthèse des protéines musculaires myofibrillaires après un repas en réponse à des doses croissantes de protéines de lactosérum au repos et après un exercice de résistance. Le Journal américain de nutrition clinique, 99(1), 86-95.
-
-Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Science and Performance Institute, une installation de haute technologie d'environ 2 000 m² dédiée à l'étude de l'optimisation humaine. Les recherches du Dr Wilson ont porté sur les changements cellulaires, moléculaires et corporels dans la taille, la force et la puissance musculaires en réponse à un régime cétogène, à une supplémentation et à un entraînement. Sur le thème de la nutrition pour l'optimisation humaine, il a publié plus de 300 articles évalués par des pairs, chapitres de livres et résumés. Jacob a remporté plusieurs prix, dont le prix Terry J. Housh du jeune chercheur de l’année de la NSCA. Le Dr Wilson a également figuré dans les films Generation Iron et Generation Iron 2.
 
 ---
 `
@@ -1576,7 +1574,7 @@ Concrètement, que faut-il recommander aux bodybuilders ?
 ## Combien de protéines un bodybuilder doit-il manger ?
 
 
-Je l'ai déjà évoqué plusieurs fois : la plupart des revues s'accordent pour dire que les bodybuilders, c'est-à-dire ceux qui veulent maximiser leur prise de muscle, devraient ingérer au moins 2,2 g/kg de protéines par jour (7,15,18,21). Malheureusement, l'information se trouve souvent dans le corps de l'article plutôt que dans le résumé. Résultat, beaucoup d'entraîneurs et de professionnels recommandent des apports plus faibles à des pratiquants qui veulent maximiser leurs gains. Un apport de 1,6 g/kg convient probablement à un pratiquant loisir qui veut prendre du muscle, mais il faut dépasser 2,2 g/kg pour maximiser les gains.
+Je l'ai déjà évoqué plusieurs fois : plusieurs revues indiquent que les bodybuilders, c'est-à-dire ceux qui veulent maximiser leur prise de muscle, ont intérêt à viser au moins 2,2 g/kg de protéines par jour (7,15,18,21). Malheureusement, l'information se trouve souvent dans le corps de l'article plutôt que dans le résumé. Résultat, beaucoup d'entraîneurs et de professionnels recommandent des apports plus faibles à des pratiquants qui veulent maximiser leurs gains. Un apport de 1,6 g/kg convient probablement à un pratiquant loisir qui veut prendre du muscle, mais il faut dépasser 2,2 g/kg pour maximiser les gains.
 
 En sèche, les bodybuilders devraient viser 2,3 à 3,1 g/kg de protéines (7), et peuvent même monter jusqu'à 4,4 g/kg : c'est une façon efficace de remplacer des calories issues des autres macronutriments sans provoquer de prise de gras (3). Cet apport plus élevé ne donne pas toujours plus de masse maigre qu'environ 2,2 g/kg (1,2,3), mais il semble favoriser la recomposition corporelle. Et c'est franchement ce qui intéresse la plupart des bodybuilders : prendre du muscle et perdre du gras en même temps.
 
@@ -1588,7 +1586,7 @@ D'autres études montrent aussi d'énormes gains de masse maigre avec une surali
 ## Les avantages d'une alimentation riche en protéines (en plus des gains)
 
 
-Avant de parler des avantages, il faut lever une inquiétude fréquente : l'effet des régimes riches en protéines sur les reins. Ces craintes viennent de résultats obtenus chez des personnes déjà malades. Chez une personne en bonne santé, un apport élevé en protéines n'a aucun effet négatif sur la santé (2).
+Avant de parler des avantages, il faut lever une inquiétude fréquente : l'effet des régimes riches en protéines sur les reins. Ces craintes viennent de résultats obtenus chez des personnes déjà malades. Chez une personne en bonne santé, les études n'ont pas montré d'effet négatif d'un apport élevé en protéines (2).
 
 Ce point réglé, voyons les autres avantages. D'abord, les protéines ne sont pas vraiment « stockées » dans le corps comme les graisses ou les glucides : elles sont constamment utilisées ou renouvelées, que ce soit pour le muscle, les enzymes ou d'autres fonctions. Se limiter à la synthèse des protéines musculaires pour juger de l'apport en protéines ne donne donc pas une vision complète : les protéines servent à bien d'autres choses qu'au maintien de la masse musculaire (21).
 
@@ -1596,7 +1594,7 @@ Au-delà de ces fonctions, des études montrent qu'augmenter les protéines peut
 
 Par ailleurs, augmenter les protéines, même au-delà de 2,2 g/kg, aide à préserver la masse musculaire en restriction calorique (10,11,13,19,24,27). Conserver son muscle est une préoccupation majeure des bodybuilders en sèche, et des apports de 2,3 à 3,1 g/kg sont recommandés pendant cette phase (7,18,21). Cet effet protecteur sur la masse maigre, associé à l'effet thermique plus élevé des protéines, signifie qu'en régime, ce sont les glucides et les lipides qu'il faut réduire en priorité. Ne coupez pas vos calories sur les protéines.
 
-Au final, les recommandations actuelles en protéines ne s'appliquent pas forcément aux bodybuilders (18). Il faut lire les revues au-delà du résumé pour le voir, mais presque toutes précisent quelque part que les bodybuilders profiteront d'un apport supérieur à celui recommandé pour le grand public ou les athlètes. Il est presque impossible de reproduire en laboratoire l'entraînement et l'alimentation d'un bodybuilder, donc on n'aura probablement jamais beaucoup d'études originales solides sur le sujet. Gardez en tête que la majorité des études d'entraînement portent sur des sujets non entraînés qui s'entraînent à peine : leurs conclusions ne s'appliquent pas au bodybuilding et ne doivent pas être lues comme telles.
+Au final, les recommandations actuelles en protéines ne s'appliquent pas forcément aux bodybuilders (18). Il faut lire les revues au-delà du résumé pour le voir, mais plusieurs précisent quelque part que les bodybuilders peuvent profiter d'un apport supérieur à celui recommandé pour le grand public ou les athlètes. Il est presque impossible de reproduire en laboratoire l'entraînement et l'alimentation d'un bodybuilder, donc on n'aura probablement jamais beaucoup d'études originales solides sur le sujet. Gardez en tête que la majorité des études d'entraînement portent sur des sujets non entraînés qui s'entraînent à peine : leurs conclusions ne s'appliquent pas au bodybuilding et ne doivent pas être lues comme telles.
 
 Un bodybuilder qui veut maximiser ses gains devrait consommer au moins 2,2 g/kg, et jusqu'à 3 g/kg ou plus en restriction calorique. En prise de masse, le bas de la fourchette suffit probablement : les bodybuilders de compétition consomment en général environ 2,4 g/kg pendant cette phase (20), ce qui paraît une pratique solide. Augmenter les protéines est nécessaire pour préserver la masse maigre en sèche, et peut même ajouter un effet thermique qui augmente la dépense énergétique totale.
 
@@ -2695,7 +2693,7 @@ L'idée n'est pas de faire la morale sur l'alcool ni de juger ceux qui boivent. 
 
 - Griggs, RC, Kingston, W., Jozefowicz, RF, Herr, BE, Forbes, G. et Halliday, D. (1989). Effet de la testostérone sur la masse musculaire et la synthèse des protéines musculaires. Journal de physiologie appliquée, 66(1), 498-503.
 
-- Judelson, DA, Maresh, CM, ACHZOD, LM, Farrell, MJ, Armstrong, LE, Kraemer, WJ,… et Anderson, JM (2008). Effet de l’état d’hydratation sur les marqueurs endocriniens de l’anabolisme, du catabolisme et du métabolisme induits par l’exercice de résistance. Journal de physiologie appliquée.
+- Judelson, DA, Maresh, CM, Yamamoto, LM, Farrell, MJ, Armstrong, LE, Kraemer, WJ,… et Anderson, JM (2008). Effet de l’état d’hydratation sur les marqueurs endocriniens de l’anabolisme, du catabolisme et du métabolisme induits par l’exercice de résistance. Journal de physiologie appliquée.
 
 - Koziris, LP, Kraemer, WJ, Gordon, SE, Incledon, T. et Knuttgen, HG (2000). Effet de l'intoxication aiguë à l'éthanol après l'exercice sur la réponse neuroendocrinienne à l'exercice de résistance. Journal de physiologie appliquée, 88(1), 165-172.
 
@@ -3787,7 +3785,7 @@ Au final, plusieurs facteurs font des athlètes d'élite ce qu'ils sont, et je n
 
 - Weston, AR, Mbambo, Z. et Myburgh, KH (2000). Économie de course à pied des coureurs de fond africains et caucasiens. Médecine et science dans le sport et l'exercice, 32(6), 1130-1134.
 
-- ACHZOD, N., Itoi, E., Tuoheti, Y., Seki, N., Abe, H., Minagawa, H., … et Okada, K. (2007). Mouvement de l'articulation gléno-humérale après déplacement médial du site d'attache du tendon supra-épineux : une étude cadavérique. Journal de chirurgie de l'épaule et du coude, 16(3), 373-378.
+- Yamamoto, N., Itoi, E., Tuoheti, Y., Seki, N., Abe, H., Minagawa, H., … et Okada, K. (2007). Mouvement de l'articulation gléno-humérale après déplacement médial du site d'attache du tendon supra-épineux : une étude cadavérique. Journal de chirurgie de l'épaule et du coude, 16(3), 373-378.
 
 ---
 `
@@ -5751,9 +5749,9 @@ Les méthodes d'intensification sont un excellent moyen de pousser vos muscles a
 
 - Marshall, P.W., Robbins, DA, Wrightson, A.W. et Siegler, J.C. (2012). Réponses neuromusculaires et de fatigue aiguës à la méthode repos-pause. Journal de la science et de la médecine du sport, 15(2), 153-158.
 
-- Ottinger, CR et Wilson, JM (2019). Biomécanique et croissance. https://ACHZOD.com/biomechanics-and-growth/
+- Ottinger, CR et Wilson, JM (2019). Biomécanique et croissance.
 
-- Ottinger, CR et Wilson, JM (2019). Excentriques et croissance. https://ACHZOD.com/eccentrics-and-growth/
+- Ottinger, CR et Wilson, JM (2019). Excentriques et croissance.
 
 - Prestes, J., Tibana, R.A., de Araujo Sousa, E., da Cunha Nascimento, D., de Oliveira Rocha, P., Camarço, NF, … & Willardson, J.M. (2017). Force et adaptations musculaires après 6 semaines de repos-pause par rapport à l'entraînement en résistance traditionnel en plusieurs séries chez des sujets entraînés. Journal de recherche sur la force et le conditionnement.
 
@@ -6710,7 +6708,7 @@ L'eau n'a rien de passionnant, mais elle peut être l'un des facteurs les plus i
 
 - Cheuvront, SN, Carter, RIII et Sawka, MN (2003). Équilibre des fluides et performances des exercices d’endurance. Représentant Curr Sports Med, 2(4), 202-208.
 
-- Judelson, DA, Maresh, CM, ACHZOD, LM, Farrell, MJ, Armstrong, LE, Kraemer, WJ,… et Anderson, JM (2008). Effet de l’état d’hydratation sur les marqueurs endocriniens de l’anabolisme, du catabolisme et du métabolisme induits par l’exercice de résistance. Journal de physiologie appliquée, 105(3), 816-824.
+- Judelson, DA, Maresh, CM, Yamamoto, LM, Farrell, MJ, Armstrong, LE, Kraemer, WJ,… et Anderson, JM (2008). Effet de l’état d’hydratation sur les marqueurs endocriniens de l’anabolisme, du catabolisme et du métabolisme induits par l’exercice de résistance. Journal de physiologie appliquée, 105(3), 816-824.
 
 - Judelson, DA, Maresh, CM, Anderson, JM, Armstrong, LE, Casa, DJ, Kraemer, WJ et Volek, JS (2007). Hydratation et performance musculaire. Médecine du sport, 37(10), 907-921.
 
@@ -6786,14 +6784,6 @@ C'est exactement ce que font les deux premiers ouvriers quand ils accusent leur 
 ### Reprendre le contrôle
 
 La différence entre ceux qui réussissent dans leur parcours fitness et ceux qui échouent est simple : les premiers ont compris qu'ils préparent eux-mêmes leur déjeuner.
-
-## L'histoire de Kurt Cobain
-
-Prenons un exemple tragique. Kurt Cobain était le leader de Nirvana, groupe de rock à succès de la fin des années 1980 et du début des années 1990. Il s'est suicidé à 27 ans.
-
-Sa lettre d'adieu indiquait qu'il ne supportait pas l'idée d'élever un enfant dans ce monde avec deux parents toxicomanes.
-
-Le problème, c'est que Kurt Cobain préparait lui-même sa lunch box. **Il en avait assez de ce qu'elle contenait, mais il était le seul à pouvoir en changer le contenu.**
 
 ## Application au fitness et à la santé
 
@@ -7221,19 +7211,14 @@ Puisqu'une décharge d'adrénaline peut vous aider à battre un record, comment 
 
 Comme on l'a vu, la décharge d'adrénaline correspond à la réponse de combat ou de fuite. Ce sont donc en général les émotions fortes qui déclenchent sa libération. La peur est la plus courante, et c'est pour cela qu'on associe l'adrénaline au parachutisme et aux sensations fortes. Mais la peur est difficile à provoquer volontairement, et je ne vous conseille pas de demander à quelqu'un de vous faire peur avant votre grosse série. Quelles autres options avez-vous à la salle ?
 
-La peur est l'émotion qu'on associe le plus à l'adrénaline, mais toute réaction émotionnelle forte peut en provoquer la libération. Les émotions les plus faciles à faire naître sont la colère, la joie, la tristesse et même l'attirance sexuelle (oui, on y va). Beaucoup d'entraîneurs expérimentés prennent le temps de comprendre à quel type d'athlète ou de client ils ont affaire, pour savoir comment utiliser ces émotions et en tirer le meilleur. Chacun a sa préférée : voyons comment utiliser chacune avant une grosse barre.
+La peur est l'émotion qu'on associe le plus à l'adrénaline, mais toute réaction émotionnelle forte peut en provoquer la libération. Les émotions les plus faciles à faire naître sont la colère, la joie et la tristesse. Beaucoup d'entraîneurs expérimentés prennent le temps de comprendre à quel type d'athlète ou de client ils ont affaire, pour savoir comment utiliser ces émotions et en tirer le meilleur. Chacun a sa préférée : voyons comment utiliser chacune avant une grosse barre.
 
 La colère est sans doute l'émotion la plus utilisée pour se mettre en condition. C'est simple : mettez une musique agressive et pensez à des choses qui vous mettent en colère. Choisissez de préférence des choses sur lesquelles vous n'avez plus de prise, des événements vieux de plusieurs mois ou plusieurs années. Si vous ruminez sur ce que vous devez faire demain ou sur quelqu'un que vous allez croiser, vous serez distrait. Ressortez de vieux souvenirs, révolus, et servez-vous-en pour nourrir votre séance. Si la colère vous réussit, essayez aussi la vision tunnel : fixez un point au sol ou sur le mur pendant que vous ressassez ces pensées. Quand vous détestez ce que vous regardez, c'est le moment de soulever.
 
 La joie, c'est tout autre chose. Mais avez-vous déjà fait une excellente séance après une promotion ou une autre bonne nouvelle ? Vous avez sans doute soulevé très lourd grâce à votre bonne humeur. La joie peut être utile à beaucoup de gens, mais elle est plus difficile à créer de toutes pièces. Elle sert surtout les jours où vous arrivez à la salle de bonne humeur : gardez cet état et entretenez-le pendant toute la séance. Faites quelques compliments autour de vous et faites circuler la bonne humeur. Ces séances sont rares, mais excellentes quand elles arrivent. Si vous entraînez des clients, vous pouvez aussi souligner leurs progrès ou leurs réussites pendant l'échauffement pour les mettre de meilleure humeur. Par exemple, un test de détente verticale avant la séance qui montre un net progrès suffit à motiver un athlète, et cela se ressent sur tout l'entraînement.
 
-J'espère qu'il n'y a pas beaucoup de lecteurs qui cherchent volontairement à être tristes pendant leurs séances. La tristesse ne donne pas vraiment envie de soulever lourd. Une tristesse intense peut pourtant aussi provoquer une décharge d'adrénaline, même si elle est sans doute moins forte qu'avec les autres émotions. Je ne vous conseille pas de chercher la tristesse avant une grosse barre, car elle risque de gâcher toute la séance. Il existe toutefois des cas où elle peut aider. Écouter une musique qui évoque des souvenirs ou des émotions tristes, comme la perte d'un proche ou d'un ami, peut provoquer une petite décharge d'adrénaline. Mais si vous vous y attardez au point d'en pleurer, cette méthode ne fonctionnera probablement pas pour vous. C'est sans doute la moins efficace des quatre, car être triste n'aide pas à grand-chose.
+J'espère qu'il n'y a pas beaucoup de lecteurs qui cherchent volontairement à être tristes pendant leurs séances. La tristesse ne donne pas vraiment envie de soulever lourd. Une tristesse intense peut pourtant aussi provoquer une décharge d'adrénaline, même si elle est sans doute moins forte qu'avec les autres émotions. Je ne vous conseille pas de chercher la tristesse avant une grosse barre, car elle risque de gâcher toute la séance. Il existe toutefois des cas où elle peut aider. Écouter une musique qui évoque des souvenirs ou des émotions tristes, comme la perte d'un proche ou d'un ami, peut provoquer une petite décharge d'adrénaline. Mais si vous vous y attardez au point d'en pleurer, cette méthode ne fonctionnera probablement pas pour vous. C'est sans doute la moins efficace des trois, car être triste n'aide pas à grand-chose.
 
-
-### L'attirance sexuelle
-
-
-Dernière émotion liée à l'adrénaline : l'attirance sexuelle. Vous avez déjà croisé quelqu'un de si attirant que vous avez eu immédiatement envie, et le courage, d'aller lui parler ? C'est exactement ça. À la salle, essayez de rediriger cette énergie et ce courage vers la barre. C'est efficace dans les salles commerciales, où il y a du monde autour de vous. Puisez de l'énergie dans leur présence, servez-vous-en pour réussir une grosse barre, et impressionnez tout le monde par la même occasion. Gardez quand même en tête que ces sentiments ne sont pas forcément réciproques : n'interrompez pas la séance de quelqu'un simplement parce que vous le trouvez attirant. Soulevez vos charges et laissez votre pump faire le reste.
 
 L'adrénaline peut aider à réussir de grosses barres. J'ai présenté plusieurs façons de déclencher ou d'influencer sa libération. Mais je ne vous conseille pas de les utiliser à chaque série. Non pas que vous risquiez une « fatigue surrénalienne », mais vous mettre en condition avant chaque série ne laisse plus de place aux séries qui comptent vraiment. Gardez vos quelques morceaux fétiches pour ces barres-là. Gardez votre émotion préférée en réserve jusqu'à la grosse série du jour, et ne la gaspillez pas sur les échauffements ou les exercices accessoires.
 
@@ -7379,7 +7364,7 @@ J'ai laissé les références au format APA complet. L'article paraît plus long
 
 - Josse, AR, Atkinson, SA, Tarnopolsky, MA et Phillips, SM (2011). La consommation accrue de produits laitiers et de protéines pendant la perte de poids induite par le régime et l'exercice favorise la perte de masse grasse et la prise de masse maigre chez les femmes préménopausées en surpoids et obèses. Le Journal de la Nutrition, 141(9), 1626-1634.
 
-- Judelson, DA, Maresh, CM, ACHZOD, LM, Farrell, MJ, Armstrong, LE, Kraemer, WJ,… et Anderson, JM (2008). Effet de l’état d’hydratation sur les marqueurs endocriniens de l’anabolisme, du catabolisme et du métabolisme induits par l’exercice de résistance. Journal de physiologie appliquée, 105(3), 816-824.
+- Judelson, DA, Maresh, CM, Yamamoto, LM, Farrell, MJ, Armstrong, LE, Kraemer, WJ,… et Anderson, JM (2008). Effet de l’état d’hydratation sur les marqueurs endocriniens de l’anabolisme, du catabolisme et du métabolisme induits par l’exercice de résistance. Journal de physiologie appliquée, 105(3), 816-824.
 
 - Morton, RW, Murphy, KT, McKellar, SR, Schoenfeld, BJ, Henselmans, M., Helms, E.,… et Phillips, SM (2018). Une revue systématique, une méta-analyse et une méta-régression de l'effet de la supplémentation en protéines sur les gains de masse et de force musculaires induits par l'entraînement en résistance chez les adultes en bonne santé. Journal britannique de médecine sportive, 52(6), 376-384.
 
@@ -8530,7 +8515,7 @@ Comme toute théorie scientifique, celle-ci reste à affiner au fil des nouvelle
     content: `# Rendre la mauvaise nourriture moins pratique
 
 
-Pour la plupart des pratiquants, aller régulièrement à la salle est la partie la plus facile. Ce qui coince chez beaucoup de gens, c'est l'alimentation. Vous trouverez sur ce blog beaucoup d'articles sur la nutrition, et même des dizaines de cours sur la nutrition sur l'ACHZOD Academy (ici), si vous avez besoin d'aide pour optimiser votre alimentation en vue de la prise de muscle ou de la perte de graisse.
+Pour la plupart des pratiquants, aller régulièrement à la salle est la partie la plus facile. Ce qui coince chez beaucoup de gens, c'est l'alimentation. Vous trouverez sur ce blog beaucoup d'articles sur la nutrition si vous avez besoin d'aide pour optimiser votre alimentation en vue de la prise de muscle ou de la perte de graisse.
 
 Le défaut de beaucoup de contenus éducatifs, c'est qu'ils n'expliquent pas comment appliquer concrètement ces informations dans votre alimentation. Presque n'importe quel régime peut servir presque n'importe quel objectif, à condition que vos apports en calories, en macronutriments et en micronutriments correspondent à ce que vous cherchez. Mais connaître ces informations ne fait que la moitié du chemin. C'est le fait de tenir le régime qui fait toute la différence quand on veut changer sa composition corporelle. Si vous n'arrivez pas à suivre un plan alimentaire, il ne vous aidera ni à prendre du muscle ni à perdre de la graisse.
 
@@ -8886,7 +8871,7 @@ Au final, la broscience fait généralement plus de mal que de bien en sciences 
 
 Sur le long terme, une approche fondée sur les preuves sera presque toujours meilleure que la broscience, mais un juste milieu entre les deux est probablement le plus efficace pour prendre du muscle ou sécher. Les études portent rarement sur des bodybuilders très musclés ou très secs : il faut donc aussi une expérience pratique avec ce type de profil pour obtenir des résultats sur la durée. Le praticien qui combine terrain et preuves est sans doute le meilleur profil en sciences du sport.
 
-Envie de développer cette double compétence ? L'ACHZOD Academy contient plus de 150 cours scientifiques et appliqués, conçus pour faire de chacun un expert en sciences du sport. Vous découvrirez les preuves derrière chaque affirmation, et surtout comment appliquer ces informations. J'y aborde même les zones grises des sciences du sport et les sujets que les chercheurs ne peuvent pas vraiment étudier. Il y a aussi une communauté de professionnels prêts à discuter de certains sujets, à relire vos programmes d'entraînement ou à corriger votre technique. Tout ce qu'il faut pour combiner terrain et preuves se trouve dans l'ACHZOD Academy.
+Envie de développer cette double compétence ? Vous trouverez sur ce blog des articles qui présentent les preuves derrière chaque affirmation, et surtout la façon de les appliquer. Et si vous voulez un programme construit sur ces bases, découvrez mon [coaching](https://www.achzodcoaching.com).
 
 ---
 `
@@ -9224,9 +9209,9 @@ La force est difficile à comparer entre espèces, car presque aucun animal n'a 
 
 - Un mémoire de master assez curieux (présenté ici) a comparé humains et grizzlis avec un test qu'on pourrait appeler, faute de mieux, un test de secouage d'appareil. Ours et humains devaient secouer et écraser un dispositif de recherche enduit de miel et d'autres friandises pour attirer l'ours. Même par simple curiosité, les ours étaient 2,5 à 5 fois plus forts que les humains. Imaginez un ours en colère.
 
-- Le bousier pourrait bien être l'animal le plus fort du règne animal. Ce petit insecte peut tirer 1 141 fois son propre poids (Knell & Simmons, 2010). L'exemple le plus proche qui me vienne côté humain, c'est l'homme le plus fort du monde, Eddie Hall, qui a tiré un avion d'environ 20 tonnes (avec une corde, bien sûr). Il pesait probablement autour de 170 kg à l'époque, ce qui veut dire qu'il a tiré environ 117,3 fois son poids de corps. Presque aussi fort qu'un insecte.
+- Le bousier pourrait bien être l'animal le plus fort du règne animal. Ce petit insecte peut tirer plus de 1 000 fois son propre poids. L'exemple le plus proche qui me vienne côté humain, c'est l'homme le plus fort du monde, Eddie Hall, qui a tiré un avion d'environ 20 tonnes (avec une corde, bien sûr). Il pesait probablement autour de 170 kg à l'époque, ce qui veut dire qu'il a tiré environ 117,3 fois son poids de corps. Presque aussi fort qu'un insecte.
 
-- Pour la force humaine, il n'existe pas de test fiable, sans composante technique, pour comparer humains et animaux. Un repère simple pourrait être les limites de port de charge au travail fixées par l'institut américain de santé et sécurité au travail (NIOSH). Il recommande de ne pas soulever plus de 23 kg au travail dans des conditions normales (sans torsion, sans flexion, etc.). En valeur relative, ça représente environ 26 % du poids moyen d'un homme et 30 % de celui d'une femme. Autant dire que l'humain est plutôt faible. Évidemment, les records de powerlifting, de strongman et d'haltérophilie écraseraient le reste du règne animal, mais ces disciplines demandent beaucoup trop de technique pour être comparées aux animaux.
+- Pour la force humaine, il n'existe pas de test fiable, sans composante technique, pour comparer humains et animaux. Un repère simple pourrait être les limites de port de charge au travail retenues par l'administration américaine de la sécurité au travail (OSHA), qui s'appuie sur l'équation de levage du NIOSH : ne pas soulever plus de 23 kg au travail dans des conditions idéales (sans torsion, sans flexion, etc.). En valeur relative, ça représente environ 26 % du poids moyen d'un homme et 30 % de celui d'une femme. Autant dire que l'humain est plutôt faible. Évidemment, les records de powerlifting, de strongman et d'haltérophilie écraseraient le reste du règne animal, mais ces disciplines demandent beaucoup trop de technique pour être comparées aux animaux.
 
 ## Détente
 
@@ -9437,7 +9422,7 @@ Au final, la nutrition post-entraînement est l'un des meilleurs leviers de réc
 
 - Witard, OC, Jackman, SR, Breen, L., Smith, K., Selby, A. et Tipton, KD (2013). Taux de synthèse des protéines musculaires myofibrillaires après un repas en réponse à des doses croissantes de protéines de lactosérum au repos et après un exercice de résistance. Le Journal américain de nutrition clinique, 99(1), 86-95.
 
-- ACHZOD, L.M., et. al. (2008). Effets de l’état d’hydratation et des exercices de résistance sur les marqueurs de lésions musculaires. Le Journal of Strength & Conditioning Research, 22(5), 1387-1393.
+- Yamamoto, L.M., et al. (2008). Effets de l’état d’hydratation et des exercices de résistance sur les marqueurs de lésions musculaires. Le Journal of Strength & Conditioning Research, 22(5), 1387-1393.
 
 ---`
   },
@@ -9482,9 +9467,9 @@ Consciente de ne pas savoir grand-chose sur l'entraînement, Fran a contacté un
 
 Fran a commencé à se dire que la musculation n'était peut-être pas pour elle, et qu'elle ferait mieux de se tourner vers autre chose, comme le triathlon ou le CrossFit.
 
-Lazer, lui, savait qu'il n'y connaissait pas grand-chose en musculation. Il a donc fouillé Google pour trouver la meilleure source d'informations sur l'entraînement et la nutrition. Il est tombé sur un site, ACHZOD.com, qui proposait toutes sortes d'informations claires, sous plusieurs formats, pour l'aider à apprendre.
+Lazer, lui, savait qu'il n'y connaissait pas grand-chose en musculation. Il a donc fouillé Google pour trouver la meilleure source d'informations sur l'entraînement et la nutrition. Il est tombé sur ce blog, qui proposait toutes sortes d'informations claires pour l'aider à apprendre.
 
-Lazer a tout de suite appliqué ce qu'il apprenait et a commencé à progresser régulièrement. Il a décidé de consacrer une heure par jour à apprendre : il allait sur le site, regardait une de mes sessions de questions-réponses, lisait un article et quelques-unes des sources citées. Très vite, il a rentabilisé chaque minute passée en salle et a même commencé à maîtriser le volet nutrition de la musculation.
+Lazer a tout de suite appliqué ce qu'il apprenait et a commencé à progresser régulièrement. Il a décidé de consacrer une heure par jour à apprendre : il lisait un article et quelques-unes des sources citées. Très vite, il a rentabilisé chaque minute passée en salle et a même commencé à maîtriser le volet nutrition de la musculation.
 
 
 ## Trois stratégies, trois résultats
@@ -9493,7 +9478,7 @@ Sans surprise, moins d'un an après ses débuts, Blazer était complètement us�
 
 Fran a fini par abandonner son programme « spécial fessiers ». Elle ne progressait pas, et ce qu'elle voulait vraiment, c'était apprendre à squatter et à soulever lourd. Elle avait vu des powerlifteurs à la salle et ça lui semblait très amusant, mais elle ne savait pas par où commencer. Elle avait croisé Blazer et Lazer à la salle sans vraiment y prêter attention : Blazer était trop occupé à fixer le mur entre ses séries, et Lazer entrait et sortait avec une efficacité parfaite. Son parcours devenait franchement frustrant, et elle envisageait sérieusement d'arrêter pour essayer autre chose.
 
-Lazer, lui, progressait de façon régulière et continue en suivant les programmes et les séances qu'il avait trouvés sur ACHZOD. Si quelque chose ralentissait ses séances, c'était plutôt les gens qui venaient lui demander pourquoi il faisait tel exercice, ou pourquoi dans cet ordre. Mais ces questions ne le dérangeaient pas : il pouvait s'appuyer sur ce qu'il avait appris sur ACHZOD et orienter les autres vers cette source. Il commençait même à penser à une compétition de bodybuilding, pour se lancer et voir comment ça se passait.
+Lazer, lui, progressait de façon régulière et continue en appliquant ce qu'il avait appris sur ce blog. Si quelque chose ralentissait ses séances, c'était plutôt les gens qui venaient lui demander pourquoi il faisait tel exercice, ou pourquoi dans cet ordre. Mais ces questions ne le dérangeaient pas : il pouvait s'appuyer sur ce qu'il avait appris et orienter les autres vers cette source. Il commençait même à penser à une compétition de bodybuilding, pour se lancer et voir comment ça se passait.
 
 
 ## Trois chemins se croisent
@@ -9513,17 +9498,17 @@ Lazer expliquait à Fran que respirer dans le ventre et se gainer avant chaque r
 
 Pour Blazer, tout ça sentait le blabla de scientifique : pourquoi s'occuper de son buste pendant un squat ? « Tu sors ça d'où ? », a-t-il lancé sèchement à Lazer entre deux séries.
 
-Sans se démonter, Lazer a sorti son téléphone et lui a montré le site ACHZOD. Blazer a écarquillé les yeux en voyant tous les sujets abordés sur les différentes pages : entraînement, nutrition, compléments, tout y était. Blazer savait qu'il avait toute la volonté du monde pour s'entraîner, mais ses connaissances étaient très limitées. Pour la première fois depuis un an, il a sauté une série pour parler d'ACHZOD avec Lazer et Fran. Ils ont fini leur séance ensemble, en s'encourageant sur chaque série et en parlant d'entraînement et de nutrition entre les séries.
+Sans se démonter, Lazer a sorti son téléphone et lui a montré le blog. Blazer a écarquillé les yeux en voyant tous les sujets abordés sur les différentes pages : entraînement, nutrition, compléments, tout y était. Blazer savait qu'il avait toute la volonté du monde pour s'entraîner, mais ses connaissances étaient très limitées. Pour la première fois depuis un an, il a sauté une série pour en parler avec Lazer et Fran. Ils ont fini leur séance ensemble, en s'encourageant sur chaque série et en parlant d'entraînement et de nutrition entre les séries.
 
 
 ## Un nouveau départ
 
 
-Après cette rencontre, Fran et Blazer sont rentrés chez eux, sont allés sur le site d'ACHZOD et ont commencé à suivre ACHZOD sur les réseaux sociaux. Ils ont passé le reste du week-end à dévorer toutes sortes d'informations, à prendre des notes et à repérer ce qu'ils pouvaient appliquer tout de suite à la salle. Blazer s'est inscrit à un programme d'entraînement personnalisé avec moi, parce qu'il savait que sa façon de s'entraîner ne le mènerait nulle part. Il m'avait entendu parler de l'importance de la périodisation, mais ne savait toujours pas comment périodiser son propre entraînement, alors il s'est dit qu'un programme conçu par un professionnel serait plus efficace.
+Après cette rencontre, Fran et Blazer sont rentrés chez eux et sont allés lire le blog. Ils ont passé le reste du week-end à dévorer toutes sortes d'informations, à prendre des notes et à repérer ce qu'ils pouvaient appliquer tout de suite à la salle. Blazer s'est inscrit à un programme d'entraînement personnalisé avec moi, parce qu'il savait que sa façon de s'entraîner ne le mènerait nulle part. Il m'avait entendu parler de l'importance de la périodisation, mais ne savait toujours pas comment périodiser son propre entraînement, alors il s'est dit qu'un programme conçu par un professionnel serait plus efficace.
 
-Fran a commencé à chercher toutes les informations possibles sur l'entraînement de force. Sa séance avec Blazer et Lazer lui avait donné confiance au squat, et elle se disait qu'elle préférerait peut-être le powerlifting à la musculation, parce qu'elle adorait soulever lourd. Elle s'est elle aussi inscrite à un programme d'entraînement personnalisé avec moi, mais conçu spécifiquement pour le powerlifting. Elle savait ce qu'elle voulait ; il lui fallait juste un cap pour y arriver.
+Fran a commencé à chercher toutes les informations possibles sur l'entraînement de force. Sa séance avec Blazer et Lazer lui avait donné confiance au squat, et elle se disait qu'elle préférerait peut-être le powerlifting à la musculation, parce qu'elle adorait soulever lourd. Elle a décidé de se rapprocher du groupe de powerlifting de sa salle. Elle savait ce qu'elle voulait ; il lui fallait juste un cap pour y arriver.
 
-Lazer a continué à consulter régulièrement le site ACHZOD, parce qu'il avait vite compris qu'on n'a jamais fini d'apprendre, surtout dans un domaine qui évolue sans cesse comme les sciences du sport. Il avait décidé de faire une compétition de bodybuilding et s'était donné 4 mois pour s'y préparer. Heureusement, j'avais publié beaucoup d'informations sur la nutrition et l'entraînement en préparation de compétition, ce qui lui permettait d'être sûr de monter sur scène avec son meilleur physique.
+Lazer a continué à lire régulièrement le blog, parce qu'il avait vite compris qu'on n'a jamais fini d'apprendre, surtout dans un domaine qui évolue sans cesse comme les sciences du sport. Il avait décidé de faire une compétition de bodybuilding et s'était donné 4 mois pour s'y préparer. Heureusement, j'avais publié beaucoup d'informations sur la nutrition et l'entraînement en préparation de compétition, ce qui lui permettait d'être sûr de monter sur scène avec son meilleur physique.
 
 Les trois se croisaient de temps en temps à la salle, mais leurs horaires différents rendaient les séances communes difficiles. Puis un autre samedi soir s'est présenté, environ 3 mois plus tard, juste avant la compétition de Lazer.
 
@@ -9533,15 +9518,15 @@ Les trois se croisaient de temps en temps à la salle, mais leurs horaires diff�
 
 Maintenant qu'il suivait un programme adapté, Blazer n'avait plus mal aux articulations et progressait de nouveau. Les progrès n'étaient pas aussi rapides que pendant ses six premiers mois d'entraînement à fond, mais ils étaient réguliers et il appréciait la variété de ses séances. Son alimentation devenait aussi plus agréable à mesure qu'il allait au-delà du poulet-riz. Ça l'a même aidé à apporter plus de nutriments pour soutenir son entraînement et sa récupération, parce qu'il avait beaucoup moins de mal à manger ses quantités du jour.
 
-Fran progressait de façon spectaculaire dans son programme de powerlifting : c'était une athlète de force née. Ses charges grimpaient en flèche et elle s'entraînait désormais avec le groupe de powerlifting de la salle. Ils lui ont donné plein de conseils pour appliquer certaines informations d'ACHZOD au powerlifting, et elle est vite devenue l'une des femmes les plus fortes de la salle. Elle avait enfin une direction pour son entraînement et adorait chaque instant de sa progression.
+Fran progressait de façon spectaculaire en powerlifting : c'était une athlète de force née. Ses charges grimpaient en flèche et elle s'entraînait désormais avec le groupe de powerlifting de la salle. Ils lui ont donné plein de conseils, et elle est vite devenue l'une des femmes les plus fortes de la salle. Elle avait enfin une direction pour son entraînement et adorait chaque instant de sa progression.
 
-Lazer avançait parfaitement dans sa sèche : il n'avait jamais été aussi affûté et prenait confiance chaque jour. Tout ce que je lui avais conseillé fonctionnait, et il savait qu'il pouvait toujours compter sur une réponse de ma part dès qu'il avait une question.
+Lazer avançait parfaitement dans sa sèche : il n'avait jamais été aussi affûté et prenait confiance chaque jour. Ce qu'il avait appris fonctionnait, et il savait où chercher dès qu'il avait une question.
 
-Quand ils se sont retrouvés pour s'entraîner ce samedi soir-là, ils n'en revenaient pas de leurs progrès. Ils ont fait une excellente séance ensemble et ont longuement parlé de tout ce qu'ils avaient appris sur ACHZOD. Trois chemins s'étaient rejoints en un seul, et celui-là menait à la réussite.
+Quand ils se sont retrouvés pour s'entraîner ce samedi soir-là, ils n'en revenaient pas de leurs progrès. Ils ont fait une excellente séance ensemble et ont longuement parlé de tout ce qu'ils avaient appris. Trois chemins s'étaient rejoints en un seul, et celui-là menait à la réussite.
 
-Si vous êtes sur le site d'ACHZOD ou sur mes réseaux sociaux, je suis convaincu que vous avez la volonté nécessaire pour devenir un grand bodybuilder ou un grand athlète de force. Et franchement, c'est la partie la plus facile. Ce qui est vraiment difficile, c'est de réunir des connaissances scientifiques applicables, surtout si vous n'avez pas étudié les sciences du sport.
+Si vous lisez ce blog, je suis convaincu que vous avez la volonté nécessaire pour devenir un grand bodybuilder ou un grand athlète de force. Et franchement, c'est la partie la plus facile. Ce qui est vraiment difficile, c'est de réunir des connaissances scientifiques applicables, surtout si vous n'avez pas étudié les sciences du sport.
 
-C'est exactement à ça que sert ACHZOD. Vous apportez la détermination et l'intensité, je vous apporte les informations et la direction pour avancer vers vos objectifs. Si vous êtes vraiment prêt à changer de vie, consultez ACHZOD Academy ici. Chaque question que vous vous posez sur l'entraînement, la nutrition ou la science y trouvera une réponse que vous pourrez appliquer dès aujourd'hui.
+C'est exactement à ça que sert ce blog. Vous apportez la détermination et l'intensité, je vous apporte les informations et la direction pour avancer vers vos objectifs. Et si vous voulez un programme construit pour vous, découvrez mon [coaching](https://www.achzodcoaching.com).
 
 ---
 `

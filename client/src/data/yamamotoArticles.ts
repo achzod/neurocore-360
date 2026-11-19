@@ -371,13 +371,13 @@ Pour choisir un complément de probiotiques parmi tous ceux proposés en pharmac
   {
     id: `yam-7`,
     slug: `yam-the-new-era-of-supplements-mcu-20-achzod-748`,
-    title: "La nouvelle ère des compléments : MCU-20® ACHZOD®",
-    excerpt: "La microencapsulation MCU-20® promet une meilleure solubilité et absorption des actifs des compléments, comme les acides aminés ou la créatine. Origines, principe et intérêt revendiqué.",
-    content: `# La nouvelle ère des compléments : MCU-20® ACHZOD®
+    title: "La microencapsulation dans les compléments alimentaires",
+    excerpt: "La microencapsulation vise à améliorer la solubilité, la stabilité et l'absorption des actifs des compléments, comme les acides aminés ou la créatine. Origines, principe et limites.",
+    content: `# La microencapsulation dans les compléments alimentaires
 
-## L'innovation MCU-20
+## Le principe
 
-MCU-20® ACHZOD® est une formulation de complément présentée comme garantissant l'assimilation de 100 % des principes actifs. MCU-20® a été développé par les Laboratoires ACHZOD® pour améliorer le transport et l'absorption des principes actifs des compléments. Le but est que ces actifs arrivent intacts à destination, avec la meilleure biodisponibilité possible, pour optimiser leur effet.
+La microencapsulation consiste à enfermer un principe actif dans une fine enveloppe, le plus souvent un polymère, pour améliorer son transport et son absorption. Le but est que l'actif arrive intact à destination, avec la meilleure biodisponibilité possible, pour optimiser son effet.
 
 La microencapsulation est une technologie déjà connue dans l'alimentation et la pharmacie. Elle a permis un tournant important : dépasser les limites de biodisponibilité de nombreuses molécules utilisées dans les compléments alimentaires. Beaucoup de matières premières courantes ont en effet des limites de diverses natures. Elles peuvent par exemple être dégradées dans le tube digestif à cause des conditions qu'elles y rencontrent, ou être peu solubles (et former des précipités qui ne sont pas totalement absorbés).
 
@@ -391,11 +391,11 @@ La microencapsulation est née au milieu des années 1920. Les premières applic
 
 Après ce premier succès, la microencapsulation s'est développée très rapidement dans l'alimentation, la cosmétique, la chimie, l'électronique et la pharmacie. Les polymères utilisés pour la microencapsulation varient selon le but recherché.
 
-### MCU-20® ACHZOD® appliqué aux compléments
+### La microencapsulation appliquée aux compléments
 
-Quel est l'intérêt concret de la microencapsulation pour les compléments ? Prenons un exemple : grâce à la microencapsulation MCU-20® d'ACHZOD®, les acides aminés, peu solubles et peu stables dans l'eau, peuvent devenir rapidement et complètement solubles sans former de précipités. Selon le fabricant, l'absorption est ainsi supérieure, en quantité comme en qualité.
+Quel est l'intérêt concret de la microencapsulation pour les compléments ? Prenons un exemple : une fois microencapsulés, les acides aminés, peu solubles et peu stables dans l'eau, peuvent se dissoudre plus facilement, sans former de précipités. L'objectif est une meilleure absorption.
 
-Cette amélioration aurait un impact direct sur la performance du consommateur, qui profiterait vraiment du soutien attendu du complément. D'autres matières premières courantes en nutrition sportive ont une absorption orale limitée : les plus connues sont la créatine, la L-carnitine et l'arginine. Avec la microencapsulation ACHZOD® MCU-20®, même les actifs réputés « mal absorbés » pourraient montrer leur efficacité en contournant les obstacles chimiques et enzymatiques, grâce à un support qui protège et transporte de petites microparticules jusqu'à une biodisponibilité optimale. Selon le fabricant, c'est la seule formulation disponible qui garantit l'assimilation complète des principes actifs indiqués sur l'étiquette, ce qui permettrait de profiter de 100 % des bénéfices tout en faisant des économies.
+D'autres matières premières courantes en nutrition sportive ont une absorption orale limitée : les plus connues sont la créatine, la L-carnitine et l'arginine. En théorie, la microencapsulation peut aider ces actifs réputés « mal absorbés » à contourner une partie des obstacles chimiques et enzymatiques du tube digestif, grâce à un support qui protège et transporte de petites microparticules. En pratique, le gain dépend de l'actif, du polymère et du procédé utilisés : aucune technologie ne garantit l'absorption complète de ce qui est indiqué sur l'étiquette.
 
 ## Références
 
@@ -455,8 +455,6 @@ La HBCD est présentée comme le glucide de référence pendant l'entraînement 
 
 Le crossfitter tirera davantage de son WOD, avec plus d'énergie et d'endurance. L'athlète de sports de combat en profite aussi : il dispose rapidement d'une énergie prête à l'emploi et garde l'esprit clair grâce à une glycémie plus stable, sans pics ni chutes qui compromettent la performance sur la durée.
 
-Depuis 2015, ACHZOD® Nutrition a lancé les dextrines cycliques en premier sur le marché italien des compléments alimentaires, dans Glycobol® et toutes ses variantes : Glycobol® Performance, Glycobol® Ultra, Glycocharge et Glycogen.
-
 ### L'isomaltulose
 
 L'autre grand acteur de cette nouvelle génération de glucides est l'isomaltulose. C'est un disaccharide formé de glucose et de fructose, présent naturellement en faible quantité dans le miel et le sirop de canne, et produit aujourd'hui par conversion enzymatique du saccharose. On le compare souvent au saccharose (et on l'utilise à sa place) pour son pouvoir sucrant (45 à 50 % de celui du saccharose) et pour son goût.
@@ -469,7 +467,7 @@ Résultat : la glycémie et l'insuline montent beaucoup moins, et de façon trè
 
 L'isomaltulose est encore peu connu comparé à des glucides plus « célèbres », mais ses qualités démontrées devraient lui donner une place importante dans l'arsenal des sportifs d'endurance. Il est entièrement digéré et absorbé dans l'intestin, lentement et progressivement, grâce à des liaisons chimiques très résistantes. C'est donc un carburant idéal pour les efforts d'endurance très longs.
 
-Grâce à l'isomaltulose, le sportif d'endurance dispose d'énergie sur la durée. ACHZOD® Nutrition l'intègre pour les athlètes qui ont des efforts très longs et de gros besoins énergétiques : dans ACHZOD® Nutrition Charge, dans la ligne Legionarivs « Alessio Sakara Special Edition », et surtout dans la gamme Alphazer® conçue pour l'endurance et les sports extrêmes, avec les gels Alphagel, Alphalyte Energy, Enerfuel et Enerfuel Nitroracing.
+Grâce à l'isomaltulose, le sportif d'endurance dispose d'énergie sur la durée. On le retrouve donc surtout dans les gels et boissons destinés aux efforts très longs, à gros besoins énergétiques.
 
 Avec l'isomaltulose, le risque de troubles digestifs est encore plus faible, et plusieurs études ont montré qu'il fournit de l'énergie plus longtemps sans « chutes » de glycémie. Une fois ingéré, il est absorbé progressivement et suit les mêmes voies métaboliques que le saccharose, puisque son hydrolyse libère les mêmes sucres (glucose et fructose). Sa digestion est particulièrement « facile » pour le tube digestif : la tolérance est très bonne, sans les problèmes typiques d'autres glucides utilisés dans le sport (ballonnements, fermentation, crampes, nausées, diarrhée) ni réactions allergiques.
 
@@ -479,11 +477,11 @@ Autre point en sa faveur, très apprécié aussi par l'industrie agroalimentaire
 
 ### Amidon de pomme de terre, de maïs et de riz (Karbolyn®)
 
-Autre glucide intéressant de nouvelle génération, le Karbolyn® provient de pommes de terre, de maïs et de riz transformés par un procédé breveté, l'« Enzymatic Milling Process ». Ce procédé enzymatique donne un poids moléculaire élevé et une excellente solubilité. L'énergie arrive aussi vite qu'avec un sucre simple, mais sans pic ni chute brutale de la glycémie ensuite. Dans la gamme ACHZOD® Nutrition, le Karbolyn® entre dans Alphatech Recharge, comme source de glucides à associer à la protéine hydrolysée de saumon Alphatech.
+Autre glucide intéressant de nouvelle génération, le Karbolyn® provient de pommes de terre, de maïs et de riz transformés par un procédé breveté, l'« Enzymatic Milling Process ». Ce procédé enzymatique donne un poids moléculaire élevé et une excellente solubilité. L'énergie arrive aussi vite qu'avec un sucre simple, mais sans pic ni chute brutale de la glycémie ensuite. On peut l'associer à une source de protéines après l'effort pour recharger le glycogène.
 
 ### Glucidex®, les maltodextrines nouvelle génération
 
-Parmi les sources de glucides de la gamme Alphazer®, on trouve aussi le Glucidex®, par exemple dans Alphalyte Energy. Si les maltodextrines d'ancienne génération sont dépassées, le Glucidex® en est une évolution technique : des maltodextrines très purifiées et très solubles, produites à partir de maïs cireux, de pomme de terre ou de blé, mieux digérées et bien mieux tolérées que les anciennes.
+Autre source de glucides courante dans les boissons d'effort : le Glucidex®. Si les maltodextrines d'ancienne génération sont dépassées, le Glucidex® en est une évolution technique : des maltodextrines très purifiées et très solubles, produites à partir de maïs cireux, de pomme de terre ou de blé, mieux digérées et bien mieux tolérées que les anciennes.
 
 Elles doivent leurs qualités à leur fabrication : ce sont des polymères issus de l'hydrolyse de ces amidons par des procédés modernes. Elles se dissolvent très bien dans l'eau et s'assimilent facilement. Leur pression osmotique est beaucoup plus faible que celle des glucides simples de faible poids moléculaire (comme le glucose) : elles quittent donc l'estomac plus vite, s'absorbent rapidement et libèrent l'énergie progressivement, sans déséquilibre glycémique particulier. C'est un autre glucide de choix pour les sportifs d'endurance.
 
@@ -703,6 +701,12 @@ Résultats : l'analyse de l'alimentation montre que les athlètes étudiés ne p
 L'étude n'a pas trouvé de différence d'apports en minéraux et vitamines entre les périodes d'entraînement et de compétition, mais elle a relevé plusieurs carences. Dans les deux périodes, l'apport énergétique, ainsi que les apports en glucides et en acide folique, étaient inférieurs aux recommandations. L'apport en vitamine C pendant la période d'entraînement et l'apport en calcium pendant la période de compétition étaient aussi insuffisants, de même que les apports en vitamines D et E. Dans une approche globale et interdisciplinaire de l'entraînement, la composition corporelle reflète avant tout l'état nutritionnel des athlètes.
 
 Le suivi de la composition corporelle permet donc d'évaluer l'efficacité des interventions nutritionnelles et d'entraînement. Faire évoluer volontairement la composition corporelle selon les périodes du macrocycle d'entraînement permet notamment de soutenir la performance, de répondre aux exigences physiques d'un sport et d'encaisser de lourdes charges d'entraînement. Les athlètes d'endurance d'élite sont en général minces, avec une masse corporelle assez faible, du fait de facteurs génétiques qui les prédisposaient à réussir dans leur sport et des effets de l'entraînement.
+
+## En résumé
+
+En cyclisme, la fatigue vient surtout de la déshydratation et de l'épuisement du glycogène. Avant la sortie, l'objectif est d'arriver avec des réserves de glucides suffisantes et de limiter les pertes en eau. Pendant l'effort, il faut apporter des glucides et de l'eau à un rythme adapté à l'intensité et à la durée. Les vitamines et minéraux au-delà des apports recommandés n'améliorent pas la performance, sauf chez les cyclistes à faible apport calorique. Enfin, suivre la composition corporelle et l'état nutritionnel permet de vérifier que l'alimentation suit vraiment les besoins de l'entraînement.
+
+## Références
 
 Brunkhorst L., Kielstein H. Comparaison des caractéristiques anthropométriques entre triathlètes professionnels et cyclistes. Biol. Sport. 2013 ; 30 : 269-27. Maughan R.J., Burke L.M., Dvorak J., Larson-Meyer D.E., Peeling P., Phillips S.M., Engebretsen L. Déclaration de consensus du CIO : les compléments alimentaires et l'athlète de haut niveau. Br. J. Sports Med. 2018 ; 52 : 439-455.
 
@@ -1227,23 +1231,23 @@ En soumettant un muscle à une charge exigeante, avec un temps sous tension suff
 
 L'entraînement en surcharge progressive, utilisé dans de nombreuses disciplines comme le bodybuilding, le cross training et le powerlifting, est l'un des moyens les plus efficaces pour stimuler l'hypertrophie musculaire et gagner en force. En jouant correctement sur les variables d'entraînement (volume, intensité, fréquence et temps de récupération), on peut modifier la nature et l'intensité du stimulus imposé au système musculo-squelettique, en combinant stress mécanique et stress métabolique.
 
-On cherche souvent à savoir s'il vaut mieux privilégier le volume ou l'intensité. La recherche montre que plus l'intensité augmente (avec un recrutement accru des fibres rapides), plus le stress mécanique domine (1). À l'inverse, les programmes à haut volume, avec des charges plus légères, plus de répétitions et des temps de repos courts, créent un stress métabolique plus important (2).
+On cherche souvent à savoir s'il vaut mieux privilégier le volume ou l'intensité. La recherche montre que plus l'intensité augmente (avec un recrutement accru des fibres rapides), plus le stress mécanique domine. À l'inverse, les programmes à haut volume, avec des charges plus légères, plus de répétitions et des temps de repos courts, créent un stress métabolique plus important.
 
 ## Volume d'entraînement
 
-Pour déclencher l'hypertrophie, il faut une intensité minimale, souvent fixée à une charge supérieure à 50 % du 1RM. Des organismes internationaux comme l'American College of Sports Medicine recommandent de travailler entre 6 et 12 RM pour équilibrer stress mécanique et stress métabolique (2).
+Pour déclencher l'hypertrophie, il faut une intensité minimale, souvent fixée à une charge supérieure à 50 % du 1RM. Des organismes internationaux comme l'American College of Sports Medicine recommandent de travailler entre 6 et 12 RM pour équilibrer stress mécanique et stress métabolique.
 
-D'autres travaux indiquent qu'augmenter la charge et l'intensité recrute davantage de fibres rapides et donne un stimulus d'hypertrophie supérieur au stress métabolique d'un volume élevé (3). Les études qui comparent directement les deux méthodes chez des pratiquants expérimentés restent rares, ce qui empêche de désigner une stratégie « gagnante ».
+D'autres travaux indiquent qu'augmenter la charge et l'intensité recrute davantage de fibres rapides et donne un stimulus d'hypertrophie supérieur au stress métabolique d'un volume élevé. Les études qui comparent directement les deux méthodes chez des pratiquants expérimentés restent rares, ce qui empêche de désigner une stratégie « gagnante ».
 
 ## Intensité et recrutement
 
-La plupart des études montrent que l'entraînement à haute intensité est plus efficace pour la force, mais donne des résultats comparables aux protocoles à haut volume pour l'hypertrophie (4, 5). En regardant de plus près, on observe une relation nette entre volume d'entraînement et hypertrophie (6, 7), moins marquée pour la force (8, 9). Mais augmenter le volume sans tenir compte du niveau de l'athlète peut être contre-productif (10).
+La plupart des études montrent que l'entraînement à haute intensité est plus efficace pour la force, mais donne des résultats comparables aux protocoles à haut volume pour l'hypertrophie. En regardant de plus près, on observe une relation nette entre volume d'entraînement et hypertrophie, moins marquée pour la force. Mais augmenter le volume sans tenir compte du niveau de l'athlète peut être contre-productif.
 
-On oublie parfois qu'un entraînement n'est utile que si vous êtes capable d'en récupérer, ce qui permet l'adaptation (gain quantitatif et qualitatif de masse musculaire). Un volume excessif auquel vous n'êtes pas habitué peut dégrader vos performances pendant 72 heures. À cela s'ajoute le concept de périodisation (organisation en micro et mésocycles), plus efficace pour améliorer les performances à long terme (11).
+On oublie parfois qu'un entraînement n'est utile que si vous êtes capable d'en récupérer, ce qui permet l'adaptation (gain quantitatif et qualitatif de masse musculaire). Un volume excessif auquel vous n'êtes pas habitué peut dégrader vos performances pendant 72 heures. À cela s'ajoute le concept de périodisation (organisation en micro et mésocycles), plus efficace pour améliorer les performances à long terme.
 
 ## Périodisation et récupération
 
-À l'inverse, un entraînement trop axé sur l'intensité, sans progression organisée, peut avoir des effets négatifs : stress du système nerveux central, stress articulaire et risque accru de blessure. Les dommages musculaires jouent aussi un rôle dans la croissance (9), mais un excès de volume n'améliore pas les résultats et peut même les freiner (12).
+À l'inverse, un entraînement trop axé sur l'intensité, sans progression organisée, peut avoir des effets négatifs : stress du système nerveux central, stress articulaire et risque accru de blessure. Les dommages musculaires jouent aussi un rôle dans la croissance, mais un excès de volume n'améliore pas les résultats et peut même les freiner.
 
 La périodisation, c'est-à-dire l'organisation méthodique de l'entraînement en microcycles et mésocycles, permet de tirer le meilleur des deux approches. Un mésocycle typique pourrait alterner 3-4 semaines d'entraînement orienté volume (12-20 répétitions, repos courts de 60-90s, nombreuses séries) avec 3-4 semaines d'entraînement orienté intensité (4-8 répétitions, repos longs de 2-4 min, charges lourdes). Cette alternance stimule des mécanismes d'adaptation distincts et complémentaires.
 
