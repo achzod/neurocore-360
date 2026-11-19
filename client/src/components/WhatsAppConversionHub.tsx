@@ -1,6 +1,7 @@
 import { Compass } from "lucide-react";
 import { useLocation } from "wouter";
 import { trackClick } from "@/lib/analytics";
+import { useIsStickyOfferBarVisible } from "@/lib/stickyOfferBar";
 
 const HIDDEN_PREFIXES = [
   "/admin",
@@ -27,12 +28,16 @@ const ORIENTATION_URL =
 export function WhatsAppConversionHub() {
   const [location] = useLocation();
   const hidden = HIDDEN_PREFIXES.some((prefix) => location.startsWith(prefix));
+  // Barre fixe d'offre visible : masqué sur mobile (il la recouvrait),
+  // remonté au-dessus d'elle sur tablette et ordinateur.
+  const stickyOfferBarVisible = useIsStickyOfferBarVisible();
 
   if (hidden) return null;
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-[70]"
+      className={`fixed right-4 z-[70] ${stickyOfferBarVisible ? "hidden md:block md:bottom-24" : "bottom-4"}`}
+      data-testid="global-orientation-cta-wrapper"
       style={{
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         maxHeight: "calc(100dvh - 2rem)",

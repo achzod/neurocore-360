@@ -1,7 +1,12 @@
-import { useState } from "react";
-import { MessageCircle } from "lucide-react";
+import React, { useState } from "react";
+import { MessageCircle, X } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { trackWhatsAppClick } from "@/lib/analytics";
+import {
+  discoveryOfferWindowFrom,
+  isDiscoveryOfferWindowOpen,
+  type DiscoveryOfferWindow,
+} from "@shared/discoveryOfferRecommendation";
 
 type AuditKind =
   | "GRATUIT"
@@ -105,6 +110,18 @@ interface CoachingPromoBannerProps {
   dismissible?: boolean;
   /** False on the Discovery report: its single recommended offer lives in the page. */
   showFormules?: boolean;
+  /**
+   * Discovery only: report date. The DISCOVERY20 code is shown with its last
+   * valid day, in the same 7-day window as the single offer block, and the
+   * banner disappears once that window is closed.
+   */
+  generatedAt?: string | Date | null;
+  /** Test hook: "today" used to check the Discovery window. */
+  now?: Date;
+}
+
+function isDiscoveryKind(kind: AuditKind): boolean {
+  return kind === "GRATUIT" || kind === "DISCOVERY";
 }
 
 // Sticky promo code banner at the top of a report page.
@@ -116,6 +133,8 @@ export function CoachingPromoBanner({
   className = "",
   dismissible = true,
   showFormules = true,
+  generatedAt,
+  now,
 }: CoachingPromoBannerProps) {
   const storageKey = `apexlabs_coaching_banner_dismissed_${auditType}`;
   const [dismissed, setDismissed] = useState<boolean>(() => {
@@ -125,6 +144,15 @@ export function CoachingPromoBanner({
   const [copied, setCopied] = useState(false);
 
   if (dismissed) return null;
+
+  const isDiscovery = isDiscoveryKind(auditType);
+  let discoveryWindow: DiscoveryOfferWindow | null = null;
+  if (isDiscovery) {
+    const offerWindow = discoveryOfferWindowFrom(generatedAt);
+    discoveryWindow = isDiscoveryOfferWindowOpen(offerWindow, now) ? offerWindow : null;
+    // Same window as the single offer block: no code once it is closed.
+    if (!discoveryWindow) return null;
+  }
 
   const promo = getPromoInfo(auditType, peptidesTier);
   const auditLabel = getAuditLabel(auditType);
@@ -168,10 +196,15 @@ export function CoachingPromoBanner({
                   title="Cliquer pour copier"
                 >
                   {promo.code}
-                  <span className="text-[10px] opacity-70">{copied ? "✓" : "📋"}</span>
+                  <span className="text-[10px] opacity-70">{copied ? "Copié" : "Copier"}</span>
                 </button>
               </p>
-              <p className="mt-1 text-xs text-white/60">{promo.description}</p>
+              <p className="mt-1 text-xs text-white/60">
+                {promo.description}
+                {discoveryWindow && (
+                  <span data-testid="coaching-promo-deadline">, valable jusqu'au {discoveryWindow.label}</span>
+                )}
+              </p>
             </div>
           </div>
 
@@ -205,7 +238,7 @@ export function CoachingPromoBanner({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 rounded-sm border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:border-[#FCDD00] hover:text-[#FCDD00]"
               >
-                {f.name} →
+                {f.name}
               </a>
             ))}
             {dismissible && (
@@ -215,7 +248,7 @@ export function CoachingPromoBanner({
                 aria-label="Masquer la bannière"
                 title="Masquer"
               >
-                ✕
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             )}
           </div>

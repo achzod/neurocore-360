@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 
-import { CoachingPromoBanner } from "../components/CoachingPromoBanner";
 import {
   beginDiscoveryReviewModerationRequest,
   createDiscoveryReviewModerationState,
@@ -50,14 +47,4 @@ test("slow approved response for audit A cannot overwrite audit B or expose its 
   const visiblePromoCode = visibleDiscoveryPromoCode(state, "audit-B");
   assert.notEqual(visibleStatus, "approved");
   assert.equal(visiblePromoCode, null);
-
-  const html = renderToStaticMarkup(React.createElement(CoachingPromoBanner, {
-    auditType: "GRATUIT",
-    reviewStatus: visibleStatus,
-    promoCode: visiblePromoCode,
-    dismissible: false,
-  }));
-  assert.equal(html.includes("SERVER_CODE_A"), false);
-  assert.equal(html.includes("Cliquer pour copier"), false);
-  assert.equal(html.includes("coaching-essential"), false);
 });

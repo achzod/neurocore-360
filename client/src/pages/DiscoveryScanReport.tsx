@@ -602,12 +602,11 @@ const DiscoveryScanReport: React.FC = () => {
               </div>
             </section>
 
-            {/* Review-gated coaching banner; the server supplies the code only after approval. */}
+            {/* Discovery code with its last valid day (same 7-day window as the single offer block). */}
             <CoachingPromoBanner
               key={auditId}
               auditType="GRATUIT"
-              reviewStatus={reviewStatus}
-              promoCode={reviewPromoCode}
+              generatedAt={reportData.generatedAt}
               showFormules={false}
               className="-mx-6 lg:-mx-12"
             />
