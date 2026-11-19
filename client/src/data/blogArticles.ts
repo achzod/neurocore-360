@@ -31854,6 +31854,3951 @@ Ajouter de la K2 MK-7 est simple, sûr et peut avoir des bénéfices significati
 
 ---`,
   },
+  {  id: "137",
+    slug: "peptides-guide-complet",
+    title: "Peptides : le guide complet pour comprendre les familles, le statut légal et les risques",
+    seoTitle: "Peptides : guide complet, statut légal et risques | APEXLABS",
+    excerpt: "Qu'est-ce qu'un peptide, quelles familles existent, ce que dit la loi en France et pour l'AMA, et pourquoi les produits « research only » sont un pari risqué : le guide pilier de notre série peptides.",
+    metaDescription: "Peptides : définition, 6 familles (BPC-157, GH, GLP-1, GHK-Cu, MOTS-c), statut légal en France et AMA, risques des produits research only et encadrement.",
+    category: "biohacking",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "18 min",
+    image: "/images/blog/peptides-guide-complet/peptides-hero.webp",
+    content: `# Peptides : le guide complet pour comprendre les familles, le statut légal et les risques
+
+![Trois flacons de laboratoire en verre sur une surface de pierre noire, éclairés par une lumière jaune latérale](/images/blog/peptides-guide-complet/peptides-hero.webp)
+
+## Introduction : un seul mot pour des produits qui n'ont rien à voir
+
+Sur les réseaux sociaux, le mot « peptide » est partout. Il sert à vendre une cicatrisation express des tendons, une « sèche » sans effort, une peau de 25 ans ou une meilleure concentration. Dans le même fil, on vous parle du BPC-157, du sémaglutide, du GHK-Cu et du MOTS-c comme s'il s'agissait de la même catégorie de produits.
+
+C'est le premier piège. Le sémaglutide est un médicament évalué sur des milliers de patients, autorisé et délivré sur ordonnance. Le BPC-157 n'a jamais fait l'objet d'un seul essai randomisé publié chez l'humain. Les deux sont des peptides. Les mettre dans le même sac, c'est comme comparer un avion de ligne certifié et un prototype qui n'a jamais quitté le hangar, au motif que les deux ont des ailes.
+
+Ce guide est l'article pilier de notre série sur les peptides. Il pose les bases :
+
+- ce qu'est un peptide, et pourquoi votre corps en fabrique déjà des centaines
+- les 6 grandes familles, ce qu'elles visent et ce que disent réellement les études
+- le statut légal en France, dans l'Union européenne et pour l'Agence mondiale antidopage (AMA)
+- les risques concrets des produits vendus « pour la recherche uniquement »
+- pourquoi l'encadrement (bilan, choix individualisé, suivi, critères d'arrêt) change tout
+
+Chaque famille renvoie vers un article dédié de la série, pour aller plus loin.
+
+> **L'essentiel en 30 secondes**
+>
+> - Un **peptide** est une courte chaîne d'acides aminés (en pratique, de 2 à environ 50). L'insuline, l'ocytocine ou le GLP-1 sont des peptides que votre corps produit naturellement.
+> - Plus de **80 médicaments peptidiques** sont autorisés dans le monde (Muttenthaler, 2021). La plupart des peptides vendus en ligne aux sportifs n'en font **pas** partie.
+> - En France, les produits comme le **BPC-157, le TB-500, le GHK-Cu injectable ou le rétatrutide** vendus sur internet ne sont **ni évalués ni autorisés**. L'ANSM a publié une alerte le 2 juillet 2026 après des hospitalisations.
+> - Pour les sportifs, le BPC-157 est cité nommément dans la **section S0 de la liste AMA** (interdit en permanence). Les sécrétagogues de GH relèvent de la section **S2**.
+> - Des analyses de produits achetés en ligne ont trouvé du **sémaglutide pur à 7,7 à 14,4 %** au lieu des 99 % annoncés, et des **endotoxines** dans tous les flacons testés (Ashraf, 2024).
+> - La seule approche défendable : **bilan sanguin avant/après, choix individualisé, suivi et critères d'arrêt définis à l'avance**, avec un médecin pour tout ce qui relève du médicament.
+
+---
+
+## Qu'est-ce qu'un peptide ?
+
+### Une définition simple
+
+Les protéines sont faites d'acides aminés reliés les uns aux autres par des liaisons dites peptidiques. Quand la chaîne est courte, on parle de **peptide**. La frontière avec la protéine n'est pas gravée dans le marbre, mais on retient souvent un seuil d'environ **50 acides aminés**. L'insuline (51 acides aminés) se situe pile à la limite.
+
+Votre organisme utilise des peptides comme **messagers** en permanence :
+
+- l'**insuline** et le **glucagon** pour la glycémie
+- le **GLP-1** et le **GIP**, des hormones intestinales qui signalent la satiété et stimulent l'insuline après un repas
+- la **GHRH** et la **ghréline**, qui commandent la sécrétion d'hormone de croissance
+- l'**ocytocine** et la **vasopressine**, produites par l'hypothalamus
+
+Un peptide agit en général en se fixant sur un **récepteur précis**, à la surface d'une cellule. C'est ce qui le rend intéressant en pharmacologie : il est souvent très spécifique, avec moins d'effets « à côté » qu'une petite molécule classique.
+
+### Pourquoi les peptides passent mal par la bouche
+
+Votre système digestif est conçu pour découper les protéines et les peptides en acides aminés. Résultat : la plupart des peptides avalés sont détruits avant d'atteindre le sang. C'est la raison pour laquelle l'insuline et la majorité des GLP-1 s'injectent. Il existe des exceptions (une forme orale de sémaglutide associée à un promoteur d'absorption, par exemple), mais elles demandent un travail de formulation important.
+
+Retenez ce point : quand un produit en gélule promet les effets d'un peptide injectable, la question de la **biodisponibilité** se pose immédiatement.
+
+### Des médicaments bien réels
+
+Les peptides ne sont pas une mode. Selon la revue de Muttenthaler et al. (2021, *Nature Reviews Drug Discovery*), **plus de 80 médicaments peptidiques** sont commercialisés dans le monde, et plus de 150 sont en développement clinique. La revue de Wang et al. (2022) dresse le même constat. Parmi les plus connus : l'insuline, les analogues du GLP-1, la leuproréline ou l'octréotide.
+
+Le problème n'est donc pas « les peptides ». Le problème, c'est l'écart entre ces médicaments évalués et les dizaines de molécules vendues en flacons sur internet, avec des promesses que personne n'a vérifiées chez l'humain.
+
+---
+
+## Les 6 grandes familles de peptides
+
+![Schéma des six familles de peptides : réparation tissulaire, axe de la GH, métabolisme GLP-1, peau et cheveux, mitochondries, cognition, avec exemples et statut réglementaire](/images/blog/peptides-guide-complet/peptides-familles.webp)
+
+### 1. Réparation tissulaire : BPC-157 et TB-500
+
+**Ce qui est promis** : une cicatrisation plus rapide des tendons, des ligaments, des muscles et de l'intestin.
+
+**Ce que montrent les études** : le BPC-157 est un fragment de 15 acides aminés dérivé d'une protéine du suc gastrique. Il a fait l'objet de dizaines d'études chez le rat, en grande partie publiées par une même équipe de Zagreb. Les mécanismes décrits en laboratoire (activation du récepteur VEGFR2, voie du monoxyde d'azote, migration des fibroblastes) sont cohérents. Chez l'humain, en revanche, la revue systématique de Poolton et al. (2026) n'a retrouvé que **3 études, 30 personnes au total**, sans groupe contrôle, avec une certitude jugée **très faible**.
+
+Le TB-500 est un fragment synthétique de la thymosine bêta-4, une protéine impliquée dans la migration cellulaire. Les données humaines sont encore plus maigres.
+
+Pour le détail des études, lisez [BPC-157 : ce que montrent vraiment les études sur les tendons et l'intestin](/blog/bpc-157-tendons-intestin-etudes) et [BPC-157 vs TB-500 : les vraies différences](/blog/bpc-157-vs-tb-500-differences).
+
+### 2. Axe de l'hormone de croissance : CJC-1295, ipamoréline, tésamoréline
+
+**Ce qui est promis** : plus de GH et d'IGF-1, donc plus de muscle, moins de gras, un meilleur sommeil.
+
+**Ce que montrent les études** : ces molécules ne contiennent pas d'hormone de croissance. Elles **stimulent l'hypophyse** pour qu'elle en sécrète davantage, soit en imitant la GHRH (CJC-1295, tésamoréline), soit en imitant la ghréline (ipamoréline). Chez des adultes en bonne santé, une seule injection de CJC-1295 a augmenté la GH de 2 à 10 fois pendant au moins 6 jours, et l'IGF-1 de 1,5 à 3 fois (Teichman, 2006). Mais faire monter un marqueur sanguin n'est pas la même chose que gagner du muscle de façon durable et sûre.
+
+La **tésamoréline** est approuvée aux États-Unis pour une indication précise (l'excès de graisse abdominale chez certains patients vivant avec le VIH). Le CJC-1295 et l'ipamoréline ne sont approuvés nulle part pour l'usage humain.
+
+Détails dans [CJC-1295 et ipamoréline : hormone de croissance et IGF-1](/blog/cjc-1295-ipamoreline-hormone-de-croissance-igf-1).
+
+### 3. Métabolisme : les agonistes du GLP-1
+
+**Ce qui est promis** : une perte de poids importante.
+
+**Ce que montrent les études** : c'est la famille la mieux documentée, et de loin. Dans l'essai STEP 1 (1 961 adultes, 68 semaines), le sémaglutide a fait perdre en moyenne **14,9 %** du poids corporel contre 2,4 % sous placebo (Wilding, 2021). Dans SURMOUNT-1, le tirzépatide a atteint **20,9 %** à la dose la plus élevée (Jastreboff, 2022). Le rétatrutide, un triple agoniste encore en phase 3, a atteint **25 %** à 80 semaines dans TRIUMPH-1 (Jastreboff, 2026).
+
+Le revers : une partie du poids perdu est de la **masse maigre**, d'où l'enjeu de préserver le muscle. Ces médicaments se prennent **sur prescription médicale**, et la vente d'agonistes du GLP-1 sur internet est illégale en France.
+
+C'est le sujet de [GLP-1 (sémaglutide, tirzépatide) : comment préserver votre muscle](/blog/glp-1-semaglutide-tirzepatide-preserver-muscle).
+
+### 4. Peau et cheveux : le GHK-Cu
+
+**Ce qui est promis** : plus de collagène, moins de rides, des cheveux plus denses.
+
+**Ce que montrent les études** : le GHK-Cu est un tripeptide lié au cuivre, présent naturellement dans le plasma. Des travaux in vitro et des études cosmétiques en application locale suggèrent un effet sur la synthèse de collagène et sur l'expression de nombreux gènes liés à la réparation (Pickart, 2018). En Europe, il est utilisé comme ingrédient cosmétique. La forme **injectable** vendue en ligne est un tout autre sujet : l'ANSM la cite parmi les produits non autorisés.
+
+Pour la peau, les fondamentaux restent prioritaires. Notre guide sur le [collagène pour la peau et les articulations](/blog/collagene-peau-articulations-guide-complet) fait le point. Pour le peptide lui-même : [GHK-Cu : le peptide de cuivre pour la peau et les cheveux](/blog/ghk-cu-peptide-cuivre-peau-cheveux).
+
+### 5. Mitochondries : MOTS-c et SS-31
+
+**Ce qui est promis** : plus d'énergie, une meilleure sensibilité à l'insuline, un effet « anti-âge ».
+
+**Ce que montrent les études** : le MOTS-c est un peptide codé par l'ADN mitochondrial. Chez la souris, il a amélioré la sensibilité à l'insuline et limité la prise de poids sous régime gras (Lee, 2015). Les données humaines restent préliminaires. Le SS-31 (élamipretide) se fixe sur la cardiolipine, un lipide de la membrane mitochondriale interne. Il a obtenu en septembre 2025 une **autorisation accélérée de la FDA** pour une maladie génétique rare, le syndrome de Barth. Ce n'est pas une validation pour un usage « bien-être ».
+
+À lire : [MOTS-c et SS-31 : les peptides des mitochondries](/blog/mots-c-ss-31-peptides-mitochondries), et en complément nos guides sur l'[urolithine A](/blog/urolithine-a-mitophagie-muscle-longevite) et le [NAD+ et le NMN](/blog/nad-nmn-niacine-longevite-energie).
+
+### 6. Cognition : Semax et Selank
+
+**Ce qui est promis** : concentration, mémoire, gestion du stress.
+
+**Ce que montrent les études** : ces peptides administrés par voie nasale ont été développés en Russie, où ils sont enregistrés. Les études sont surtout russes, souvent anciennes et de petite taille. Ils ne sont pas autorisés dans l'Union européenne. Pour la cognition, le sommeil, la gestion du stress et certains composés mieux étudiés restent des leviers plus sûrs (voir notre article sur les [nootropiques naturels](/blog/nootropiques-naturels-cognition)).
+
+---
+
+## Le récapitulatif : famille, preuve et statut
+
+| Famille | Exemples | Niveau de preuve chez l'humain | Statut en France et dans l'UE | AMA (sport) |
+|---|---|---|---|---|
+| Réparation tissulaire | BPC-157, TB-500 | Très faible (3 petites études sans contrôle pour le BPC-157) | Non autorisés | Interdits (BPC-157 en S0, TB-500 en S2) |
+| Axe de la GH | CJC-1295, ipamoréline, tésamoréline | Marqueurs hormonaux, peu de données cliniques hors tésamoréline | Non autorisés pour l'usage sportif | Interdits (S2) |
+| Métabolisme (GLP-1) | Sémaglutide, tirzépatide, rétatrutide | Élevé pour les molécules autorisées (essais de phase 3) | Sémaglutide et tirzépatide : sur ordonnance ; rétatrutide : non autorisé | Non interdits, sous surveillance (programme de suivi 2027) |
+| Peau et cheveux | GHK-Cu | Faible à modéré en cosmétique topique | Cosmétique topique ; injectable non autorisé | Non cité ; S0 vise toute substance non approuvée |
+| Mitochondries | MOTS-c, SS-31 | Préliminaire (animal) ; SS-31 approuvé pour une maladie rare aux États-Unis | Non autorisés dans l'UE | S0 pour les substances non approuvées |
+| Cognition | Semax, Selank | Faible, études surtout russes | Non autorisés dans l'UE | S0 pour les substances non approuvées |
+
+---
+
+> **Un accompagnement qui part de votre profil, pas d'une tendance**
+>
+> Avant de vous intéresser à un peptide, posez les bases : entraînement structuré, nutrition calibrée, sommeil, suivi de vos progrès. C'est là que se joue 90 % du résultat. Achzod construit votre programme d'entraînement et de nutrition et vous suit semaine après semaine, avec des ajustements basés sur vos données.
+>
+> [Découvrir l'accompagnement personnalisé](https://www.achzodcoaching.com)
+
+---
+
+## Le statut légal : France, Union européenne, AMA
+
+### En France et dans l'Union européenne : la notion de médicament
+
+Le droit européen (directive 2001/83/CE) et le Code de la santé publique (article L5111-1) définissent le médicament par sa **présentation** (on lui prête des propriétés curatives ou préventives) ou par sa **fonction** (il modifie une fonction physiologique par une action pharmacologique). Un produit injectable censé réparer un tendon ou faire perdre du poids coche ces cases. Il lui faut donc une **autorisation de mise sur le marché** (AMM), nationale ou européenne, pour être vendu.
+
+Conséquence directe :
+
+- **sémaglutide, tirzépatide, liraglutide** : autorisés, prescrits par un médecin, délivrés en pharmacie
+- **BPC-157, TB-500, CJC-1295, ipamoréline, MOTS-c, GHK-Cu injectable, rétatrutide** vendus en ligne : **aucune autorisation** en France
+
+### Ce que dit l'ANSM
+
+Le 2 juillet 2026, l'ANSM a publié une alerte intitulée « Peptides vendus en ligne : ne les utilisez pas, ils peuvent être dangereux », mise à jour le 31 août 2026. Les points clés :
+
+- ces produits sont vendus sur internet, sur les réseaux sociaux ou par des circuits informels, « notamment des entraîneurs sportifs ou des proches »
+- l'agence cite notamment le **rétatrutide, le TB500, la GH, le GHK-Cu, le BPC-157 et le NAD+**
+- elle a reçu plusieurs signalements, notamment avec le rétatrutide, et **certaines personnes ont dû être hospitalisées**
+- les effets rapportés vont des troubles digestifs et de la déshydratation à l'**atteinte du foie**, aux **infections au point d'injection** et aux **réactions allergiques sévères**, avec un risque plus élevé pour les injectables
+- l'ANSM demande de ne jamais utiliser un produit portant la mention « For research use only », « Réservé à la recherche » ou « Not for human use »
+
+Pour les GLP-1, l'agence rappelle que **toute vente d'agonistes du GLP-1 sur internet est illégale** en France, et elle a pris plusieurs mesures de police sanitaire contre des sites marchands en 2026.
+
+### Pour les sportifs : la liste de l'AMA
+
+Si vous êtes licencié dans une fédération ou si vous participez à des compétitions, la question se règle vite :
+
+- **Section S0, substances non approuvées** : toute substance pharmacologique sans autorisation pour l'usage humain par une autorité de santé est interdite **en permanence**. Le **BPC-157** y est cité nommément. La liste 2027 ajoute même le mot « peptides » dans la définition de S0.
+- **Section S2** : les facteurs de libération de la GH (analogues de la GHRH comme le CJC-1295, sécrétagogues comme l'ipamoréline), ainsi que la thymosine bêta-4 et ses dérivés comme le TB-500.
+- **GLP-1** : le sémaglutide et le tirzépatide ne sont **pas interdits**, mais restent dans le **programme de surveillance** de l'AMA pour 2027.
+
+### Et aux États-Unis ?
+
+Vous lirez peut-être que « le BPC-157 est devenu légal ». Ce n'est pas exact. Fin octobre 2026, le département américain de la santé (HHS) a publié une politique provisoire de **tolérance** pour la préparation magistrale de six peptides (dont le BPC-157, le TB-500 et le MOTS-c), sous ordonnance, en pharmacie agréée, avec un certificat d'analyse complet. Ce n'est ni une approbation, ni une évaluation de l'efficacité, et cela **ne change rien au droit français** ni à la liste de l'AMA.
+
+---
+
+## Les risques : pureté, contamination et mention « research only »
+
+### Ce que contient vraiment un flacon acheté en ligne
+
+L'étude la plus citée est celle d'Ashraf et al. (2024, *Journal of Medical Internet Research*). Les chercheurs ont tenté d'acheter du sémaglutide sans ordonnance auprès de 6 vendeurs en ligne :
+
+- **3 commandes sur 6 ne sont jamais arrivées** (arnaques pures et simples)
+- les 3 flacons reçus contenaient **29 à 39 % de sémaglutide en plus** de la quantité affichée
+- la **pureté mesurée** était de **7,7 à 14,4 %**, contre 99 % annoncés sur l'étiquette
+- des **endotoxines** (fragments de bactéries qui peuvent provoquer fièvre et réactions inflammatoires) ont été détectées **dans tous les flacons**
+
+Limite honnête : l'échantillon est minuscule. Mais il illustre un point simple : sur ce marché, l'étiquette n'engage personne.
+
+Une analyse plus large, encore en prépublication donc non relue par des pairs (Mendias et Awan, 2026), a examiné **6 441 résultats de tests** portant sur 14 peptides vendus comme produits de recherche. Selon le niveau d'exigence retenu, **41,6 à 71,1 % des échantillons** ne respectaient pas les critères de qualité de base (quantité, pureté, endotoxines). Les médianes étaient correctes, mais les écarts entre lots étaient considérables. Autrement dit : deux flacons du même vendeur peuvent ne pas contenir la même chose.
+
+### Pourquoi « research only » ne protège personne
+
+La mention « réservé à la recherche » est une stratégie commerciale, pas une garantie. Elle signifie que le produit n'a pas été fabriqué selon les standards du médicament injectable :
+
+- pas d'exigence de **stérilité** ni de contrôle des endotoxines
+- pas de contrôle des **impuretés** liées à la synthèse (fragments de peptides, solvants résiduels, métaux)
+- pas de traçabilité du fabricant d'origine
+- pas d'obligation de déclarer les effets indésirables
+
+La FDA a résumé ses inquiétudes pour le BPC-157 : un risque d'**immunogénicité** (réaction du système immunitaire contre le peptide ou ses impuretés), des difficultés à caractériser les impuretés, et un manque de données de sécurité chez l'humain.
+
+### Les risques propres à chaque molécule
+
+Au-delà de la qualité, chaque famille a ses risques théoriques ou documentés :
+
+- **Facteurs de croissance et angiogenèse** (BPC-157) : stimuler la formation de vaisseaux aide à cicatriser, mais c'est aussi un mécanisme qui nourrit les tumeurs. Aucune donnée humaine ne permet d'exclure ce risque sur le long terme.
+- **Axe GH et IGF-1** : rétention d'eau, baisse de la sensibilité à l'insuline, et questions ouvertes sur l'exposition prolongée à un IGF-1 élevé.
+- **GLP-1 hors cadre** : troubles digestifs, déshydratation, perte musculaire non surveillée, et produits contrefaits dont la composition est inconnue.
+- **Injection en elle-même** : infections locales, abcès, réactions allergiques.
+
+---
+
+> **Peptides Engine : une analyse de votre profil avant toute décision**
+>
+> Peptides Engine part de vos données (âge, objectifs, antécédents, sport pratiqué, dernier bilan sanguin) pour analyser ce qui a du sens dans votre situation, ce qui n'en a pas, et ce qu'il faudrait surveiller. L'analyse intègre le statut réglementaire, les règles antidopage et un plan de suivi biologique. Ce n'est pas une ordonnance et cela ne remplace pas votre médecin.
+>
+> [Lancer mon analyse Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Pourquoi l'encadrement change tout
+
+![Tubes de prélèvement sanguin alignés sur une surface noire à côté d'un stéthoscope, sous une lumière jaune](/images/blog/peptides-guide-complet/peptides-suivi-bilan.webp)
+
+### Le même produit ne donne pas le même résultat chez tout le monde
+
+Deux personnes qui prennent la même molécule n'obtiennent pas le même résultat. L'âge, le sexe, le statut hormonal de départ, la masse musculaire, l'alimentation, le sommeil, les traitements en cours et la qualité réelle du produit changent tout. On consacre un article entier à cette question : [Même peptide, résultats différents : pourquoi](/blog/meme-peptide-resultats-differents).
+
+C'est pour cette raison qu'une démarche sans mesure n'a aucune valeur. Si vous ne savez pas d'où vous partez, vous ne pouvez pas savoir ce qui a changé, ni si ce changement est un bénéfice ou un signal d'alerte.
+
+### Les 4 étapes d'une démarche suivie
+
+![Schéma en quatre étapes : bilan initial, choix individualisé, suivi, critères d'arrêt](/images/blog/peptides-guide-complet/peptides-encadrement.webp)
+
+1. **Le bilan initial** : prise de sang complète, antécédents personnels et familiaux, traitements en cours, objectifs précis, sport pratiqué et règles qui s'y appliquent.
+2. **Le choix individualisé** : la balance bénéfice/risque à l'échelle de votre profil, le statut légal de la molécule, les alternatives mieux documentées. Très souvent, la meilleure décision est de **ne rien ajouter** et de corriger d'abord un fondamental.
+3. **Le suivi** : un bilan de contrôle, l'évolution de la composition corporelle, la tension artérielle, les effets indésirables notés au fil de l'eau.
+4. **Les critères d'arrêt** : définis **avant** de commencer. Un marqueur qui dérive, un effet absent après une durée fixée, un symptôme qui apparaît. Sans critère d'arrêt écrit, on continue toujours « encore un peu ».
+
+### Les marqueurs qui reviennent le plus souvent
+
+Selon la famille concernée, on surveille notamment :
+
+- **glycémie à jeun et HbA1c**, surtout pour l'axe GH et les GLP-1
+- **IGF-1**, pour tout ce qui touche à l'hormone de croissance
+- **enzymes hépatiques (ASAT, ALAT, GGT)**, que l'ANSM cite parmi les atteintes observées
+- **fonction rénale** (créatinine, DFG)
+- **bilan lipidique** et **CRP ultrasensible**
+- **hémogramme** et **ferritine**
+
+Le détail, marqueur par marqueur, est dans [Peptides et bilan sanguin : les marqueurs à suivre](/blog/peptides-bilan-sanguin-marqueurs-a-suivre). Et si vous voulez savoir ce qu'un bilan standard laisse de côté, lisez [Bilan sanguin : les marqueurs que votre médecin ne demande pas](/blog/bilan-sanguin-marqueurs-que-medecin-ne-demande-pas) et notre guide des [marqueurs sanguins de santé](/blog/marqueurs-sanguins-sante).
+
+Pour transformer votre prise de sang en priorités claires, l'[analyse Blood Analysis](/offers/blood-analysis) lit vos biomarqueurs dans une logique de performance et de prévention.
+
+---
+
+## Avant de penser peptide : les causes que l'on oublie
+
+Dans ma pratique, la grande majorité des personnes qui me demandent « quel peptide prendre » ont un problème plus simple à régler :
+
+- une **stagnation** due à une programmation sans surcharge progressive ou à un volume mal dosé (voir [Stagnation en musculation : pourquoi vous stagnez](/blog/stagnation-musculation-pourquoi-vous-stagnez))
+- une **testostérone basse** jamais explorée correctement (voir [Testostérone basse : lire son bilan sanguin](/blog/testosterone-basse-lire-son-bilan-sanguin) et notre guide de la [testostérone naturelle](/blog/testosterone-naturelle-optimisation-masculine))
+- un apport en protéines insuffisant, un sommeil court, un déficit calorique trop agressif
+- l'absence de suppléments de base validés comme la [créatine](/blog/creatine-guide-complet)
+
+Un peptide ne compense aucun de ces points. Pour une vue d'ensemble (hormones, récupération, sommeil, nutrition, entraînement), l'[Anabolic Bioscan](/offers/anabolic-bioscan) identifie les vrais blocages avant d'envisager quoi que ce soit d'autre.
+
+---
+
+## FAQ : peptides
+
+### Qu'est-ce qu'un peptide, en une phrase ?
+
+Une courte chaîne d'acides aminés, en général moins de 50, qui agit le plus souvent comme un messager en se fixant sur un récepteur précis. L'insuline, le GLP-1 et l'ocytocine sont des peptides naturels.
+
+### Les peptides sont-ils légaux en France ?
+
+Les médicaments peptidiques autorisés (insuline, sémaglutide, tirzépatide, etc.) sont légaux sur prescription et délivrés en pharmacie. Les peptides vendus en ligne pour la musculation, la perte de poids ou l'anti-âge (BPC-157, TB-500, CJC-1295, rétatrutide, GHK-Cu injectable…) ne sont pas autorisés, et l'ANSM recommande de ne pas les utiliser.
+
+### Le BPC-157 est-il interdit pour les sportifs ?
+
+Oui. Il est cité nommément dans la section S0 de la liste de l'AMA, qui interdit en permanence (en compétition et hors compétition) les substances sans autorisation pour l'usage humain. Un contrôle positif peut entraîner une suspension.
+
+### Les peptides marqués « research only » sont-ils plus sûrs ?
+
+Non, c'est même l'inverse. Cette mention signifie que le produit n'est pas fabriqué selon les exigences d'un médicament injectable : ni stérilité garantie, ni contrôle des endotoxines, ni contrôle des impuretés. Des analyses ont trouvé des écarts majeurs entre l'étiquette et le contenu réel.
+
+### Les GLP-1 comme le sémaglutide sont-ils des peptides ?
+
+Oui. Le sémaglutide, le liraglutide et le tirzépatide sont des peptides modifiés pour durer plus longtemps dans le sang. Ce sont des médicaments autorisés, avec des essais de phase 3 sur des milliers de patients, qui se prennent sur prescription médicale.
+
+### Faut-il faire une prise de sang avant de s'intéresser aux peptides ?
+
+Oui, c'est le point de départ de toute démarche sérieuse. Sans bilan initial, impossible de savoir d'où vous partez, de choisir de façon individualisée, ni de détecter un effet indésirable. Le suivi et les critères d'arrêt viennent ensuite.
+
+---
+
+## Le verdict : la molécule compte moins que le cadre
+
+Le mot « peptide » mélange des médicaments parmi les mieux étudiés de la décennie et des produits que personne n'a évalués chez l'humain. La première question n'est donc jamais « lequel prendre ? ». C'est « qu'est-ce que ce produit a démontré, chez qui, et dans quel cadre légal ? ».
+
+Ma position est simple. Les GLP-1 ont leur place, sur prescription, avec une stratégie pour protéger le muscle. Les peptides de recherche restent des molécules expérimentales, interdites aux sportifs et non autorisées en France. Dans tous les cas, ce qui protège votre santé et vos résultats, c'est le cadre : un bilan avant, un choix argumenté, un suivi et des critères d'arrêt.
+
+> **Construisez d'abord des fondations solides**
+>
+> Programme d'entraînement, nutrition, récupération, suivi des marqueurs : l'accompagnement personnalisé par Achzod vous fait progresser sur ce qui compte vraiment, avec des ajustements réguliers et un regard expert sur vos données.
+>
+> [Travailler avec Achzod](https://www.achzodcoaching.com)
+
+> **Vous voulez un avis argumenté sur votre situation ?**
+>
+> Peptides Engine analyse votre profil, intègre le statut réglementaire et les règles antidopage, et vous propose un plan de suivi biologique avec des critères d'arrêt clairs. Une analyse individualisée, sans promesse de résultat.
+>
+> [Découvrir Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Références
+
+1. Muttenthaler M, et al. Trends in peptide drug discovery. *Nat Rev Drug Discov.* 2021;20(4):309-325. [doi:10.1038/s41573-020-00135-8](https://doi.org/10.1038/s41573-020-00135-8)
+2. Wang L, et al. Therapeutic peptides: current applications and future directions. *Signal Transduct Target Ther.* 2022;7(1):48. [doi:10.1038/s41392-022-00904-4](https://doi.org/10.1038/s41392-022-00904-4)
+3. Wilding JPH, et al. Once-weekly semaglutide in adults with overweight or obesity. *N Engl J Med.* 2021;384(11):989-1002. [doi:10.1056/NEJMoa2032183](https://doi.org/10.1056/NEJMoa2032183)
+4. Jastreboff AM, et al. Tirzepatide once weekly for the treatment of obesity. *N Engl J Med.* 2022;387(3):205-216. [doi:10.1056/NEJMoa2206038](https://doi.org/10.1056/NEJMoa2206038)
+5. Jastreboff AM, et al. Retatrutide, a triple hormone receptor agonist, for treatment of obesity. *N Engl J Med.* 2026;395(18):1781-1793. [doi:10.1056/NEJMoa2604169](https://doi.org/10.1056/NEJMoa2604169)
+6. Teichman SL, et al. Prolonged stimulation of growth hormone (GH) and insulin-like growth factor I secretion by CJC-1295, a long-acting analog of GH-releasing hormone, in healthy adults. *J Clin Endocrinol Metab.* 2006;91(3):799-805. [doi:10.1210/jc.2005-1536](https://doi.org/10.1210/jc.2005-1536)
+7. Pickart L, Margolina A. Regenerative and protective actions of the GHK-Cu peptide in the light of the new gene data. *Int J Mol Sci.* 2018;19(7):1987. [doi:10.3390/ijms19071987](https://doi.org/10.3390/ijms19071987)
+8. Lee C, et al. The mitochondrial-derived peptide MOTS-c promotes metabolic homeostasis and reduces obesity and insulin resistance. *Cell Metab.* 2015;21(3):443-454. [doi:10.1016/j.cmet.2015.02.009](https://doi.org/10.1016/j.cmet.2015.02.009)
+9. Poolton JT, Minett J, Kazmi A. Human evidence for BPC-157 in orthopaedic and regenerative medicine: a systematic review of efficacy and safety. *Acta Orthop Belg.* 2026;92(3). [doi:10.52628/92.3.15837](https://doi.org/10.52628/92.3.15837) (PMID 42885452)
+10. Vasireddi N, et al. Emerging use of BPC-157 in orthopaedic sports medicine: a systematic review. *HSS J.* 2025;21(4):485-495. [doi:10.1177/15563316251355551](https://doi.org/10.1177/15563316251355551)
+11. Ashraf AR, et al. Multifactor quality and safety analysis of semaglutide products sold by online sellers without a prescription: market surveillance, content analysis, and product purchase evaluation study. *J Med Internet Res.* 2024;26:e65440. [doi:10.2196/65440](https://doi.org/10.2196/65440)
+12. Ashraf AR, et al. Safety and risk assessment of no-prescription online semaglutide purchases. *JAMA Netw Open.* 2024;7(8):e2428280. [doi:10.1001/jamanetworkopen.2024.28280](https://doi.org/10.1001/jamanetworkopen.2024.28280)
+13. Mendias et Awan. Evaluation of research grade peptides marketed directly to consumers. *Preprints.org.* 2026 (prépublication non relue par des pairs).
+14. ANSM. « Peptides » vendus en ligne : ne les utilisez pas, ils peuvent être dangereux. Publié le 02/07/2026, mis à jour le 31/08/2026. [ansm.sante.fr](https://ansm.sante.fr/actualites/peptides-vendus-en-ligne-ne-les-utilisez-pas-ils-peuvent-etre-dangereux)
+15. Agence mondiale antidopage. Liste des interdictions 2026 et Programme de surveillance 2027. [wada-ama.org](https://www.wada-ama.org/en/prohibited-list)
+16. U.S. FDA. Approbation accélérée de Forzinity (élamipretide) pour le syndrome de Barth, 19 septembre 2025. [fda.gov](https://www.fda.gov/news-events/press-announcements/fda-grants-accelerated-approval-first-treatment-barth-syndrome)
+17. U.S. FDA. Certain bulk drug substances for use in compounding that may present significant safety risks (BPC-157). [fda.gov](https://www.fda.gov/drugs/human-drug-compounding/certain-bulk-drug-substances-use-compounding-may-present-significant-safety-risks)
+18. U.S. HHS. Enforcement discretion policy regarding 503A compounding using certain peptide bulk drug substances, octobre 2026. [hhs.gov](https://www.hhs.gov/sites/default/files/hhs-503a-peptide-enforcement-discretion-policy-appendix-b.pdf)
+
+*Cet article est informatif et ne remplace pas un avis médical. Aucun des peptides non autorisés cités ici ne doit être utilisé en dehors d'un essai clinique encadré. Les médicaments autorisés se prennent sur prescription médicale.*
+`,
+  },
+  {  id: "138",
+    slug: "bpc-157-tendons-intestin-etudes",
+    title: "BPC-157 : ce que montrent vraiment les études sur les tendons et l'intestin",
+    seoTitle: "BPC-157 : tendons, intestin et vraies études | APEXLABS",
+    excerpt: "Tendons, muscles, intestin : le BPC-157 impressionne chez le rat. Chez l'humain, 3 études et 30 personnes. Mécanismes, limites, risque lié à l'angiogenèse et statut réglementaire, sans le marketing.",
+    metaDescription: "BPC-157 : études animales sur tendons et intestin, 3 études humaines (30 personnes), mécanismes VEGFR2, NO et FAK, risques liés à l'angiogenèse et statut.",
+    category: "biohacking",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "15 min",
+    image: "/images/blog/bpc-157-tendons-intestin-etudes/bpc-157-hero.webp",
+    content: `# BPC-157 : ce que montrent vraiment les études sur les tendons et l'intestin
+
+![Fibres de collagène d'un tendon en gros plan, traversées par de fins capillaires éclairés en jaune sur fond noir](/images/blog/bpc-157-tendons-intestin-etudes/bpc-157-hero.webp)
+
+## Introduction : une réputation construite chez le rat
+
+Tendinopathie qui traîne, déchirure musculaire, intestin irritable : sur les forums et les réseaux sociaux, le BPC-157 est présenté comme la solution qui « répare tout ». Les témoignages sont enthousiastes, les vidéos nombreuses, et le peptide est devenu l'un des plus recherchés par les pratiquants de musculation.
+
+Pourtant, quand on remonte aux études, le constat est net. L'immense majorité des données sur le BPC-157 vient du **rat**, souvent de la **même équipe de recherche**, et les données humaines tiennent en **3 petites études sans groupe contrôle, totalisant 30 personnes**. Ce n'est pas un détail. C'est ce qui sépare une hypothèse prometteuse d'un traitement démontré.
+
+Dans cet article, on décortique :
+
+- d'où vient le BPC-157 et qui l'étudie
+- ce que montrent les études animales sur les tendons, les muscles et l'intestin
+- les rares données humaines, une par une, avec leurs limites
+- les mécanismes décrits en laboratoire : VEGFR2, monoxyde d'azote, voie FAK
+- les risques théoriques, en particulier ceux liés à l'angiogenèse
+- le statut réglementaire en France et pour les sportifs
+
+> **L'essentiel en 30 secondes**
+>
+> - Le BPC-157 est un peptide synthétique de **15 acides aminés**, dérivé d'une protéine isolée du suc gastrique humain. Il n'est **approuvé comme médicament dans aucun pays**.
+> - Les effets sur les **tendons, les ligaments, les muscles et l'intestin** sont décrits **chez l'animal**, surtout le rat. Une revue systématique de 2025 a retenu **35 études précliniques et 1 seule étude clinique** sur le versant musculosquelettique (Vasireddi, 2025).
+> - Chez l'humain : **3 études, 30 participants**, sans groupe placebo, jugées de mauvaise qualité méthodologique, avec un niveau de certitude **très faible** (Poolton, 2026).
+> - Mécanismes décrits : activation du **VEGFR2** (formation de vaisseaux), de la voie **Akt-eNOS** (monoxyde d'azote) et de la voie **FAK-paxilline** (migration des fibroblastes).
+> - Le risque théorique principal : l'**angiogenèse**, utile pour cicatriser, mais aussi impliquée dans la croissance des tumeurs. Aucune donnée humaine à long terme ne permet de trancher.
+> - En France, l'ANSM le classe parmi les « peptides » vendus sans autorisation. Pour les sportifs, il est **interdit en permanence** (section S0 de la liste AMA).
+
+---
+
+## BPC-157 : de quoi parle-t-on exactement ?
+
+### Un fragment de 15 acides aminés
+
+BPC signifie *Body Protection Compound*. Le BPC-157 est une séquence de 15 acides aminés (Gly-Glu-Pro-Pro-Pro-Gly-Lys-Pro-Ala-Asp-Asp-Ala-Gly-Leu-Val) correspondant à une partie d'une protéine décrite dans le suc gastrique humain. La molécule utilisée dans les études est **synthétique**.
+
+Sa particularité, mise en avant par ses promoteurs : une **stabilité** inhabituelle dans le suc gastrique, qui expliquerait son activité par voie orale chez l'animal. Mais attention, stable dans l'estomac ne veut pas dire durable dans le sang. Selon la revue de Vasireddi et al. (2025), sa **demi-vie est inférieure à 30 minutes**, avec un métabolisme hépatique et une élimination rénale.
+
+### Une littérature dominée par une seule équipe
+
+La grande majorité des publications sur le BPC-157 provient de l'équipe du professeur Predrag Sikirić, à l'université de Zagreb, qui étudie la molécule depuis le début des années 1990. Ce travail est considérable et publié. Mais en science, un résultat devient solide quand des **équipes indépendantes** le reproduisent. Pour le BPC-157, ces réplications restent rares, ce que soulignent toutes les revues récentes.
+
+---
+
+## Ce que montrent les études animales sur les tendons et les muscles
+
+![Paillasse de laboratoire sombre avec une boîte de Petri et une pipette sous un faisceau jaune, évoquant la recherche préclinique](/images/blog/bpc-157-tendons-intestin-etudes/bpc-157-recherche-preclinique.webp)
+
+### Le tendon d'Achille sectionné chez le rat
+
+L'étude de référence est celle de Staresinic et al. (2003, *Journal of Orthopaedic Research*). Les chercheurs ont sectionné le tendon d'Achille de rats, puis comparé les animaux ayant reçu du BPC-157 aux animaux témoins. Résultats rapportés : une **meilleure récupération fonctionnelle**, une **résistance mécanique** du tendon plus élevée et une **organisation des fibres** de collagène plus avancée chez les rats ayant reçu le peptide. En parallèle, in vitro, le peptide stimulait la croissance des cellules du tendon (ténocytes).
+
+Krivic et al. (2006) ont ensuite testé un modèle de **désinsertion** du tendon d'Achille de l'os : la cicatrisation tendon-os était là aussi améliorée, et le peptide contrebalançait l'effet délétère des corticoïdes sur la cicatrisation.
+
+### Les fibroblastes du tendon en culture
+
+Chang et al. (2011, *Journal of Applied Physiology*) ont travaillé sur des fibroblastes de tendon d'Achille de rat, en culture. Le BPC-157 augmentait :
+
+- la **croissance** des cellules hors de l'explant de tendon
+- la **survie** des cellules exposées à un stress oxydatif (peroxyde d'hydrogène)
+- leur **migration**, via l'activation dose-dépendante de deux protéines de signalisation, **FAK et paxilline**
+
+La même équipe (Chang, 2014, *Molecules*) a montré que le peptide augmentait l'**expression du récepteur de l'hormone de croissance** dans ces fibroblastes, ce qui les rendait plus sensibles à la GH in vitro.
+
+### Muscles, ligaments, os
+
+Au-delà du tendon, la revue systématique de Vasireddi et al. (2025, *HSS Journal*) a passé en revue la littérature musculosquelettique jusqu'en juin 2024 :
+
+- **544 articles identifiés**, **36 retenus** : **35 études précliniques et 1 étude clinique**
+- amélioration des résultats **fonctionnels, structurels et biomécaniques** dans des modèles animaux de lésions musculaires, tendineuses, ligamentaires et osseuses
+- études de sécurité précliniques sans effet indésirable notable sur plusieurs organes
+- **aucune donnée de sécurité clinique** chez l'humain
+
+Les auteurs concluent que le BPC-157 « montre des promesses », tout en rappelant que leur revue ne repose que sur des études de niveau IV et V, le bas de l'échelle des preuves.
+
+---
+
+## L'intestin : là où tout a commencé
+
+### Ulcères, colites et fistules chez l'animal
+
+Avant de devenir le peptide des tendons, le BPC-157 a été étudié pour le **tube digestif**. Les synthèses de l'équipe de Zagreb (Sikirić, 2011 ; Sikirić, 2012) décrivent, chez le rat :
+
+- une protection de la muqueuse gastrique contre l'alcool et les anti-inflammatoires non stéroïdiens
+- une cicatrisation accélérée dans des modèles de **colite** et de **fistules**
+- des effets sur l'anastomose intestinale (la suture de deux segments d'intestin)
+
+Ce sont des résultats chez l'animal, obtenus dans des modèles où la lésion est provoquée de façon standardisée. Un syndrome de l'intestin irritable, une maladie de Crohn ou une hyperperméabilité intestinale chez l'humain sont des situations bien plus complexes.
+
+### Les essais humains sur la rectocolite hémorragique
+
+Une formulation du BPC-157 (nommée PL 14736) a été testée en lavement chez des patients atteints de **rectocolite hémorragique** au début des années 2000. D'après le document d'information de la FDA de juillet 2026, ces travaux n'existent que sous forme de **résumés de congrès** (Veljaca, 2002 et 2003), sans publication complète. Les effets indésirables les plus fréquents rapportés chez les volontaires sains étaient des **maux de tête** et des **flatulences**.
+
+Un essai de phase 1 par voie orale a aussi été enregistré au Mexique (NCT02637284, 42 participants prévus). **Aucun résultat n'a été publié.**
+
+---
+
+> **Une blessure qui traîne ? Commencez par ce qui est prouvé**
+>
+> Une tendinopathie se gère d'abord par une charge progressive bien dosée, un programme adapté et une récupération maîtrisée. Achzod construit votre programme d'entraînement et de nutrition autour de vos contraintes et ajuste la charge avec vous, semaine après semaine.
+>
+> [Découvrir l'accompagnement personnalisé](https://www.achzodcoaching.com)
+
+---
+
+## Les données humaines : 3 études, 30 personnes
+
+![Pyramide du niveau de preuve du BPC-157 : cultures cellulaires, études animales, 3 études humaines sans groupe contrôle, aucun essai randomisé publié](/images/blog/bpc-157-tendons-intestin-etudes/bpc-157-niveau-de-preuve.webp)
+
+Voici, étude par étude, tout ce qui a été publié chez l'humain. Les trois études viennent de **cliniques privées en Floride** et ont été publiées dans la même revue, *Alternative Therapies in Health and Medicine*.
+
+### 1. Douleur du genou (Lee et Padgett, 2021)
+
+- **Type d'étude** : revue rétrospective de dossiers, sans groupe contrôle
+- **Participants** : 17 patients ayant reçu une injection intra-articulaire de BPC-157 (seul ou associé à la thymosine bêta-4) pour des douleurs de genou de causes variées ; 16 ont été joints par téléphone, 6 mois à 1 an plus tard
+- **Résultat rapporté** : 14 patients sur 16 ont déclaré un soulagement significatif de la douleur, dont 11 sur 12 dans le groupe BPC-157 seul
+- **Limites** : aucun outil validé pour mesurer la douleur ou la fonction (les auteurs le reconnaissent), diagnostics hétérogènes, souvenir des patients des mois plus tard, pas de placebo. La revue de Vasireddi lit les mêmes données comme « 7 patients sur 12 soulagés plus de 6 mois », ce qui montre à quel point l'interprétation est fragile.
+
+### 2. Cystite interstitielle (Lee, Walker et Ayadi, 2024)
+
+- **Type d'étude** : pilote à un seul bras
+- **Participants** : 12 femmes de 39 à 76 ans atteintes de cystite interstitielle résistante au traitement habituel
+- **Intervention** : injections dans la paroi de la vessie au cours d'une cystoscopie
+- **Résultat rapporté** : 10 femmes ont décrit une disparition complète des symptômes, les 2 autres une amélioration d'environ 80 %
+- **Limites** : 12 personnes, aucun groupe contrôle, un seul critère auto-évalué. La cystite interstitielle est connue pour ses fluctuations et son effet placebo important.
+
+### 3. Sécurité par voie intraveineuse (Lee et Burgess, 2025)
+
+- **Type d'étude** : pilote de sécurité
+- **Participants** : **2 adultes** (58 et 68 ans)
+- **Résultat rapporté** : pas de variation notable des signes vitaux ni des analyses sanguines, aucun effet indésirable déclaré
+- **Limites** : avec 2 personnes, on ne peut détecter que des effets indésirables extrêmement fréquents. Une revue publiée en 2026 dans *Pharmaceutics* (Mateescu, 2026) estime qu'un tel échantillon ne repère, avec une confiance d'environ 86 %, que les effets qui touchent au moins 1 personne sur 10.
+
+### Le verdict de la revue systématique 2026
+
+Poolton et al. (2026, *Acta Orthopaedica Belgica*) ont mené une revue systématique enregistrée (PROSPERO), en interrogeant Embase, PubMed, Cochrane et ClinicalTrials.gov jusqu'au 1er juin 2026. Conclusion :
+
+- **3 études, 30 participants** au total
+- qualité méthodologique **mauvaise** pour les trois
+- certitude des preuves **très faible** (méthode GRADE), en raison d'un risque de biais sérieux, d'un caractère indirect et d'une imprécision
+- recommandation : le BPC-157 **ne devrait pas être utilisé en clinique** chez l'humain en dehors d'essais encadrés, éthiquement approuvés et de bonne qualité
+
+---
+
+## Les mécanismes : VEGFR2, monoxyde d'azote, FAK
+
+![Schéma des mécanismes du BPC-157 décrits en laboratoire : activation du VEGFR2, voie Akt-eNOS et monoxyde d'azote, voie FAK-paxilline, récepteur de la GH](/images/blog/bpc-157-tendons-intestin-etudes/bpc-157-mecanismes.webp)
+
+### VEGFR2 et angiogenèse
+
+Un tendon est un tissu **peu vascularisé**. C'est l'une des raisons pour lesquelles il cicatrise lentement. L'hypothèse centrale autour du BPC-157 est qu'il favorise la formation de nouveaux vaisseaux (**angiogenèse**) dans la zone lésée.
+
+Hsieh et al. (2017, *Journal of Molecular Medicine*) ont apporté l'élément le plus précis. Dans des cellules endothéliales en culture et chez le rat avec une ischémie de la patte arrière, le BPC-157 :
+
+- augmentait l'expression du **récepteur VEGFR2** (sans augmenter le VEGF-A lui-même)
+- favorisait l'**internalisation** de ce récepteur, une étape de son activation
+- activait la voie **VEGFR2-Akt-eNOS**
+- augmentait la formation de vaisseaux et accélérait le retour du flux sanguin dans la patte ischémiée
+
+### Le monoxyde d'azote
+
+La voie **eNOS** produit du **monoxyde d'azote (NO)**, une molécule qui dilate les vaisseaux et module l'inflammation. L'équipe de Zagreb décrit depuis des années une interaction entre le BPC-157 et le système du NO (Seiwerth, 2014 ; Sikirić, 2025). C'est un mécanisme cohérent avec les effets observés sur la circulation locale, mais encore une fois décrit chez l'animal.
+
+### FAK-paxilline et récepteur de la GH
+
+La voie **FAK-paxilline** contrôle l'adhésion des cellules à leur environnement et leur capacité à migrer. Pour cicatriser, les fibroblastes doivent migrer vers la lésion et produire du collagène. L'activation de cette voie par le BPC-157 (Chang, 2011) et l'augmentation du récepteur de la GH (Chang, 2014) forment un tableau cohérent, mais limité à des **cellules de rat en culture**.
+
+### Mécanisme plausible ne veut pas dire effet démontré
+
+Un mécanisme cohérent est un bon point de départ. Mais l'histoire de la pharmacologie est remplie de molécules qui faisaient tout bien dans une boîte de Petri et chez le rat, puis rien de mesurable chez l'humain. Le BPC-157 n'a pas encore passé ce cap.
+
+---
+
+## Les risques : ce que l'on sait et ce que l'on ignore
+
+### Le risque théorique lié à l'angiogenèse
+
+C'est le point que les vidéos enthousiastes passent sous silence. L'angiogenèse est un processus **à double tranchant**. Elle est indispensable à la cicatrisation, mais elle est aussi l'un des mécanismes qui permettent aux **tumeurs de croître** et de se disséminer (Carmeliet et Jain, 2000, *Nature*). Plusieurs traitements anticancéreux ciblent d'ailleurs précisément la voie du VEGF.
+
+Stimuler le VEGFR2 de façon prolongée, chez une personne qui pourrait porter une lésion précancéreuse non diagnostiquée, pose donc une question légitime. Personne ne peut y répondre aujourd'hui : **aucune étude de cancérogénicité** à long terme n'a été publiée chez l'humain. Ce n'est pas une preuve de danger. C'est une absence de preuve de sécurité, ce qui n'est pas la même chose qu'une sécurité démontrée.
+
+### Les données de toxicité chez l'animal
+
+Xu et al. (2020, *Regulatory Toxicology and Pharmacology*) ont publié des études de toxicité préclinique chez la souris, le rat, le lapin et le chien. Le peptide a été bien toléré, sans toxicité sérieuse. Ces études sont rassurantes pour une première approche, mais elles ne remplacent pas un suivi humain sur des centaines de personnes et plusieurs années.
+
+### La qualité du produit : le risque le plus concret
+
+La FDA a résumé ses inquiétudes sur le BPC-157 : risque d'**immunogénicité** selon la voie d'administration, difficultés à caractériser les **impuretés** liées au peptide, et données de sécurité humaines insuffisantes pour savoir s'il peut nuire. Ajoutez à cela un marché où l'étiquette n'engage personne : des analyses de peptides vendus en ligne ont trouvé des écarts majeurs de quantité, de pureté et de contamination par des endotoxines (voir notre [guide complet des peptides](/blog/peptides-guide-complet)).
+
+En pratique, le risque le plus probable n'est pas un effet rare du BPC-157 lui-même. C'est de s'injecter **autre chose que ce qui est écrit**, dans des conditions qui ne garantissent pas la stérilité.
+
+---
+
+## Le statut réglementaire du BPC-157
+
+| Cadre | Statut du BPC-157 (novembre 2026) |
+|---|---|
+| Médicament autorisé | Aucun pays, aucune pharmacopée (constat de la FDA, juillet 2026) |
+| France (ANSM) | Cité parmi les « peptides » vendus sans autorisation ; l'agence recommande de ne pas les utiliser |
+| Sport (AMA) | Interdit en permanence, cité nommément en section S0 (substances non approuvées) |
+| États-Unis | Pas approuvé ; tolérance provisoire depuis fin octobre 2026 pour certaines préparations magistrales sur ordonnance, ce qui ne vaut ni approbation ni preuve d'efficacité |
+| Recherche | Aucun essai randomisé contre placebo publié chez l'humain |
+
+Pour un athlète soumis aux contrôles, la question est donc réglée : un contrôle positif au BPC-157 expose à une suspension, quelle que soit l'intention.
+
+---
+
+> **Peptides Engine : une analyse de votre profil, pas une promesse**
+>
+> Vous vous posez la question du BPC-157 pour une blessure précise ? Peptides Engine analyse votre profil (blessure, antécédents, sport pratiqué, règles antidopage, dernier bilan sanguin), situe le niveau de preuve réel, recense les alternatives mieux documentées et propose un plan de suivi avec des critères d'arrêt clairs. L'analyse ne remplace pas votre médecin.
+>
+> [Lancer mon analyse Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Que faire concrètement avec une tendinopathie ?
+
+### Ce qui est documenté chez l'humain
+
+La prise en charge d'une tendinopathie repose sur des approches testées dans des essais cliniques :
+
+- **la gestion de la charge** : réduire ce qui aggrave la douleur sans mettre le tendon au repos complet
+- **le renforcement progressif** : exercices isométriques, puis excentriques ou lents et lourds selon le tendon, sur plusieurs semaines à plusieurs mois
+- **le temps** : un tendon remodèle son collagène lentement, souvent sur 3 à 6 mois
+- **l'avis d'un professionnel** (médecin du sport, kinésithérapeute) pour le diagnostic et les options comme les ondes de choc ou le PRP, selon les cas
+
+### Les leviers nutritionnels à ne pas négliger
+
+- un apport suffisant en **protéines**
+- le **collagène** associé à la vitamine C avant une séance ciblée, une piste étudiée (voir notre guide sur le [collagène pour la peau et les articulations](/blog/collagene-peau-articulations-guide-complet))
+- un statut correct en **vitamine D**, en fer et en zinc
+- éviter un déficit calorique trop agressif pendant la phase de cicatrisation
+
+### Si vous envisagez malgré tout le BPC-157
+
+Ce n'est pas un produit autorisé, et nous ne le recommandons pas en dehors d'un essai clinique. Si la question se pose, elle doit passer par un bilan sanguin initial, un échange honnête avec un médecin, la vérification des règles de votre fédération, et un suivi avec des critères d'arrêt écrits. Pour les marqueurs à surveiller, lisez [Peptides et bilan sanguin : les marqueurs à suivre](/blog/peptides-bilan-sanguin-marqueurs-a-suivre). Pour comprendre la différence avec l'autre peptide « réparateur », voyez [BPC-157 vs TB-500 : les vraies différences](/blog/bpc-157-vs-tb-500-differences). Et si vous vous demandez pourquoi les témoignages divergent autant, lisez [Même peptide, résultats différents : pourquoi](/blog/meme-peptide-resultats-differents).
+
+Pour un état des lieux biologique complet avant toute décision, l'[analyse Blood Analysis](/offers/blood-analysis) lit vos biomarqueurs dans une logique de performance et de prévention.
+
+---
+
+## FAQ : BPC-157
+
+### Le BPC-157 répare-t-il vraiment les tendons ?
+
+Chez le rat, plusieurs études montrent une cicatrisation plus rapide et un tendon plus résistant. Chez l'humain, aucune étude contrôlée ne l'a démontré. La seule donnée sur une pathologie articulaire est une revue rétrospective de 16 patients, sans groupe placebo ni mesure validée.
+
+### Le BPC-157 est-il efficace pour l'intestin ?
+
+Les effets protecteurs sur l'estomac et l'intestin sont bien décrits chez l'animal. Chez l'humain, des essais sur la rectocolite hémorragique ont été menés au début des années 2000, mais ils n'existent que sous forme de résumés de congrès. Il n'existe aucune preuve publiée pour le syndrome de l'intestin irritable ou l'hyperperméabilité intestinale.
+
+### Combien d'études humaines existent sur le BPC-157 ?
+
+Trois études publiées, pour 30 participants au total : 16 patients avec des douleurs de genou, 12 femmes avec une cystite interstitielle et 2 volontaires pour un test de sécurité intraveineuse. Aucune n'a de groupe contrôle. La revue systématique de 2026 juge la certitude très faible.
+
+### Le BPC-157 peut-il favoriser le cancer ?
+
+On ne le sait pas. Le BPC-157 stimule l'angiogenèse via le VEGFR2, un mécanisme également utilisé par les tumeurs pour croître. Aucune étude de cancérogénicité à long terme n'existe chez l'humain. C'est un risque théorique, ni démontré, ni exclu.
+
+### Le BPC-157 est-il légal en France ?
+
+Il n'est autorisé comme médicament ni en France, ni dans aucun autre pays. L'ANSM le cite parmi les « peptides » vendus sans autorisation sur internet et recommande de ne pas les utiliser. Pour les sportifs, il est interdit en permanence par l'AMA.
+
+### Le BPC-157 est-il détectable lors d'un contrôle antidopage ?
+
+Il figure nommément dans la section S0 de la liste de l'AMA, et les laboratoires accrédités disposent de méthodes pour le rechercher. Un contrôle positif peut entraîner une suspension, même sans compétition à venir.
+
+---
+
+## Le verdict : une hypothèse sérieuse, pas un traitement
+
+Le BPC-157 coche plusieurs cases qui expliquent son succès : des résultats impressionnants chez le rat, des mécanismes cohérents (VEGFR2, monoxyde d'azote, FAK), une bonne tolérance dans les études de toxicité animale. Mais il lui manque l'essentiel : des **essais randomisés contre placebo chez l'humain**. Trente personnes réparties dans trois études sans contrôle ne permettent de conclure ni à l'efficacité, ni à la sécurité.
+
+Ma position : pour un tendon ou un intestin en souffrance, commencez par ce qui est prouvé. Charge progressive, nutrition, temps et avis médical. Le BPC-157 reste une molécule expérimentale, non autorisée en France, interdite aux sportifs, avec un risque théorique lié à l'angiogenèse que personne ne peut écarter aujourd'hui.
+
+> **Revenir plus fort, avec un plan qui tient compte de votre blessure**
+>
+> L'accompagnement personnalisé par Achzod adapte votre programme d'entraînement et votre nutrition à votre situation, avec un suivi régulier de la charge, de la douleur et des progrès.
+>
+> [Travailler avec Achzod](https://www.achzodcoaching.com)
+
+> **Un avis argumenté avant de décider**
+>
+> Peptides Engine analyse votre profil, situe le niveau de preuve réel de chaque option, intègre le statut réglementaire et les règles antidopage, et vous propose un suivi biologique avec des critères d'arrêt. Sans promesse de résultat.
+>
+> [Découvrir Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Références
+
+1. Vasireddi N, et al. Emerging use of BPC-157 in orthopaedic sports medicine: a systematic review. *HSS J.* 2025;21(4):485-495. [doi:10.1177/15563316251355551](https://doi.org/10.1177/15563316251355551) (PMID 40756949)
+2. Poolton JT, Minett J, Kazmi A. Human evidence for BPC-157 in orthopaedic and regenerative medicine: a systematic review of efficacy and safety. *Acta Orthop Belg.* 2026;92(3). [doi:10.52628/92.3.15837](https://doi.org/10.52628/92.3.15837) (PMID 42885452)
+3. McGuire FP, et al. Regeneration or risk? A narrative review of BPC-157 for musculoskeletal healing. *Curr Rev Musculoskelet Med.* 2025;18(12):611-619. [doi:10.1007/s12178-025-09990-7](https://doi.org/10.1007/s12178-025-09990-7) (PMID 40789979)
+4. Staresinic M, et al. Gastric pentadecapeptide BPC 157 accelerates healing of transected rat Achilles tendon and in vitro stimulates tendocytes growth. *J Orthop Res.* 2003;21(6):976-983. [doi:10.1016/S0736-0266(03)00110-4](https://doi.org/10.1016/S0736-0266(03)00110-4)
+5. Krivic A, et al. Achilles detachment in rat and stable gastric pentadecapeptide BPC 157: promoted tendon-to-bone healing and opposed corticosteroid aggravation. *J Orthop Res.* 2006;24(5):982-989. [doi:10.1002/jor.20096](https://doi.org/10.1002/jor.20096)
+6. Chang CH, et al. The promoting effect of pentadecapeptide BPC 157 on tendon healing involves tendon outgrowth, cell survival, and cell migration. *J Appl Physiol.* 2011;110(3):774-780. [doi:10.1152/japplphysiol.00945.2010](https://doi.org/10.1152/japplphysiol.00945.2010)
+7. Chang CH, et al. Pentadecapeptide BPC 157 enhances the growth hormone receptor expression in tendon fibroblasts. *Molecules.* 2014;19(11):19066-19077. [doi:10.3390/molecules191119066](https://doi.org/10.3390/molecules191119066)
+8. Hsieh MJ, et al. Therapeutic potential of pro-angiogenic BPC157 is associated with VEGFR2 activation and up-regulation. *J Mol Med.* 2017;95(3):323-333. [doi:10.1007/s00109-016-1488-y](https://doi.org/10.1007/s00109-016-1488-y)
+9. Seiwerth S, et al. BPC 157 and blood vessels. *Curr Pharm Des.* 2014;20(7):1121-1125. [doi:10.2174/13816128113199990421](https://doi.org/10.2174/13816128113199990421)
+10. Sikiric P, et al. BPC 157 therapy: targeting angiogenesis and nitric oxide's cytotoxic and damaging actions. *Pharmaceuticals.* 2025;18(10):1450. [doi:10.3390/ph18101450](https://doi.org/10.3390/ph18101450)
+11. Sikiric P, et al. Stable gastric pentadecapeptide BPC 157: novel therapy in gastrointestinal tract. *Curr Pharm Des.* 2011;17(16):1612-1632. [doi:10.2174/138161211796196954](https://doi.org/10.2174/138161211796196954)
+12. Sikiric P, et al. Focus on ulcerative colitis: stable gastric pentadecapeptide BPC 157. *Curr Med Chem.* 2012;19(1):126-132. [doi:10.2174/092986712803414015](https://doi.org/10.2174/092986712803414015)
+13. Lee E, Padgett B. Intra-articular injection of BPC 157 for multiple types of knee pain. *Altern Ther Health Med.* 2021;27(4):8-13. PMID 34324435
+14. Lee E, Walker C, Ayadi B. Effect of BPC-157 on symptoms in patients with interstitial cystitis: a pilot study. *Altern Ther Health Med.* 2024;30(10):12-17. PMID 39325560
+15. Lee E, Burgess K. Safety of intravenous infusion of BPC157 in humans: a pilot study. *Altern Ther Health Med.* 2025;31(5):20-24. PMID 40131143
+16. Xu C, et al. Preclinical safety evaluation of body protective compound-157, a potential drug for treating various wounds. *Regul Toxicol Pharmacol.* 2020;114:104665. [doi:10.1016/j.yrtph.2020.104665](https://doi.org/10.1016/j.yrtph.2020.104665)
+17. Carmeliet P, Jain RK. Angiogenesis in cancer and other diseases. *Nature.* 2000;407(6801):249-257. [doi:10.1038/35025220](https://doi.org/10.1038/35025220)
+18. U.S. FDA. Briefing document, Pharmacy Compounding Advisory Committee, 23-24 juillet 2026 (BPC-157). [fda.gov](https://www.fda.gov/media/193343/download)
+19. ANSM. « Peptides » vendus en ligne : ne les utilisez pas, ils peuvent être dangereux. Publié le 02/07/2026, mis à jour le 31/08/2026. [ansm.sante.fr](https://ansm.sante.fr/actualites/peptides-vendus-en-ligne-ne-les-utilisez-pas-ils-peuvent-etre-dangereux)
+20. Agence mondiale antidopage. Liste des interdictions, section S0 (substances non approuvées). [wada-ama.org](https://www.wada-ama.org/en/prohibited-list)
+21. Mateescu et al. BPC-157 as an investigational peptide therapeutic: biopharmaceutical challenges, formulation strategies, and translational development barriers. *Pharmaceutics.* 2026;18(5):625. [doi:10.3390/pharmaceutics18050625](https://doi.org/10.3390/pharmaceutics18050625)
+22. U.S. HHS. Enforcement discretion policy regarding 503A compounding using certain peptide bulk drug substances, octobre 2026. [hhs.gov](https://www.hhs.gov/sites/default/files/hhs-503a-peptide-enforcement-discretion-policy-appendix-b.pdf)
+
+*Cet article est informatif et ne remplace pas un avis médical. Le BPC-157 n'est autorisé comme médicament dans aucun pays et ne doit pas être utilisé en dehors d'un essai clinique encadré.*
+`,
+  },
+  {  id: "139",
+    slug: "glp-1-semaglutide-tirzepatide-preserver-muscle",
+    title: "GLP-1 (sémaglutide, tirzépatide) : comment préserver votre muscle pendant la perte de poids",
+    seoTitle: "GLP-1 : préserver le muscle sous sémaglutide | APEXLABS",
+    excerpt: "Sous sémaglutide ou tirzépatide, quelle part du poids perdu est du muscle ? Les chiffres réels des essais STEP 1 et SURMOUNT-1, le rétatrutide, et le plan protéines, musculation et suivi DEXA pour protéger votre masse maigre.",
+    metaDescription: "GLP-1 et muscle : masse maigre perdue dans STEP 1 et SURMOUNT-1, rétatrutide, et les 3 leviers pour la préserver : protéines, musculation, suivi DEXA.",
+    category: "metabolisme",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "17 min",
+    image: "/images/blog/glp-1-semaglutide-tirzepatide-preserver-muscle/glp-1-hero.webp",
+    content: `# GLP-1 (sémaglutide, tirzépatide) : comment préserver votre muscle pendant la perte de poids
+
+![Barre olympique chargée posée sur un rack dans une salle de musculation sombre, éclairée par une fine lumière jaune](/images/blog/glp-1-semaglutide-tirzepatide-preserver-muscle/glp-1-hero.webp)
+
+## Introduction : perdre du poids, oui, mais lequel ?
+
+Les agonistes du GLP-1 ont changé la prise en charge de l'obésité. Avec le sémaglutide (Wegovy, Ozempic) ou le tirzépatide (Mounjaro), des pertes de 15 à 20 % du poids corporel sont devenues courantes dans les essais cliniques. Pour beaucoup de patients, c'est un tournant de santé majeur.
+
+Mais une question revient de plus en plus, chez les médecins comme chez les pratiquants : **quelle part de ce poids perdu est du muscle ?** Les chiffres qui circulent vont de « presque rien » à « 40 % ». Les deux camps citent des études. Les deux simplifient.
+
+Ce que montrent vraiment les essais, c'est qu'une part non négligeable du poids perdu est de la **masse maigre**, que cette part varie selon la molécule, la population et la méthode de calcul, et surtout qu'elle **n'est pas une fatalité**. Les leviers pour protéger le muscle sont connus : protéines, musculation, suivi de la composition corporelle.
+
+Dans ce guide :
+
+- les chiffres réels de masse maigre perdue dans STEP 1, SURMOUNT-1 et les études sur le rétatrutide
+- pourquoi « masse maigre » ne veut pas dire « muscle »
+- ce qui se passe à l'arrêt du traitement
+- les 3 leviers pour préserver votre muscle, avec les études qui les soutiennent
+- comment suivre votre composition corporelle (DEXA, bioimpédance, force)
+
+Précision importante : cet article ne donne **aucune indication de dosage**. Le sémaglutide et le tirzépatide sont des médicaments qui se prennent **sur prescription médicale**, et leur vente sur internet est illégale en France.
+
+> **L'essentiel en 30 secondes**
+>
+> - Dans la sous-étude DEXA de **STEP 1** (140 participants, 68 semaines), le sémaglutide a fait baisser la masse grasse de **19,3 %** et la masse maigre de **9,7 %**. Rapportée au tissu perdu, la masse maigre représente **environ 39 %** (estimation à partir des moyennes publiées).
+> - Dans **SURMOUNT-1** (160 participants, 72 semaines), le tirzépatide a fait perdre **33,9 %** de masse grasse et **10,9 %** de masse maigre, soit **environ 75 % de gras et 25 % de maigre**, la même répartition que sous placebo.
+> - Pour le **rétatrutide** (triple agoniste, non autorisé à ce jour), la seule sous-étude DEXA publiée porte sur 36 semaines chez des personnes diabétiques, avec une part de masse maigre estimée à **un peu plus d'un tiers** du tissu perdu à la dose de 8 mg.
+> - La masse maigre mesurée par DEXA inclut **l'eau, le glycogène et les organes**, pas seulement le muscle.
+> - Les leviers documentés : **1,2 à 1,6 g de protéines par kg et par jour** proposés pendant la perte de poids, **musculation 2 à 3 fois par semaine**, et un **suivi DEXA ou bioimpédance** régulier, avec des tests de force.
+> - À l'arrêt du sémaglutide, les participants de STEP 1 ont repris **les deux tiers du poids perdu en un an** (Wilding, 2022). Le muscle construit pendant le traitement est votre meilleure assurance.
+
+---
+
+## GLP-1 : comment ces médicaments font perdre du poids
+
+### Une hormone intestinale amplifiée
+
+Le **GLP-1** (*glucagon-like peptide-1*) est une hormone que votre intestin libère après un repas. Elle stimule la sécrétion d'insuline quand la glycémie monte, ralentit la vidange de l'estomac et agit sur le cerveau pour **réduire l'appétit**. Le GLP-1 naturel est dégradé en quelques minutes. Le sémaglutide est une version modifiée qui reste active environ une semaine.
+
+Le **tirzépatide** agit à la fois sur le récepteur du GLP-1 et sur celui du **GIP**, une autre hormone intestinale. Le **rétatrutide** ajoute une troisième cible, le récepteur du **glucagon**, qui augmenterait la dépense énergétique.
+
+### Des pertes de poids sans précédent pour un médicament
+
+- **STEP 1** (sémaglutide, 1 961 adultes sans diabète, 68 semaines) : **−14,9 %** contre −2,4 % sous placebo (Wilding, 2021)
+- **SURMOUNT-1** (tirzépatide, 2 539 adultes, 72 semaines) : jusqu'à **−20,9 %** à la dose la plus élevée, contre −3,1 % sous placebo (Jastreboff, 2022)
+- **TRIUMPH-1** (rétatrutide, 2 339 adultes, 80 semaines) : jusqu'à **−25,0 %** contre −3,9 % sous placebo (Jastreboff, 2026)
+
+Le mécanisme principal reste le même : vous mangez **beaucoup moins**, sans lutter en permanence contre la faim. C'est précisément là que se crée le risque pour le muscle. Un déficit calorique important, avec un appétit très réduit, entraîne souvent un **apport en protéines trop faible**.
+
+---
+
+## Masse maigre perdue : ce que disent vraiment les essais
+
+![Graphique comparant la part de masse maigre dans le poids perdu : sémaglutide STEP 1 environ 39 %, tirzépatide SURMOUNT-1 environ 26 %, placebo environ 25 %, rétatrutide environ 37 %, sémaglutide seul BELIEVE environ 28 %, sémaglutide plus bimagrumab environ 7 %](/images/blog/glp-1-semaglutide-tirzepatide-preserver-muscle/glp-1-masse-maigre-essais.webp)
+
+### STEP 1 : le chiffre des « 40 % »
+
+La sous-étude DEXA de STEP 1 (Wilding, 2021, *Journal of the Endocrine Society*) a mesuré la composition corporelle de **140 participants** (95 sous sémaglutide, 45 sous placebo), dont **76 % de femmes**, avec un poids moyen de 98,4 kg.
+
+Sous sémaglutide, à 68 semaines :
+
+- poids : **−15,0 %** (contre −3,6 % sous placebo)
+- masse grasse totale : **−19,3 %**
+- graisse viscérale : **−27,4 %**
+- masse maigre totale : **−9,7 %**
+- proportion de masse maigre dans le corps : **+3,0 points**, parce que le gras a fondu plus vite que le maigre
+
+Le fameux « 40 % de muscle perdu » n'est pas écrit dans l'étude. C'est un **calcul** : rapportée au tissu perdu (gras + maigre), la masse maigre représente environ **38 à 40 %**. Selon le dénominateur choisi (poids total ou tissu mesuré par DEXA), certaines revues arrivent même à 45 % (Neeland, 2024). Le chiffre est donc réel dans son ordre de grandeur, mais il dépend de la façon de compter.
+
+Limite majeure : ces résultats ne sont publiés que sous forme de **résumé de congrès**, et les participants ne suivaient **aucun programme de musculation** structuré.
+
+### SURMOUNT-1 : la répartition 75/25
+
+La sous-étude DEXA de SURMOUNT-1 (Look, 2025, *Diabetes, Obesity and Metabolism*) est publiée en version complète. Elle porte sur **160 participants** (124 sous tirzépatide, toutes doses confondues, et 36 sous placebo), dont 73 % de femmes, avec un poids moyen de **102,5 kg**.
+
+| Mesure à 72 semaines | Tirzépatide | Placebo |
+|---|---|---|
+| Poids corporel | −21,3 % | −5,3 % |
+| Masse grasse | −33,9 % | −8,2 % |
+| Masse maigre | −10,9 % | −2,6 % |
+| Graisse viscérale | −40,1 % | −7,3 % |
+| Part du poids perdu en masse maigre | environ 25 % | environ 25 % |
+
+Le point clé : sous tirzépatide comme sous placebo, environ **75 % du poids perdu était du gras et 25 % de la masse maigre**. Autrement dit, le médicament n'a pas fait perdre « plus de muscle » qu'un régime. Il a fait perdre **beaucoup plus de poids**, donc plus de kilos de masse maigre en valeur absolue, avec la même répartition. Cette proportion restait stable selon le sexe, l'âge et l'ampleur de la perte de poids.
+
+Précision utile : l'étude est financée par Eli Lilly, le fabricant du tirzépatide, et ne mesure ni la force, ni la fonction physique.
+
+### Le rétatrutide : des données encore limitées
+
+Le rétatrutide n'est **pas autorisé** à ce jour. L'ANSM l'a d'ailleurs cité nommément en 2026 parmi les produits vendus illégalement en ligne, après des hospitalisations. La seule sous-étude DEXA publiée (Coskun, 2025, *Lancet Diabetes & Endocrinology*) concerne des adultes **diabétiques de type 2**, sur **36 semaines** :
+
+- **189 participants** inclus, mais seulement **103** avec un scan au départ et à la fin
+- masse grasse : **−26,1 %** à 8 mg et **−23,2 %** à 12 mg, contre −4,5 % sous placebo
+- à 8 mg, environ **10,9 kg de masse grasse** et **6,5 kg de masse maigre** perdus, soit un peu plus d'un tiers de masse maigre dans le tissu perdu
+- conclusion des auteurs : une proportion de masse maigre perdue **similaire aux autres traitements** de l'obésité
+
+Les grands essais de phase 3 (TRIUMPH) prévoient une sous-étude DEXA d'environ 100 participants. En attendant, on manque de données chez des personnes sans diabète, sur la durée et avec des mesures de force.
+
+### BELIEVE : la piste des molécules « protectrices »
+
+L'essai de phase 2 BELIEVE (Heymsfield, 2026, *Nature Medicine*, 507 participants) a testé le sémaglutide associé au **bimagrumab**, un anticorps expérimental qui bloque les récepteurs de l'activine, un frein naturel à la croissance musculaire. À 48 semaines, environ **72 % du poids perdu était du gras sous sémaglutide seul**, contre près de **93 % avec la combinaison**. C'est une piste de recherche intéressante, pas un traitement disponible.
+
+### Masse maigre n'égale pas muscle
+
+C'est la nuance que la plupart des articles oublient. La « masse maigre » mesurée par DEXA regroupe tout ce qui n'est ni gras ni os : **muscle, eau, glycogène, organes, tissu conjonctif**. Quand vous mangez beaucoup moins de glucides, vos réserves de glycogène baissent, et chaque gramme de glycogène est stocké avec environ 3 grammes d'eau. Une partie de la « masse maigre perdue » au début est donc de l'eau.
+
+Les spécialistes discutent aussi de la **qualité** du muscle : moins de graisse infiltrée, une force rapportée au poids qui peut s'améliorer. Conte et al. (2024, *JAMA*) rappellent que l'impact clinique réel de cette perte dépend surtout du profil : un adulte jeune et actif n'a pas le même risque qu'une personne âgée déjà fragile.
+
+Pour autant, ne relativisez pas trop vite. **Le muscle perdu est difficile à reconstruire**, surtout après 50 ans, et il joue un rôle central dans la glycémie, l'autonomie et le maintien du poids à long terme.
+
+---
+
+> **Perdre du gras sans sacrifier votre muscle, ça se planifie**
+>
+> Un traitement GLP-1 prescrit par votre médecin gère l'appétit. Le reste se construit : apport en protéines calculé, programme de musculation progressif, suivi de la force et de la composition corporelle. Achzod établit votre programme d'entraînement et de nutrition et vous suit pour ajuster semaine après semaine.
+>
+> [Découvrir l'accompagnement personnalisé](https://www.achzodcoaching.com)
+
+---
+
+## Et à l'arrêt du traitement ?
+
+### Le poids revient, souvent vite
+
+Dans l'extension de STEP 1 (Wilding, 2022, *Diabetes, Obesity and Metabolism*), **327 participants** ont été suivis un an après l'arrêt. Ceux qui avaient pris du sémaglutide ont **repris environ les deux tiers** du poids perdu, et la plupart des améliorations cardiométaboliques se sont estompées.
+
+L'essai STEP 4 (Rubino, 2021, *JAMA*) l'a montré autrement : après 20 semaines de sémaglutide, les participants qui ont continué ont encore perdu **7,9 %** de leur poids, tandis que ceux passés au placebo en ont **repris 6,9 %**.
+
+### Pourquoi le muscle compte encore plus ici
+
+Le poids repris après un régime est souvent riche en **graisse**. Si vous avez perdu du muscle pendant le traitement et que vous reprenez surtout du gras à l'arrêt, votre composition corporelle peut finir **moins bonne qu'au départ**, à poids égal. C'est le scénario à éviter.
+
+À l'inverse, le muscle que vous construisez ou préservez pendant le traitement augmente votre capacité à gérer le glucose, soutient votre dépense énergétique et vous rend plus autonome. La musculation est aussi l'habitude qui reste quand le médicament s'arrête.
+
+---
+
+## Le plan : 3 leviers pour préserver votre muscle
+
+![Les trois leviers pour préserver le muscle sous GLP-1 : protéines, musculation, suivi de la composition corporelle](/images/blog/glp-1-semaglutide-tirzepatide-preserver-muscle/glp-1-trois-leviers.webp)
+
+### Levier 1 : les protéines, en priorité dans l'assiette
+
+**Ce que disent les recommandations.** L'avis conjoint publié en 2025 par quatre sociétés savantes américaines (American College of Lifestyle Medicine, American Society for Nutrition, Obesity Medicine Association, The Obesity Society) rappelle que l'apport de référence pour la population générale est de **0,8 g/kg/jour**, et que des objectifs plus élevés, de l'ordre de **1,2 à 1,6 g/kg/jour**, sont proposés pendant une perte de poids active (Mozaffarian, 2025). Les auteurs reconnaissent une zone grise : chez une personne en obésité, faut-il calculer sur le poids réel, le poids ajusté ou la masse maigre ? Le poids réel surestime souvent les besoins.
+
+**Ce que montrent les études.** Dans l'essai de Longland et al. (2016, *American Journal of Clinical Nutrition*), 40 jeunes hommes ont suivi pendant 4 semaines un déficit calorique d'environ 40 % avec un entraînement intense, 6 jours par semaine. Le groupe à **2,4 g/kg/jour** a **gagné 1,2 kg de masse maigre** et perdu 4,8 kg de gras. Le groupe à **1,2 g/kg/jour** a gagné 0,1 kg de masse maigre et perdu 3,5 kg de gras. Population jeune, entraînée, étude courte : on ne peut pas transposer tel quel, mais la direction est claire.
+
+La méta-analyse de Morton et al. (2018, *British Journal of Sports Medicine*, 49 essais, 1 863 participants) situe autour de **1,6 g/kg/jour** le seuil au-delà duquel les protéines n'apportent plus de gain supplémentaire de masse maigre, en association avec la musculation.
+
+**En pratique sous GLP-1** :
+
+- servez-vous **d'abord les protéines** à chaque repas, avant les féculents et les légumes, parce que l'appétit s'arrête vite
+- visez **25 à 40 g de protéines par repas**, réparties sur 3 ou 4 prises
+- privilégiez des sources **denses et faciles** : œufs, skyr ou yaourt grec, fromage blanc, poisson, volaille, tofu, lentilles, protéine en poudre si besoin
+- surveillez l'**hydratation**, les nausées et le transit, fréquents en début de traitement
+
+![Flat-lay d'aliments riches en protéines sur ardoise noire : blanc de poulet, saumon, œufs, yaourt grec, lentilles, fromage blanc et légumes verts](/images/blog/glp-1-semaglutide-tirzepatide-preserver-muscle/glp-1-proteines.webp)
+
+Pour le détail des apports selon votre profil, lisez notre guide sur les [protéines en musculation](/blog/proteines-bodybuilders-doses) et la comparaison [protéine végétale ou animale](/blog/proteine-vegetale-animale).
+
+### Levier 2 : la musculation, non négociable
+
+**Ce que montrent les études.** L'essai de Villareal et al. (2017, *New England Journal of Medicine*) a suivi **160 adultes âgés en obésité** pendant 6 mois de régime, répartis entre endurance, musculation, combinaison des deux ou aucun exercice. Résultats chez les 141 participants qui ont terminé :
+
+- **masse maigre** : −5 % avec l'endurance seule, contre **−2 % avec la musculation** et −3 % avec la combinaison
+- **force** : **+18 à +19 %** dans les groupes musculation et combiné, contre +4 % avec l'endurance seule
+- c'est la combinaison qui a le plus amélioré la fonction physique
+
+L'essai de Lundgren et al. (2021, *NEJM*) a suivi 195 adultes pendant un an après une perte de poids initiale : l'association exercice et liraglutide (un GLP-1 plus ancien) a réduit le pourcentage de masse grasse de 3,9 points, environ deux fois plus que l'exercice seul ou le liraglutide seul.
+
+**En pratique sous GLP-1** :
+
+- **2 à 3 séances par semaine**, en ciblant tout le corps
+- des **exercices polyarticulaires** : squat ou presse, soulevé de terre roumain, développé, rowing, tirage vertical, fentes
+- une **surcharge progressive** : l'objectif est de garder, voire d'augmenter vos charges, pas de « brûler » des calories (voir notre guide de la [surcharge progressive](/blog/surcharge-progressive-guide))
+- des séries proches de l'échec technique, sans viser l'épuisement à chaque séance, surtout si vous mangez peu
+- de la **marche** quotidienne en complément, plutôt que des séances de cardio intenses qui augmentent la fatigue
+
+Si vous débutez, commencez à un volume modeste et augmentez progressivement. Avec un apport calorique très bas, la récupération est plus lente : le sommeil et la gestion de la fatigue comptent double.
+
+### Levier 3 : mesurer, pas deviner
+
+La balance ne vous dit pas ce que vous perdez. Pour piloter, il faut **mesurer la composition corporelle** et la **force**.
+
+| Outil | Ce qu'il mesure | Points forts | Limites |
+|---|---|---|---|
+| DEXA | Masse grasse, masse maigre, os, répartition par région | Méthode de référence des essais, précise et reproductible | Coût, accès, faible irradiation |
+| Bioimpédance (balance ou appareil segmentaire) | Estimation de la masse grasse et de la masse maigre | Accessible, utilisable à domicile pour suivre une tendance | Très sensible à l'hydratation, aux repas, à l'heure |
+| Tests de force | Charges sur 2 ou 3 exercices repères | Gratuit, directement lié à la fonction musculaire | Dépend de la technique et de la fatigue |
+| Tour de taille | Graisse abdominale, indirectement | Simple, bon reflet du risque métabolique | Ne dit rien sur le muscle |
+
+**Le protocole de suivi que je recommande** :
+
+- une **mesure de départ** avant ou au début du traitement (DEXA idéalement, sinon bioimpédance)
+- une nouvelle mesure **toutes les 8 à 12 semaines**, dans les mêmes conditions : même appareil, même heure, à jeun, vessie vide, sans entraînement la veille
+- un suivi de **la force** sur 2 ou 3 exercices repères, toutes les 2 à 4 semaines
+- le **tour de taille** mensuel
+- un **bilan sanguin** selon le rythme fixé par votre médecin (glycémie, HbA1c, fonction rénale, bilan lipidique, ferritine, vitamine B12, vitamine D…)
+
+Si la masse maigre baisse plus vite que prévu ou si la force chute nettement, c'est le signal pour ajuster : plus de protéines, un programme revu, un rythme de perte plus lent à discuter avec votre médecin.
+
+Pour aller plus loin sur la lecture de vos analyses, consultez notre guide des [marqueurs sanguins de santé](/blog/marqueurs-sanguins-sante) et [Peptides et bilan sanguin : les marqueurs à suivre](/blog/peptides-bilan-sanguin-marqueurs-a-suivre).
+
+---
+
+> **Peptides Engine : une analyse de votre profil pour un suivi structuré**
+>
+> Vous suivez un traitement GLP-1 prescrit et vous voulez structurer votre suivi ? Peptides Engine analyse votre profil (objectifs, composition corporelle, antécédents, bilan sanguin) et vous propose un plan de suivi biologique et de composition corporelle, avec des points de contrôle et des signaux d'alerte. L'analyse ne modifie pas votre prescription : elle se discute avec votre médecin.
+>
+> [Lancer mon analyse Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Les autres leviers à discuter
+
+### La créatine
+
+La créatine monohydrate, associée à la musculation, augmente la masse maigre et la force dans de nombreux essais. Aucun essai spécifique sous GLP-1 n'a été publié à notre connaissance, mais rien ne suggère d'interaction. C'est une option simple à évoquer avec votre médecin, notamment si votre fonction rénale est suivie (voir notre [guide complet de la créatine](/blog/creatine-guide-complet)).
+
+### Le rythme de perte de poids
+
+Une perte très rapide augmente généralement la part de masse maigre perdue. Avec un médicament puissant, le rythme dépend en partie de la progression des doses, décidée par votre médecin. Si votre masse maigre ou votre force chutent, parlez-en : la stratégie peut s'ajuster.
+
+### Le sommeil et les hormones
+
+Dans une petite étude en laboratoire (Nedeltcheva, 2010, 10 adultes), réduire le sommeil à 5 h 30 par nuit pendant un régime a diminué de 55 % la part de gras dans le poids perdu et augmenté la perte de masse maigre. Chez l'homme, une testostérone basse complique aussi la préservation musculaire : si vous avez des symptômes, lisez [Testostérone basse : lire son bilan sanguin](/blog/testosterone-basse-lire-son-bilan-sanguin).
+
+### Les produits vendus en ligne : à fuir
+
+Des « GLP-1 » ou du rétatrutide sont vendus en flacons sur internet et sur les réseaux sociaux. L'ANSM rappelle que toute vente d'agonistes du GLP-1 en ligne est **illégale** en France, et ses analyses ont montré des produits sans la substance annoncée. Une étude de 2024 a trouvé du sémaglutide pur à seulement 7,7 à 14,4 % et des endotoxines dans tous les flacons achetés sans ordonnance (Ashraf, 2024). Tout le contexte est dans notre [guide complet des peptides](/blog/peptides-guide-complet).
+
+Pour une vue d'ensemble de vos blocages (hormones, récupération, nutrition, entraînement), l'[Anabolic Bioscan](/offers/anabolic-bioscan) identifie les priorités. Et pour un premier état des lieux rapide, le [Discovery Scan](/offers/discovery-scan) est un bon point d'entrée.
+
+---
+
+## FAQ : GLP-1 et muscle
+
+### Le sémaglutide fait-il perdre du muscle ?
+
+Il fait perdre de la masse maigre, comme toute perte de poids importante. Dans la sous-étude DEXA de STEP 1, la masse maigre a baissé de 9,7 % et la masse grasse de 19,3 %, soit environ 39 % de masse maigre dans le tissu perdu. Une partie de cette masse maigre est de l'eau et du glycogène, pas uniquement du muscle.
+
+### Le tirzépatide préserve-t-il mieux le muscle que le sémaglutide ?
+
+Dans SURMOUNT-1, environ 25 % du poids perdu sous tirzépatide était de la masse maigre, contre environ 39 % dans STEP 1 pour le sémaglutide. Mais ces essais diffèrent par la population, la durée et la méthode d'analyse : aucune étude n'a comparé directement les deux molécules sur ce critère.
+
+### Combien de protéines manger sous GLP-1 ?
+
+L'avis conjoint de quatre sociétés savantes (2025) évoque des objectifs de 1,2 à 1,6 g/kg/jour pendant une perte de poids active, en précisant que le calcul sur le poids réel peut surestimer les besoins chez une personne en obésité. En pratique, 25 à 40 g par repas, en commençant par les protéines, est un bon repère à ajuster avec un professionnel.
+
+### La musculation est-elle obligatoire sous GLP-1 ?
+
+Elle n'est pas obligatoire pour perdre du poids, mais c'est le levier le plus efficace pour préserver la masse maigre et la force. Dans l'essai de Villareal (2017), la musculation a limité la perte de masse maigre à environ 2 %, contre 5 % avec l'endurance seule.
+
+### Faut-il faire un DEXA avant de commencer un GLP-1 ?
+
+C'est l'idéal, car c'est la méthode utilisée dans les essais. À défaut, une bioimpédance réalisée toujours dans les mêmes conditions permet de suivre une tendance. Ajoutez des tests de force et le tour de taille : ensemble, ces mesures montrent si vous perdez du gras ou du muscle.
+
+### Que se passe-t-il pour le muscle à l'arrêt du traitement ?
+
+Les participants de STEP 1 ont repris environ les deux tiers du poids perdu dans l'année suivant l'arrêt du sémaglutide. Le poids repris étant souvent riche en graisse, le muscle préservé pendant le traitement et l'habitude de la musculation sont votre meilleure protection.
+
+---
+
+## Le verdict : le médicament gère l'appétit, vous gérez le muscle
+
+Les GLP-1 sont parmi les médicaments les plus efficaces jamais développés contre l'obésité. Le prix à payer en masse maigre est réel, mais il a été exagéré dans un sens comme dans l'autre. Sous tirzépatide, la répartition gras/maigre est la même que sous régime seul. Sous sémaglutide, la part de masse maigre semble plus élevée, avec des chiffres qui dépendent de la façon de calculer. Dans les deux cas, les participants ne suivaient pas de programme de musculation structuré.
+
+Ma position : si votre médecin vous prescrit un GLP-1, considérez la musculation et les protéines comme une partie du traitement, pas comme une option. Mesurez votre composition corporelle au départ, suivez votre force, ajustez. C'est la différence entre « perdre du poids » et « changer de corps ».
+
+> **Un programme pensé pour votre traitement et vos objectifs**
+>
+> L'accompagnement personnalisé par Achzod construit votre programme de musculation et votre plan nutritionnel autour de votre situation, avec un suivi régulier de la force, de la composition corporelle et des ajustements à chaque étape.
+>
+> [Travailler avec Achzod](https://www.achzodcoaching.com)
+
+> **Structurer votre suivi avec Peptides Engine**
+>
+> Une analyse de profil individualisée, un plan de suivi biologique et de composition corporelle, des signaux d'alerte définis à l'avance. Sans promesse de résultat, et toujours en complément de votre médecin.
+>
+> [Découvrir Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Références
+
+1. Wilding JPH, et al. Once-weekly semaglutide in adults with overweight or obesity. *N Engl J Med.* 2021;384(11):989-1002. [doi:10.1056/NEJMoa2032183](https://doi.org/10.1056/NEJMoa2032183)
+2. Wilding JPH, et al. Impact of semaglutide on body composition in adults with overweight or obesity: exploratory analysis of the STEP 1 study. *J Endocr Soc.* 2021;5(Suppl 1):A16-A17. [doi:10.1210/jendso/bvab048.030](https://doi.org/10.1210/jendso/bvab048.030)
+3. Jastreboff AM, et al. Tirzepatide once weekly for the treatment of obesity. *N Engl J Med.* 2022;387(3):205-216. [doi:10.1056/NEJMoa2206038](https://doi.org/10.1056/NEJMoa2206038)
+4. Look M, et al. Body composition changes during weight reduction with tirzepatide in the SURMOUNT-1 study of adults with obesity or overweight. *Diabetes Obes Metab.* 2025;27(5):2720-2729. [doi:10.1111/dom.16275](https://doi.org/10.1111/dom.16275) (PMID 39996356)
+5. Coskun T, et al. Effects of retatrutide on body composition in people with type 2 diabetes: a substudy of a phase 2, double-blind, parallel-group, placebo-controlled, randomised trial. *Lancet Diabetes Endocrinol.* 2025;13(8):674-684. [doi:10.1016/S2213-8587(25)00092-0](https://doi.org/10.1016/S2213-8587(25)00092-0) (PMID 40609566)
+6. Jastreboff AM, et al. Retatrutide, a triple hormone receptor agonist, for treatment of obesity. *N Engl J Med.* 2026;395(18):1781-1793. [doi:10.1056/NEJMoa2604169](https://doi.org/10.1056/NEJMoa2604169)
+7. Heymsfield SB, et al. Bimagrumab plus semaglutide alone or in combination for the treatment of obesity: a randomized phase 2 trial. *Nat Med.* 2026;32:869-882. [doi:10.1038/s41591-026-04204-0](https://doi.org/10.1038/s41591-026-04204-0)
+8. Neeland IJ, et al. Changes in lean body mass with glucagon-like peptide-1-based therapies and mitigation strategies. *Diabetes Obes Metab.* 2024;26(Suppl 4):16-27. [doi:10.1111/dom.15728](https://doi.org/10.1111/dom.15728)
+9. Conte C, et al. Is weight loss-induced muscle mass loss clinically relevant? *JAMA.* 2024;332(1):9-10. [doi:10.1001/jama.2024.6586](https://doi.org/10.1001/jama.2024.6586)
+10. Wilding JPH, et al. Weight regain and cardiometabolic effects after withdrawal of semaglutide: the STEP 1 trial extension. *Diabetes Obes Metab.* 2022;24(8):1553-1564. [doi:10.1111/dom.14725](https://doi.org/10.1111/dom.14725)
+11. Rubino D, et al. Effect of continued weekly subcutaneous semaglutide vs placebo on weight loss maintenance in adults with overweight or obesity: the STEP 4 randomized clinical trial. *JAMA.* 2021;325(14):1414-1425. [doi:10.1001/jama.2021.3224](https://doi.org/10.1001/jama.2021.3224)
+12. Mozaffarian D, et al. Nutritional priorities to support GLP-1 therapy for obesity: a joint Advisory from the American College of Lifestyle Medicine, the American Society for Nutrition, the Obesity Medicine Association, and The Obesity Society. *Am J Clin Nutr.* 2025;122(1):344-367. [doi:10.1016/j.ajcnut.2025.04.023](https://doi.org/10.1016/j.ajcnut.2025.04.023)
+13. Longland TM, et al. Higher compared with lower dietary protein during an energy deficit combined with intense exercise promotes greater lean mass gain and fat mass loss: a randomized trial. *Am J Clin Nutr.* 2016;103(3):738-746. [doi:10.3945/ajcn.115.119339](https://doi.org/10.3945/ajcn.115.119339)
+14. Morton RW, et al. A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults. *Br J Sports Med.* 2018;52(6):376-384. [doi:10.1136/bjsports-2017-097608](https://doi.org/10.1136/bjsports-2017-097608)
+15. Villareal DT, et al. Aerobic or resistance exercise, or both, in dieting obese older adults. *N Engl J Med.* 2017;376(20):1943-1955. [doi:10.1056/NEJMoa1616338](https://doi.org/10.1056/NEJMoa1616338)
+16. Lundgren JR, et al. Healthy weight loss maintenance with exercise, liraglutide, or both combined. *N Engl J Med.* 2021;384(18):1719-1730. [doi:10.1056/NEJMoa2028198](https://doi.org/10.1056/NEJMoa2028198)
+17. Mechanick JI, et al. Strategies for minimizing muscle loss during use of incretin-mimetic drugs for treatment of obesity. *Obes Rev.* 2025;26(1):e13841. [doi:10.1111/obr.13841](https://doi.org/10.1111/obr.13841)
+18. Ashraf AR, et al. Multifactor quality and safety analysis of semaglutide products sold by online sellers without a prescription. *J Med Internet Res.* 2024;26:e65440. [doi:10.2196/65440](https://doi.org/10.2196/65440)
+19. Nedeltcheva AV, et al. Insufficient sleep undermines dietary efforts to reduce adiposity. *Ann Intern Med.* 2010;153(7):435-441. [doi:10.7326/0003-4819-153-7-201010050-00006](https://doi.org/10.7326/0003-4819-153-7-201010050-00006)
+20. ANSM. Alerte sur les risques associés à l'achat sur internet d'aGLP-1 contrefaits, mise à jour le 07/10/2026 ; « Peptides » vendus en ligne : ne les utilisez pas, mise à jour le 31/08/2026. [ansm.sante.fr](https://ansm.sante.fr/actualites/peptides-vendus-en-ligne-ne-les-utilisez-pas-ils-peuvent-etre-dangereux)
+
+*Cet article est informatif et ne remplace pas un avis médical. Les agonistes du GLP-1 sont des médicaments soumis à prescription : toute décision concernant leur utilisation, leur dose ou leur arrêt relève de votre médecin.*
+`,
+  },
+  {  id: "140",
+    slug: "bpc-157-vs-tb-500-differences",
+    title: "BPC-157 vs TB-500 : différences, mécanismes et ce que valent vraiment les preuves",
+    seoTitle: "BPC-157 vs TB-500 : différences et preuves | APEXLABS",
+    excerpt: "BPC-157 et TB-500 ne sont ni la même molécule ni au même niveau de preuve. Mécanismes, études décortiquées, association, AMA et risques : le comparatif sans marketing.",
+    metaDescription: "BPC-157 vs TB-500 : mécanismes, études animales et humaines, thymosine bêta-4, intérêt d'une association, statut AMA et risques, sans dosage ni promesse.",
+    category: "performance",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "17 min",
+    image: "/images/blog/bpc-157-vs-tb-500-differences/bpc-157-vs-tb-500-hero.webp",
+    content: `# BPC-157 vs TB-500 : différences, mécanismes et ce que valent vraiment les preuves
+
+## Introduction : deux peptides « réparateurs » qu'on confond trop souvent
+
+Sur les forums de musculation, BPC-157 et TB-500 sont présentés comme un duo inséparable pour « réparer » un tendon, une épaule ou un genou. On les vend ensemble, on les compare comme deux marques de la même chose, et on finit par croire qu'ils ont été testés côte à côte chez des sportifs blessés. Ce n'est pas le cas.
+
+La différence entre BPC-157 et TB-500 commence dès leur origine. Le premier est un fragment synthétique de 15 acides aminés tiré d'une protéine du suc gastrique. Le second est un fragment de 7 acides aminés d'une protéine présente dans presque toutes vos cellules, la thymosine bêta-4. Ils n'agissent pas sur les mêmes cibles, ils n'ont pas le même dossier scientifique, et le peu de données humaines disponibles ne porte presque jamais sur le produit vendu sous le nom TB-500.
+
+Dans ce guide, on fait le tri : ce que sont exactement ces molécules, leurs mécanismes, ce que montre chaque type de preuve, l'intérêt théorique d'une association, leur statut auprès de l'AMA et les risques, connus comme inconnus.
+
+> **L'essentiel en 30 secondes**
+>
+> - **BPC-157** : peptide synthétique de 15 acides aminés. De nombreux travaux chez l'animal, mais seulement **3 petites études humaines (30 personnes au total)**, sans groupe contrôle. Une revue systématique de 2026 juge le niveau de certitude **très faible**.
+> - **Thymosine bêta-4 (Tβ4)** : protéine naturelle de 43 acides aminés. Elle a été testée chez l'humain en **essais de phase 2 et 3**, surtout en application locale (ulcères de jambe, gouttes oculaires), avec des résultats modestes.
+> - **TB-500** : fragment synthétique acétylé de la Tβ4 (séquence Ac-LKKTETQ). **Aucune étude publiée chez l'humain.** Les données de la Tβ4 ne s'appliquent pas automatiquement à lui.
+> - **Association** : l'idée de complémentarité repose sur des mécanismes différents, pas sur un essai. Aucune étude contrôlée n'a testé le duo.
+> - **AMA** : les deux sont **interdits en permanence**, en compétition comme hors compétition (BPC-157 en S0, Tβ4 et TB-500 en S2).
+> - Aucun des deux n'a d'autorisation de mise sur le marché pour un usage humain, en France comme aux États-Unis.
+
+---
+
+## BPC-157, thymosine bêta-4 et TB-500 : trois molécules, pas deux
+
+### Le BPC-157 : un fragment venu de l'estomac
+
+Le BPC-157 (pour *Body Protection Compound*) est un **pentadécapeptide** : 15 acides aminés, dont la séquence (Gly-Glu-Pro-Pro-Pro-Gly-Lys-Pro-Ala-Asp-Asp-Ala-Gly-Leu-Val) correspond à une partie d'une protéine isolée dans le suc gastrique humain (Chang, 2011). La molécule utilisée en recherche est synthétique. Sa particularité est d'être stable dans l'acidité gastrique, ce qui explique qu'elle ait d'abord été étudiée pour la muqueuse digestive.
+
+Point à garder en tête : l'essentiel de la littérature provient d'un même groupe de recherche basé à Zagreb, qui détient aussi des brevets sur la molécule. Une revue de 2025 consacrée à la littérature et aux brevets du BPC-157 le documente en détail (Józwiak, 2025). Ce n'est pas une preuve de biais. C'est une raison d'attendre des réplications indépendantes, qui restent rares.
+
+Pour le détail des études sur les tendons et l'intestin, lisez notre article dédié : [BPC-157 : tendons, intestin et ce que disent les études](/blog/bpc-157-tendons-intestin-etudes).
+
+### La thymosine bêta-4 : une protéine que vous fabriquez déjà
+
+La **thymosine bêta-4 (Tβ4)** est une protéine naturelle de **43 acides aminés**. On la trouve dans presque toutes les cellules, en particulier dans les plaquettes sanguines, qui la libèrent sur le site d'une blessure (Treadwell, 2012). Sa fonction principale est de **séquestrer l'actine G**, la brique de base du squelette interne des cellules. En contrôlant la quantité d'actine disponible, elle influence la capacité des cellules à changer de forme et à se déplacer.
+
+### Le TB-500 : un fragment, pas la protéine entière
+
+C'est ici que la confusion est la plus coûteuse. Le produit commercialisé sous le nom **TB-500** n'est pas la Tβ4. Les analyses menées par le laboratoire antidopage de Gand ont identifié comme principe actif le fragment **17-23 de la Tβ4, acétylé à son extrémité : Ac-LKKTETQ** (Esposito, 2012). Le laboratoire des courses hippiques de Hong Kong décrit le même produit comme une préparation vétérinaire contenant ce fragment de 7 acides aminés (Ho, 2012).
+
+La séquence LKKTETQ est bien la zone de la Tβ4 qui se lie à l'actine. Mais une protéine de 43 acides aminés et un fragment de 7 n'ont ni la même stabilité, ni la même distribution dans l'organisme, ni forcément les mêmes effets. Quand un site vous cite une étude sur la thymosine bêta-4 pour vendre du TB-500, il fait un raccourci que la science n'a pas validé.
+
+---
+
+## Mécanismes : ce que chaque peptide fait en laboratoire
+
+![Schéma comparatif des mécanismes du BPC-157 et de la thymosine bêta-4 : angiogenèse, migration cellulaire, fibroblastes du tendon et inflammation](/images/blog/bpc-157-vs-tb-500-differences/bpc-157-tb-500-mecanismes.webp)
+
+### BPC-157 : vaisseaux, fibroblastes et récepteur de la GH
+
+Les mécanismes décrits pour le BPC-157 viennent de cultures cellulaires et de modèles animaux, principalement le rat :
+
+- **Angiogenèse** : sur la membrane chorio-allantoïdienne de poulet et sur des cellules endothéliales, le BPC-157 augmente la densité des vaisseaux. Chez le rat avec une ischémie de la patte arrière, il accélère le retour du flux sanguin, avec une activation du récepteur VEGFR2 (Hsieh, 2017).
+- **Fibroblastes du tendon** : sur des explants de tendon d'Achille de rat, il accélère la sortie des fibroblastes, améliore leur survie sous stress oxydatif et augmente leur migration, via la voie FAK-paxilline. Il ne stimule pas directement leur prolifération (Chang, 2011).
+- **Récepteur de l'hormone de croissance** : dans ces mêmes fibroblastes, il augmente l'expression du récepteur de la GH, ce qui rend les cellules plus sensibles à l'hormone de croissance déjà présente (Chang, 2014).
+- **Monoxyde d'azote et inflammation** : plusieurs travaux décrivent une action sur la voie Akt-eNOS et une baisse de cytokines inflammatoires (McGuire, 2025).
+
+Sa demi-vie chez l'animal est courte, **moins de 30 minutes**, avec un métabolisme hépatique et une élimination rénale (Vasireddi, 2025).
+
+### Thymosine bêta-4 : migration cellulaire et cicatrisation de la peau
+
+La Tβ4 a un profil différent. Son action passe d'abord par l'actine et la **migration des cellules** :
+
+- **Cicatrisation cutanée** : chez le rat avec une plaie de pleine épaisseur, la Tβ4 appliquée localement ou injectée dans le péritoine augmente la réépithélialisation de **42 % à 4 jours** et jusqu'à **61 % à 7 jours** par rapport au sérum physiologique, avec plus de collagène et plus de vaisseaux. Elle multiplie par 2 à 3 la migration des kératinocytes en culture (Malinda, 1999).
+- **Cœur** : chez la souris, elle favorise la migration et la survie des cellules cardiaques après un infarctus expérimental via l'enzyme ILK (Bock-Marquette, 2004) et mobilise des cellules progénitrices de l'épicarde (Smart, 2007).
+- **Inflammation** : effets anti-inflammatoires et anti-apoptotiques décrits dans plusieurs modèles (Goldstein, 2012).
+
+### Ce qu'il faut retenir sur les mécanismes
+
+Le BPC-157 agit surtout sur **les vaisseaux et les fibroblastes**, la Tβ4 sur **la mobilité des cellules** qui referment une plaie. Mais un mécanisme observé chez le rat ne dit rien de la tolérance ni du bénéfice chez un humain qui souffre d'une tendinopathie depuis six mois.
+
+---
+
+## Ce que montre chaque type de preuve
+
+![Pyramide des niveaux de preuve appliquée au BPC-157, à la thymosine bêta-4 et au TB-500, des études in vitro aux essais randomisés](/images/blog/bpc-157-vs-tb-500-differences/bpc-157-tb-500-niveaux-de-preuve.webp)
+
+### Les études chez l'animal : abondantes pour le BPC-157
+
+La revue systématique de Vasireddi (2025, *HSS Journal*), réalisée par une équipe orthopédique de Cleveland, a passé au crible 544 articles publiés entre 1993 et 2024. Résultat après sélection : **36 études retenues, dont 35 précliniques et 1 seule clinique**. Chez l'animal, le BPC-157 améliore des critères fonctionnels, structuraux et biomécaniques après des lésions de muscle, de tendon, de ligament et d'os. Les auteurs classent l'ensemble en niveaux de preuve IV et V, les plus bas de l'échelle.
+
+### Les études chez l'humain : 30 personnes pour le BPC-157
+
+Trois publications seulement, toutes issues du même cabinet privé en Floride et publiées dans la même revue :
+
+- **Genou (Lee et Padgett, 2021)** : étude **rétrospective** sur dossiers. 16 patients recontactés par téléphone 6 à 12 mois après une injection intra-articulaire. 11 des 12 patients ayant reçu du BPC-157 seul déclarent une amélioration, 3 des 4 ayant reçu BPC-157 et Tβ4. Aucun groupe contrôle, aucun questionnaire validé de douleur ou de fonction, des causes de douleur très variées.
+- **Cystite interstitielle (Lee, 2024)** : 12 femmes de 39 à 76 ans, une injection unique dans la paroi de la vessie sous cystoscopie. 10 sur 12 rapportent une résolution complète. Pas de placebo, pas d'aveugle, critère de jugement subjectif.
+- **Sécurité par voie intraveineuse (Lee et Burgess, 2025)** : **2 participants**, qui avaient déjà reçu du BPC-157 avant l'étude. Pas d'anomalie sur les marqueurs testés en 3 jours.
+
+La revue systématique de Poolton (2026, *Acta Orthopaedica Belgica*), enregistrée dans PROSPERO, a regroupé ces 3 études (**30 participants**). Verdict : qualité méthodologique **médiocre** et certitude des preuves **très faible** selon la grille GRADE, avec une recommandation nette de ne pas utiliser le BPC-157 en clinique en dehors d'essais encadrés.
+
+> **Vous voulez avancer sans miser votre saison sur un flacon ?**
+>
+> Une blessure qui traîne se règle d'abord par la charge, la technique, la récupération et l'alimentation. L'accompagnement personnalisé par Achzod construit votre programme d'entraînement et de nutrition autour de votre lésion et de vos objectifs, avec un suivi régulier et des ajustements semaine après semaine.
+>
+> [Découvrir l'accompagnement Achzod](https://www.achzodcoaching.com)
+
+### Les études chez l'humain : la thymosine bêta-4 va plus loin
+
+La Tβ4 entière a eu droit à un vrai programme clinique, porté par des entreprises pharmaceutiques :
+
+- **Ulcères veineux (Guarnera, 2010)** : essai de phase 2 en double aveugle contre placebo, **73 patients** dans 8 centres en Italie et en Pologne, gel de Tβ4 appliqué localement. Tolérance comparable au placebo. L'efficacité est seulement « suggérée » : environ 25 % de cicatrisation complète en 3 mois à la concentration de 0,03 %, surtout sur les plaies petites à modérées.
+- **Escarres et ulcères de stase** : dans deux essais de phase 2, la Tβ4 aurait accéléré la cicatrisation de près d'un mois **chez les patients qui ont cicatrisé** (Treadwell, 2012). Nuance de taille : ce n'est pas la même chose qu'augmenter la proportion de patients guéris.
+- **Kératopathie neurotrophique (Sosne, 2022)** : essai de phase 3 avec un collyre de Tβ4 (RGN-259). **18 patients** (10 traités, 8 sous placebo). Cicatrisation complète à 4 semaines chez 6 patients sur 10 contre 1 sur 8, **différence non significative** (p = 0,066) sur ce critère. L'étude a été conçue par l'entreprise qui développe le produit.
+
+Dix ans d'essais n'ont donc pas abouti, à ce jour, à un médicament à base de Tβ4 autorisé en Europe ou aux États-Unis. Et toutes ces données concernent une application **locale** (peau, œil), pas une injection sous-cutanée pour un tendon.
+
+### TB-500 : zéro étude humaine
+
+Pour le fragment TB-500, la colonne humaine est vide. La FDA indique dans ses documents d'évaluation de 2026 qu'elle n'a identifié **aucune donnée d'exposition humaine** et aucune étude clinique pour ce produit, quelle que soit la voie d'administration (FDA, 2026). Les seules publications le concernant sont des méthodes de détection antidopage, mises au point chez le cheval de course (Ho, 2012).
+
+| Type de preuve | BPC-157 | Thymosine bêta-4 | TB-500 |
+|---|---|---|---|
+| Cultures cellulaires | Nombreuses | Nombreuses | Quelques données sur le fragment |
+| Études animales | Nombreuses, surtout chez le rat | Nombreuses (peau, cœur, œil) | Quasi inexistantes |
+| Études humaines sans contrôle | 3, soit 30 personnes | Oui | Aucune |
+| Essais randomisés contre placebo | Aucun | Phase 2 et 3, application locale | Aucun |
+| Données de sécurité à long terme | Aucune | Limitées aux essais | Aucune |
+| Indépendance des équipes | Faible (un groupe principal) | Essais financés par les développeurs | Sans objet |
+
+---
+
+## Associer BPC-157 et TB-500 : l'intérêt théorique d'une association
+
+### L'argument de la complémentarité
+
+L'idée qui circule est simple : le BPC-157 favoriserait la vascularisation et l'activité des fibroblastes au niveau de la lésion, pendant que le TB-500 faciliterait l'arrivée des cellules réparatrices. Sur le papier, deux mécanismes distincts pourraient s'additionner. C'est l'argument derrière les « stacks » de récupération vendus en ligne.
+
+### Pourquoi cet argument reste théorique
+
+1. **Aucun essai contrôlé n'a testé l'association.** Le seul chiffre humain disponible vient de l'étude rétrospective sur le genou : 4 patients ont reçu les deux peptides, 3 se disent soulagés (Lee, 2021). Quatre personnes, sans contrôle, interrogées par téléphone : on ne peut rien en conclure.
+2. **Le TB-500 n'a pas de données humaines propres.** Associer une molécule peu documentée à une molécule non documentée n'augmente pas le niveau de preuve.
+3. **Les inconnues se multiplient.** Deux produits, c'est deux sources possibles d'impuretés, deux risques de réaction immunitaire et l'impossibilité de savoir lequel est responsable d'un effet ou d'un effet indésirable.
+4. **Deux pro-angiogéniques ensemble.** Si la stimulation de la formation de vaisseaux est un avantage pour un tendon, c'est aussi la principale préoccupation théorique en matière de sécurité (voir plus bas).
+
+Ma lecture de coach : une « synergie » jamais testée reste une hypothèse marketing.
+
+> **Peptides Engine : une analyse de votre profil avant toute décision**
+>
+> Le Peptides Engine part de vos objectifs, de votre historique de blessures, de vos analyses et de votre statut sportif pour évaluer si une approche par peptides a du sens dans votre cas, et laquelle. Vous obtenez une analyse individualisée avec un suivi, des marqueurs à contrôler et des critères d'arrêt clairs. Pas de promesse, pas de protocole copié sur un forum.
+>
+> [Découvrir le Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Statut réglementaire et liste de l'AMA
+
+### Pour les sportifs : interdits en permanence
+
+La liste des interdictions 2026 de l'Agence mondiale antidopage (AMA) est sans ambiguïté :
+
+- **BPC-157** : classe **S0, substances non approuvées**, cité nommément. Interdit en permanence.
+- **Thymosine bêta-4 et ses dérivés, par exemple le TB-500** : classe **S2.3, facteurs de croissance et modulateurs**, cités nommément. Interdits en permanence, et classés substances non spécifiées.
+
+L'AMA précise aussi que les cosmétiques contenant des peptides de la classe S2 restent interdits, et qu'un produit mal étiqueté ne sera pas une excuse recevable en cas de contrôle positif. Le TB-500 est détectable dans les urines et le plasma, des méthodes existent depuis 2012 (Esposito, 2012 ; Ho, 2012). Si vous êtes licencié dans une fédération soumise au code mondial antidopage, la question est réglée.
+
+### Pour tout le monde : aucune autorisation de mise sur le marché
+
+- **En France et dans l'Union européenne**, ni le BPC-157, ni le TB-500, ni la thymosine bêta-4 n'ont d'autorisation de mise sur le marché pour un usage humain.
+- **Aux États-Unis**, aucun n'est approuvé par la FDA. Les deux avaient été classés en 2023 dans la catégorie des substances présentant des risques significatifs pour la préparation magistrale. Après le retrait des demandes en avril 2026, la FDA a recommandé en juillet 2026 de ne pas les inscrire sur la liste autorisée, en invoquant l'absence de données de sécurité humaines (FDA, 2026). Depuis fin octobre 2026, une politique provisoire du ministère américain de la Santé tolère leur préparation sur ordonnance individuelle sous conditions. Ce n'est ni une approbation, ni une preuve d'efficacité.
+- Les flacons vendus avec la mention « pour la recherche uniquement » ne sont pas destinés à l'usage humain, et leur contenu n'est contrôlé par aucune autorité sanitaire.
+
+---
+
+## Les risques : ce qu'on sait et ce qu'on ignore
+
+### Ce que disent les données disponibles
+
+Aucun effet indésirable n'a été rapporté dans les trois études humaines sur le BPC-157, et la Tβ4 locale a été aussi bien tolérée que le placebo (Guarnera, 2010 ; Sosne, 2022). Rassurant à court terme, mais sur quelques dizaines de personnes, des durées courtes et des voies d'administration qui ne sont pas celles de la salle de sport.
+
+### Ce qui inquiète les autorités
+
+Les évaluations de la FDA mettent en avant trois points (FDA, 2026) :
+
+- **L'immunogénicité** : un peptide injecté peut déclencher une réaction immunitaire, surtout s'il contient des agrégats ou des impuretés.
+- **La qualité de fabrication** : impuretés liées à la synthèse, caractérisation incomplète du principe actif, endotoxines.
+- **Le manque de données** : pour le TB-500, aucune donnée humaine. Pour le BPC-157, des informations « nulles ou limitées » pour les voies proposées.
+
+### Le risque théorique lié à l'angiogenèse
+
+Les deux peptides favorisent la formation de nouveaux vaisseaux et la migration cellulaire. Ce sont des propriétés utiles pour cicatriser, et ce sont aussi des propriétés qu'exploitent les tumeurs. Les β-thymosines, dont la Tβ4, sont étudiées pour leur rôle dans la migration des cellules cancéreuses et la formation de métastases (Sribenja, 2013). La revue de McGuire (2025), intitulée « Régénération ou risque ? », pose explicitement la question pour le BPC-157. Aucune donnée ne montre que ces peptides provoquent un cancer. Mais personne n'a étudié ce risque chez l'humain, et un antécédent personnel de cancer est une raison sérieuse de s'abstenir.
+
+### Le risque le plus fréquent : reprendre trop tôt
+
+Une douleur qui diminue ne signifie pas un tendon qui a retrouvé sa résistance. Reprendre lourd sur une impression de mieux-être, c'est la recette classique de la rechute. La fonction mesurée (force, amplitude, tolérance à la charge) compte plus que le ressenti.
+
+---
+
+## BPC-157 vs TB-500 : le comparatif complet
+
+| Critère | BPC-157 | TB-500 |
+|---|---|---|
+| Nature | Peptide synthétique de 15 acides aminés | Fragment synthétique acétylé de 7 acides aminés (Ac-LKKTETQ) |
+| Origine | Séquence d'une protéine du suc gastrique | Région de liaison à l'actine de la thymosine bêta-4 |
+| Mécanismes décrits | Angiogenèse (VEGFR2), migration et survie des fibroblastes, récepteur de la GH, voie du NO | Liaison à l'actine, migration cellulaire, cicatrisation (données surtout obtenues avec la Tβ4 entière) |
+| Données animales | Abondantes, un groupe de recherche majoritaire | Faibles pour le fragment, abondantes pour la Tβ4 |
+| Données humaines | 3 études sans contrôle, 30 personnes, certitude très faible | Aucune |
+| Molécule mère testée chez l'humain | Non | Oui, la Tβ4 en phase 2 et 3, en application locale |
+| Statut AMA 2026 | S0, interdit en permanence | S2.3, interdit en permanence |
+| Autorisation de mise sur le marché | Aucune | Aucune |
+| Principales inconnues | Sécurité à long terme, dose, réplication indépendante | Pharmacologie humaine, sécurité, équivalence avec la Tβ4 |
+
+---
+
+## Encadrer plutôt que bricoler : la démarche qui protège
+
+Si vous envisagez malgré tout un peptide, la différence entre un risque raisonné et un pari se joue sur l'encadrement.
+
+### Avant : poser le bon diagnostic
+
+- **Un diagnostic précis** de la lésion (tendinopathie, rupture partielle, conflit, douleur projetée), idéalement avec imagerie si elle est indiquée. Une douleur n'est pas un diagnostic : c'est la structure lésée qu'il faut identifier.
+- **Un bilan sanguin de référence** : numération formule sanguine, CRP ultrasensible, bilan hépatique (ASAT, ALAT, GGT), créatinine et débit de filtration glomérulaire, glycémie à jeun. Notre guide [peptides et bilan sanguin](/blog/peptides-bilan-sanguin-marqueurs-a-suivre) détaille le pourquoi de chaque marqueur.
+- **Les contre-indications** : antécédent de cancer, grossesse ou allaitement, maladie auto-immune, sport soumis à contrôle antidopage.
+
+### Pendant : mesurer, pas ressentir
+
+- Des **tests fonctionnels** datés (force isométrique, répétitions sans douleur, amplitude) et la surveillance des réactions locales.
+- Un **programme de rééducation progressif** : aucune molécule ne remplace la mise en charge du tendon.
+
+### Les critères d'arrêt, décidés à l'avance
+
+- réaction au point d'injection qui persiste ou s'étend, fièvre, malaise
+- anomalie sur un contrôle sanguin
+- absence de progrès fonctionnel mesurable à l'échéance fixée au départ
+- contrôle antidopage possible à venir
+
+Et avant tout cela, les fondamentaux : apport en protéines suffisant, sommeil, gestion de la charge d'entraînement. Le [collagène associé à la vitamine C](/blog/collagene-peau-articulations-guide-complet) et la [créatine](/blog/creatine-guide-complet) ont un dossier bien plus solide que n'importe quel peptide de récupération, pour un coût et un risque bien moindres. Pour le cadre général, lisez notre [guide complet des peptides](/blog/peptides-guide-complet), notre article [même peptide, résultats différents](/blog/meme-peptide-resultats-differents) et notre guide sur [la récupération active et passive](/blog/recuperation-active-passive).
+
+Pour transformer vos résultats sanguins en priorités claires, l'[analyse Blood Analysis](/offers/blood-analysis) lit vos biomarqueurs dans une logique performance et prévention.
+
+---
+
+## FAQ : BPC-157 et TB-500
+
+### Quelle est la différence entre BPC-157 et TB-500 ?
+
+Le BPC-157 est un peptide synthétique de 15 acides aminés issu d'une protéine du suc gastrique, étudié surtout chez le rat. Le TB-500 est un fragment synthétique de 7 acides aminés de la thymosine bêta-4, lié à la migration cellulaire. Structure, cibles et dossier scientifique diffèrent.
+
+### TB-500 et thymosine bêta-4, c'est la même chose ?
+
+Non. La thymosine bêta-4 est une protéine naturelle de 43 acides aminés, testée chez l'humain dans des essais de phase 2 et 3 en application locale. Le TB-500 n'en reprend qu'un fragment acétylé de 7 acides aminés. Les résultats obtenus avec la protéine entière ne peuvent pas être transposés au fragment sans études spécifiques, qui n'existent pas chez l'humain.
+
+### Le BPC-157 et le TB-500 sont-ils autorisés pour les sportifs ?
+
+Non. Sur la liste 2026 de l'AMA, le BPC-157 est cité en classe S0 (substances non approuvées) et la thymosine bêta-4 et ses dérivés comme le TB-500 en classe S2.3 (facteurs de croissance). Les deux sont interdits en permanence, en compétition comme hors compétition, et des méthodes de détection existent.
+
+### Peut-on associer BPC-157 et TB-500 ?
+
+L'association repose sur une complémentarité théorique de mécanismes, pas sur des données. Aucun essai contrôlé ne l'a évaluée. Le seul chiffre humain concerne 4 patients d'une étude rétrospective. Associer deux produits peu documentés multiplie les inconnues et rend impossible l'attribution d'un effet ou d'un effet indésirable.
+
+### BPC-157 ou TB-500 pour une tendinite ?
+
+Aucun des deux n'a démontré d'efficacité sur une tendinopathie chez l'humain dans un essai contrôlé. Le traitement de référence reste la rééducation par mise en charge progressive, adaptée au stade de la lésion, avec une gestion de l'entraînement. Si vous envisagez un peptide, faites-le dans un cadre médical, avec un diagnostic, un bilan et des critères d'arrêt.
+
+### Quels sont les effets secondaires du BPC-157 et du TB-500 ?
+
+Les petites études disponibles ne rapportent pas d'effet indésirable notable, sur très peu de personnes et peu de temps. Les autorités signalent des risques de réaction immunitaire et d'impuretés, et l'absence de données à long terme. Leur effet pro-angiogénique pose une question non résolue en cas d'antécédent de cancer.
+
+---
+
+## Le verdict : deux pistes de recherche, aucune réponse clinique
+
+BPC-157 et TB-500 ne sont pas interchangeables, et ce ne sont pas des traitements validés. Le BPC-157 a un dossier animal fourni et un dossier humain quasi vide. La thymosine bêta-4 a été testée sérieusement chez l'humain, avec des résultats modestes et uniquement en application locale. Le TB-500, lui, emprunte la réputation de sa molécule mère sans avoir fait ses propres preuves.
+
+Ma position : si vous êtes sportif contrôlé, la question ne se pose pas. Si vous ne l'êtes pas, commencez par ce qui fonctionne (diagnostic, rééducation, charge, nutrition, sommeil). Et si vous envisagez un peptide, faites-le avec un bilan, un suivi et des critères d'arrêt, jamais à l'aveugle.
+
+> **Un plan de reprise construit pour votre corps**
+>
+> L'accompagnement personnalisé par Achzod, c'est un programme d'entraînement et de nutrition adapté à votre blessure, à votre niveau et à vos objectifs, avec un suivi régulier pour ajuster au bon moment.
+>
+> [Découvrir l'accompagnement Achzod](https://www.achzodcoaching.com)
+
+> **Peptides Engine : décider sur des données, pas sur des promesses**
+>
+> Une analyse individualisée de votre profil (objectifs, antécédents, bilan sanguin, statut antidopage) pour savoir si un peptide a sa place dans votre stratégie, avec un suivi, des marqueurs à contrôler et des critères d'arrêt définis dès le départ.
+>
+> [Découvrir le Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Références
+
+1. Vasireddi N, et al. Emerging Use of BPC-157 in Orthopaedic Sports Medicine: A Systematic Review. *HSS J.* 2025;21(4):485-495. [doi:10.1177/15563316251355551](https://doi.org/10.1177/15563316251355551)
+2. Poolton JT, Minett J, Kazmi A. Human evidence for BPC-157 in orthopaedic and regenerative medicine: a systematic review of efficacy and safety. *Acta Orthop Belg.* 2026;92(3). [doi:10.52628/92.3.15837](https://doi.org/10.52628/92.3.15837)
+3. McGuire FP, et al. Regeneration or Risk? A Narrative Review of BPC-157 for Musculoskeletal Healing. *Curr Rev Musculoskelet Med.* 2025;18(12):611-619. [doi:10.1007/s12178-025-09990-7](https://doi.org/10.1007/s12178-025-09990-7)
+4. Lee E, Padgett B. Intra-Articular Injection of BPC 157 for Multiple Types of Knee Pain. *Altern Ther Health Med.* 2021;27(4):8-13. [PMID: 34324435](https://pubmed.ncbi.nlm.nih.gov/34324435/)
+5. Lee E, Walker C, Ayadi B. Effect of BPC-157 on Symptoms in Patients with Interstitial Cystitis: A Pilot Study. *Altern Ther Health Med.* 2024;30(10):12-17. [PMID: 39325560](https://pubmed.ncbi.nlm.nih.gov/39325560/)
+6. Lee E, Burgess K. Safety of Intravenous Infusion of BPC157 in Humans: A Pilot Study. *Altern Ther Health Med.* 2025;31(5):20-24. [PMID: 40131143](https://pubmed.ncbi.nlm.nih.gov/40131143/)
+7. Chang CH, et al. The promoting effect of pentadecapeptide BPC 157 on tendon healing involves tendon outgrowth, cell survival, and cell migration. *J Appl Physiol.* 2011;110(3):774-780. [doi:10.1152/japplphysiol.00945.2010](https://doi.org/10.1152/japplphysiol.00945.2010)
+8. Chang CH, et al. Pentadecapeptide BPC 157 enhances the growth hormone receptor expression in tendon fibroblasts. *Molecules.* 2014;19(11):19066-19077. [doi:10.3390/molecules191119066](https://doi.org/10.3390/molecules191119066)
+9. Hsieh MJ, et al. Therapeutic potential of pro-angiogenic BPC157 is associated with VEGFR2 activation and up-regulation. *J Mol Med.* 2017;95(3):323-333. [doi:10.1007/s00109-016-1488-y](https://doi.org/10.1007/s00109-016-1488-y)
+10. Józwiak M, et al. Multifunctionality and Possible Medical Application of the BPC 157 Peptide: Literature and Patent Review. *Pharmaceuticals.* 2025;18(2):185. [doi:10.3390/ph18020185](https://doi.org/10.3390/ph18020185)
+11. Goldstein AL, et al. Thymosin β4: a multi-functional regenerative peptide. Basic properties and clinical applications. *Expert Opin Biol Ther.* 2012;12(1):37-51. [doi:10.1517/14712598.2012.634793](https://doi.org/10.1517/14712598.2012.634793)
+12. Malinda KM, et al. Thymosin beta4 accelerates wound healing. *J Invest Dermatol.* 1999;113(3):364-368. [doi:10.1046/j.1523-1747.1999.00708.x](https://doi.org/10.1046/j.1523-1747.1999.00708.x)
+13. Bock-Marquette I, et al. Thymosin beta4 activates integrin-linked kinase and promotes cardiac cell migration, survival and cardiac repair. *Nature.* 2004;432(7016):466-472. [doi:10.1038/nature03000](https://doi.org/10.1038/nature03000)
+14. Smart N, et al. Thymosin beta4 induces adult epicardial progenitor mobilization and neovascularization. *Nature.* 2007;445(7124):177-182. [doi:10.1038/nature05383](https://doi.org/10.1038/nature05383)
+15. Guarnera G, DeRosa A, Camerini R. The effect of thymosin treatment of venous ulcers. *Ann N Y Acad Sci.* 2010;1194:207-212. [doi:10.1111/j.1749-6632.2010.05490.x](https://doi.org/10.1111/j.1749-6632.2010.05490.x)
+16. Treadwell T, et al. The regenerative peptide thymosin β4 accelerates the rate of dermal healing in preclinical animal models and in patients. *Ann N Y Acad Sci.* 2012;1270:37-44. [doi:10.1111/j.1749-6632.2012.06717.x](https://doi.org/10.1111/j.1749-6632.2012.06717.x)
+17. Sosne G, et al. 0.1% RGN-259 (Thymosin ß4) Ophthalmic Solution Promotes Healing and Improves Comfort in Neurotrophic Keratopathy Patients in a Randomized, Placebo-Controlled, Double-Masked Phase III Clinical Trial. *Int J Mol Sci.* 2022;24(1):554. [doi:10.3390/ijms24010554](https://doi.org/10.3390/ijms24010554)
+18. Esposito S, et al. Synthesis and characterization of the N-terminal acetylated 17-23 fragment of thymosin beta 4 identified in TB-500, a product suspected to possess doping potential. *Drug Test Anal.* 2012;4(9):733-738. [doi:10.1002/dta.1402](https://doi.org/10.1002/dta.1402)
+19. Ho EN, et al. Doping control analysis of TB-500, a synthetic version of an active region of thymosin β4, in equine urine and plasma by liquid chromatography-mass spectrometry. *J Chromatogr A.* 2012;1265:57-69. [doi:10.1016/j.chroma.2012.09.043](https://doi.org/10.1016/j.chroma.2012.09.043)
+20. Sribenja S, et al. Roles and mechanisms of β-thymosins in cell migration and cancer metastasis: an update. *Cancer Invest.* 2013;31(2):103-110. [doi:10.3109/07357907.2012.756111](https://doi.org/10.3109/07357907.2012.756111)
+21. Agence mondiale antidopage. Liste des interdictions 2026 (classes S0 et S2.3). [wada-ama.org/fr/liste-des-interdictions](https://www.wada-ama.org/fr/liste-des-interdictions)
+22. U.S. Food and Drug Administration. Pharmacy Compounding Advisory Committee, réunion des 23 et 24 juillet 2026 : évaluations du BPC-157 et du TB-500. [fda.gov/media/193773/download](https://www.fda.gov/media/193773/download)
+
+*Cet article est informatif et ne remplace pas un avis médical. Les peptides cités n'ont pas d'autorisation de mise sur le marché pour un usage humain. Aucun dosage ni protocole n'est donné ici, volontairement.*
+`,
+  },
+  {  id: "141",
+    slug: "cjc-1295-ipamoreline-hormone-de-croissance-igf-1",
+    title: "CJC-1295 et ipamoréline : hormone de croissance, IGF-1 et ce que disent vraiment les études",
+    seoTitle: "CJC-1295 et ipamoréline : GH, IGF-1 et études | APEXLABS",
+    excerpt: "L'axe GHRH, ghréline, GH et IGF-1, la différence entre CJC-1295 avec et sans DAC, l'ipamoréline face aux autres GHRP et les marqueurs à surveiller : ce que montrent les études.",
+    metaDescription: "CJC-1295 et ipamoréline : axe GH et IGF-1, DAC ou sans DAC, études cliniques, effets sur glycémie, eau et prolactine, marqueurs à suivre. Sans dosage.",
+    category: "hormones",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "17 min",
+    image: "/images/blog/cjc-1295-ipamoreline-hormone-de-croissance-igf-1/cjc-1295-ipamoreline-hero.webp",
+    content: `# CJC-1295 et ipamoréline : hormone de croissance, IGF-1 et ce que disent vraiment les études
+
+## Introduction : « relancer sa GH naturellement », vraiment ?
+
+Le duo CJC-1295 et ipamoréline est vendu comme l'alternative « douce » à l'hormone de croissance : au lieu d'injecter de la GH, on pousserait l'hypophyse à en fabriquer davantage. Plus de masse maigre, moins de gras, meilleur sommeil, meilleure récupération. L'argument sonne physiologique, donc rassurant.
+
+La réalité est plus nuancée. Le CJC-1295 et l'ipamoréline agissent bien sur l'axe de l'hormone de croissance et de l'IGF-1, et des études humaines le montrent. Mais ces études sont peu nombreuses, courtes, menées sur quelques dizaines de volontaires, et aucune n'a testé l'association des deux. Surtout, faire monter la GH et l'IGF-1 a des conséquences mesurables sur la glycémie, la rétention d'eau et parfois d'autres hormones.
+
+Dans ce guide, on reprend tout depuis le début : l'axe GHRH, ghréline, GH et IGF-1, la différence entre CJC-1295 avec et sans DAC, la place de l'ipamoréline parmi les GHRP, les études cliniques connues, les effets métaboliques et les marqueurs à surveiller si vous êtes concerné.
+
+> **L'essentiel en 30 secondes**
+>
+> - Le **CJC-1295** est un analogue du GHRH, l'hormone qui ordonne à l'hypophyse de libérer la GH. L'**ipamoréline** imite la **ghréline** et agit sur un autre récepteur. Les deux voies se renforcent mutuellement.
+> - **Avec DAC**, le CJC-1295 se fixe à l'albumine : demi-vie de **5,8 à 8,1 jours**, GH multipliée par 2 à 10 pendant 6 jours ou plus et **IGF-1 multipliée par 1,5 à 3** pendant 9 à 11 jours après une injection (Teichman, 2006). **Sans DAC**, la molécule agit beaucoup plus brièvement et n'a fait l'objet d'aucun essai clinique publié.
+> - L'**ipamoréline** est le premier sécrétagogue jugé « sélectif » : chez l'animal, elle ne fait pas monter le cortisol ni l'ACTH, contrairement au GHRP-6 et au GHRP-2 (Raun, 1998).
+> - Aucune étude publiée n'a évalué l'**association CJC-1295 + ipamoréline**. Le développement du CJC-1295 a été arrêté en 2006 après le décès d'un participant d'un essai de phase 2.
+> - Plus de GH, c'est aussi plus de **résistance à l'insuline**, de **rétention d'eau** et, avec certains GHRP, de **prolactine et de cortisol**.
+> - Marqueurs clés : **IGF-1** rapportée à l'âge, **glycémie à jeun**, **HbA1c**, insuline. Les deux molécules sont **interdites par l'AMA** et n'ont aucune autorisation de mise sur le marché.
+
+---
+
+## L'axe GHRH, ghréline, GH, IGF-1 en 5 minutes
+
+![Schéma de l'axe somatotrope : hypothalamus, GHRH et somatostatine, ghréline venue de l'estomac, hypophyse, hormone de croissance, foie et IGF-1 avec rétrocontrôle négatif, et points d'action du CJC-1295 et de l'ipamoréline](/images/blog/cjc-1295-ipamoreline-hormone-de-croissance-igf-1/axe-ghrh-ghreline-gh-igf-1.webp)
+
+### Trois signaux pour une hormone
+
+La sécrétion d'hormone de croissance (GH) par l'hypophyse dépend de trois signaux :
+
+1. **Le GHRH** (*growth hormone-releasing hormone*), produit par l'hypothalamus, qui **stimule** la libération de GH.
+2. **La somatostatine**, produite elle aussi par l'hypothalamus, qui **freine** cette libération.
+3. **La ghréline**, produite surtout par l'estomac, qui agit sur un autre récepteur de l'hypophyse (le récepteur GHS-R1a) et **amplifie** la libération de GH. C'est aussi l'hormone de la faim.
+
+La GH est libérée **par pulsations**, avec les pics les plus importants pendant le sommeil profond. Elle agit directement sur les tissus (le tissu adipeux notamment) et surtout sur le **foie**, qui produit en réponse l'**IGF-1**, le principal médiateur des effets anaboliques de la GH. L'IGF-1 exerce ensuite un **rétrocontrôle négatif** : quand elle monte, l'hypothalamus et l'hypophyse ralentissent la production de GH.
+
+### Pourquoi on associe les deux voies
+
+GHRH et ghréline ne se contentent pas de s'additionner. Chez de jeunes hommes en bonne santé, la ghréline seule faisait monter le pic de GH à 92 µg/L, le GHRH seul à 27 µg/L, et les deux ensemble à **134 µg/L**, un effet que les auteurs qualifient de synergique (Arvat, 2001). C'est la logique pharmacologique du duo CJC-1295 (voie GHRH) et ipamoréline (voie ghréline).
+
+Ce que cette synergie ne dit pas : qu'elle soit souhaitable sur des semaines ou des mois, ni qu'elle se traduise par un bénéfice sur la composition corporelle ou la santé.
+
+---
+
+## CJC-1295 avec et sans DAC : deux molécules différentes
+
+### Le CJC-1295 avec DAC
+
+Le CJC-1295 a été conçu par la société canadienne ConjuChem à partir des 29 premiers acides aminés du GHRH humain, modifiés pour résister à la dégradation. La version d'origine porte un **DAC** (*Drug Affinity Complex*), un bras chimique qui se lie de façon covalente à l'**albumine** du sang après l'injection (Jetté, 2005). Résultat : une molécule qui reste en circulation pendant des jours.
+
+Les deux essais fondateurs, chez des adultes en bonne santé de 21 à 61 ans (Teichman, 2006) :
+
+- deux essais randomisés en double aveugle contre placebo, de **28 et 49 jours**, à doses croissantes
+- après une injection : **GH moyenne multipliée par 2 à 10 pendant 6 jours ou plus**, **IGF-1 multipliée par 1,5 à 3 pendant 9 à 11 jours**
+- **demi-vie estimée de 5,8 à 8,1 jours**, avec un effet cumulatif après plusieurs injections : l'IGF-1 restait au-dessus de sa valeur de départ jusqu'à 28 jours
+- aucun effet indésirable grave rapporté, mais des effets fréquents. Selon l'analyse de la FDA, des effets indésirables ont été notés chez **94 % des participants sous CJC-1295 contre 29 % sous placebo** dans le premier essai : réactions au point d'injection, maux de tête, diarrhée, bouffées vasomotrices avec chaleur et baisse transitoire de la tension (FDA, décembre 2024)
+
+Un second travail a examiné la forme de la sécrétion chez **des hommes de 20 à 40 ans**, avec des prélèvements toutes les 20 minutes pendant 12 heures, avant et une semaine après une injection (Ionescu et Frohman, 2006) :
+
+- la **pulsatilité de la GH est conservée** : fréquence et amplitude des pics inchangées
+- le **niveau de base entre les pics est multiplié par 7,5**
+- la GH moyenne augmente de **46 %** et l'IGF-1 de **45 %**
+
+Autrement dit, le CJC-1295 avec DAC ne crée pas de nouveaux pics : il relève le plancher. C'est ce que les utilisateurs appellent le « GH bleed », une stimulation continue qui ne ressemble pas au profil naturel.
+
+### Le CJC-1295 sans DAC
+
+Le produit vendu sous les noms « CJC-1295 sans DAC » ou « Mod GRF 1-29 » est la même séquence modifiée, **sans le bras qui se fixe à l'albumine**. Sans les jours de circulation que permet l'albumine, sa durée d'action est courte : il produit un pic de GH bref, plus proche d'une pulsation naturelle.
+
+Le problème est simple : les trois études humaines publiées que la FDA a recensées portent toutes sur la forme **avec DAC**, chez des volontaires sains. **Aucun essai clinique publié** ne documente la forme sans DAC (FDA, 2024). Les profils de sécurité de l'une ne s'appliquent pas automatiquement à l'autre.
+
+![Illustration schématique de l'évolution de l'hormone de croissance sur 24 heures : profil pulsatile naturel, CJC-1295 sans DAC avec un pic bref, CJC-1295 avec DAC avec une élévation continue du niveau de base](/images/blog/cjc-1295-ipamoreline-hormone-de-croissance-igf-1/cjc-1295-avec-sans-dac-profil-gh.webp)
+
+### L'arrêt du programme clinique
+
+En juillet 2006, ConjuChem a interrompu son essai de phase 2 du CJC-1295 chez **192 patients** vivant avec le VIH et une accumulation de graisse viscérale, après le décès d'un participant d'un infarctus du myocarde, environ deux heures après sa 11e injection hebdomadaire. Le médecin investigateur a attribué l'événement à une maladie coronarienne préexistante non diagnostiquée, mais les données de l'essai n'ont jamais été publiées et le développement n'a jamais repris (FDA, 2024 ; essai NCT00267527).
+
+Ce décès ne prouve pas que la molécule est dangereuse. Il signifie que le CJC-1295 n'a jamais terminé le parcours qui aurait permis de connaître son profil de sécurité.
+
+### La preuve qu'un analogue du GHRH peut marcher : la tésamoréline
+
+Pour mesurer ce qu'un analogue du GHRH bien étudié peut faire, regardez la **tésamoréline**, approuvée aux États-Unis pour une seule indication. Dans un essai de 26 semaines chez **412 patients** vivant avec le VIH et un excès de graisse abdominale (Falutz, 2007, *NEJM*) :
+
+- graisse viscérale **-15,2 %** contre **+5,0 %** sous placebo
+- triglycérides en baisse de 50 mg/dL
+- IGF-1 **+81 %**
+- pas de différence significative sur les mesures de glycémie, mais plus d'arrêts pour effets indésirables dans le groupe traité
+
+C'est ce niveau de preuve (un grand essai randomisé, une indication précise, un suivi de sécurité) qui manque au CJC-1295.
+
+---
+
+## L'ipamoréline face aux autres GHRP et sécrétagogues
+
+### La promesse de la sélectivité
+
+Les GHRP (*growth hormone-releasing peptides*) et les sécrétagogues de la GH imitent la ghréline. Le problème des premières molécules, c'est qu'elles ne stimulent pas que la GH. L'ipamoréline a été développée par Novo Nordisk pour corriger ce défaut. Dans l'étude de référence (Raun, 1998) :
+
+- chez le porc, l'ipamoréline libère la GH avec une efficacité comparable au GHRP-6
+- le GHRP-6 et le GHRP-2 font monter l'**ACTH et le cortisol**
+- l'ipamoréline **ne les augmente pas** de façon significative, même à des doses 200 fois supérieures à celle qui produit la moitié de l'effet maximal sur la GH
+- aucun des sécrétagogues testés ne modifiait la prolactine, la FSH, la LH ni la TSH chez le porc
+
+Point clé : cette sélectivité a été démontrée **chez l'animal**. Chez l'humain, on dispose surtout d'une étude de pharmacocinétique chez des volontaires (Gobburu, 1999) et d'un essai chirurgical.
+
+> **Votre progression dépend d'abord de votre programme**
+>
+> La GH et l'IGF-1 suivent ce que vous faites tous les jours : intensité d'entraînement, sommeil, masse grasse, apport en protéines. L'accompagnement personnalisé par Achzod construit votre programme d'entraînement et de nutrition à partir de vos objectifs et de vos contraintes, avec un suivi régulier pour ajuster ce qui doit l'être.
+>
+> [Découvrir l'accompagnement Achzod](https://www.achzodcoaching.com)
+
+### Ce que dit le seul grand essai humain
+
+L'ipamoréline a été testée en phase 2 pour accélérer la reprise du transit après une chirurgie intestinale (Beck, 2014) : **114 patients** analysés, perfusions intraveineuses pendant 7 jours au plus.
+
+- temps médian jusqu'au premier repas solide toléré : **25,3 heures contre 32,6 heures** sous placebo, **différence non significative** (p = 0,15)
+- effets indésirables chez 87,5 % des patients traités contre 94,8 % sous placebo, une population de patients opérés
+- dans son évaluation, la FDA relève **deux décès** dans le groupe ipamoréline (complications chirurgicales, lien non établi) et une fréquence plus élevée d'**hypokaliémie et d'hyperglycémie** chez les patients traités (FDA, 2024)
+
+### Le comparatif des principaux sécrétagogues
+
+| Molécule | Type | Effets sur d'autres hormones | Points notables |
+|---|---|---|---|
+| **Ipamoréline** | Pentapeptide, voie ghréline | Pas de hausse d'ACTH ni de cortisol chez l'animal (Raun, 1998) | Données humaines limitées. Essai de phase 2 négatif sur son critère principal |
+| **GHRP-6** | Hexapeptide, voie ghréline | Hausse de l'ACTH et du cortisol chez l'animal | Connu pour stimuler fortement l'appétit, comme la ghréline |
+| **GHRP-2** | Hexapeptide, voie ghréline | Hausse de l'ACTH et du cortisol | Chez 9 jeunes hommes, réponse de GH atténuée en 5 jours et IGF-1 inchangée (Nijland, 1998) |
+| **Hexaréline** | Hexapeptide, voie ghréline | Hausse de la prolactine, de l'ACTH et du cortisol chez l'humain | Réduit le sommeil lent profond chez 7 volontaires (Frieboes, 2004) |
+| **MK-677 (ibutamoren)** | Non peptidique, oral | Cortisol +47 nmol/L sur un an | Glycémie à jeun +0,3 mmol/L, baisse de la sensibilité à l'insuline, faim, œdèmes (Nass, 2008) |
+| **CJC-1295** | Analogue du GHRH | Pas d'action directe sur la voie ghréline | Avec DAC : élévation continue de la GH. Sans DAC : aucune donnée clinique publiée |
+
+---
+
+## Plus de GH et d'IGF-1, est-ce vraiment mieux ?
+
+### Les données sur la GH elle-même
+
+Si l'on veut savoir ce qu'apporte une élévation durable de la GH chez un adulte sans déficit, le meilleur indicateur reste la GH injectée. La revue systématique de Liu (2007, *Annals of Internal Medicine*) a regroupé **18 essais randomisés** chez des adultes en bonne santé d'âge moyen 69 ans :
+
+- masse maigre **+2,1 kg** et masse grasse **-2,1 kg**, sans changement de poids
+- pas d'effet sur la densité osseuse ni sur les lipides, en dehors d'une petite baisse du cholestérol total
+- plus d'**œdèmes**, de **douleurs articulaires**, de **syndromes du canal carpien** et de **gynécomasties**, et une tendance à plus de **diabètes et d'intolérances au glucose**
+- conclusion des auteurs : la GH **ne peut pas être recommandée** comme traitement anti-âge
+
+### Le cas instructif du MK-677
+
+Le MK-677, sécrétagogue oral, a été suivi pendant deux ans chez **65 adultes de 60 à 81 ans** (Nass, 2008). La GH et l'IGF-1 sont remontées au niveau de jeunes adultes et la masse maigre a augmenté de **1,1 kg**. Mais **la force et les capacités fonctionnelles n'ont pas changé**, le poids a augmenté de 2,7 kg et la glycémie à jeun de 0,3 mmol/L.
+
+C'est la leçon centrale : une hausse de la masse maigre mesurée par l'imagerie n'est pas forcément du muscle fonctionnel. Une partie correspond à de l'eau.
+
+### L'IGF-1 et le risque de cancer
+
+Une IGF-1 durablement haute n'est pas neutre. Dans la méta-analyse de Renehan (2004, *The Lancet*), des concentrations d'IGF-1 plus élevées étaient associées à un risque accru de **cancer de la prostate** et de **cancer du sein avant la ménopause**. Ce sont des associations observationnelles, pas une preuve de causalité. Mais c'est une raison de ne pas chercher à maintenir une IGF-1 au-dessus des normes pour son âge.
+
+> **Peptides Engine : une décision construite sur votre profil**
+>
+> Avant de toucher à l'axe de l'hormone de croissance, il faut savoir d'où vous partez : IGF-1, glycémie, HbA1c, prolactine, composition corporelle, sommeil, statut antidopage. Le Peptides Engine analyse votre profil de façon individualisée, vous dit si une approche par peptides a du sens ou non, et organise le suivi avec des marqueurs à contrôler et des critères d'arrêt. Aucune promesse, aucun protocole générique.
+>
+> [Découvrir le Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Glycémie, eau et prolactine : les effets à surveiller
+
+![Schéma des effets métaboliques d'une élévation de la GH : résistance à l'insuline et glycémie, rétention d'eau et de sodium, prolactine et cortisol selon le sécrétagogue](/images/blog/cjc-1295-ipamoreline-hormone-de-croissance-igf-1/gh-effets-glycemie-eau-prolactine.webp)
+
+### La glycémie : l'effet le plus constant
+
+La GH est une hormone **hyperglycémiante**. Elle stimule la lipolyse, ce qui libère des acides gras dans le sang, et ces acides gras réduisent la sensibilité des muscles et du foie à l'insuline (Møller et Jørgensen, 2009). À court terme, c'est utile : la GH protège vos réserves de glucose pendant le jeûne. À long terme, chez une personne déjà en surpoids ou sédentaire, cela peut pousser vers le prédiabète. Les données convergent : tendance au diabète sous GH (Liu, 2007), hausse de la glycémie sous MK-677 (Nass, 2008), hyperglycémies plus fréquentes sous ipamoréline chez des patients opérés (FDA, 2024).
+
+### La rétention d'eau
+
+La GH fait retenir du sodium et de l'eau par les reins. C'est la cause des **œdèmes**, des **mains gonflées**, des **fourmillements dans les doigts** et du **syndrome du canal carpien** décrits sous GH (Liu, 2007), et des œdèmes des jambes observés sous MK-677 (Nass, 2008). Sur la balance et sur une impédancemétrie, cette eau peut se faire passer pour de la « masse maigre ».
+
+### Prolactine et cortisol
+
+Tous les sécrétagogues ne se valent pas. La ghréline et l'hexaréline augmentent la **prolactine**, l'**ACTH** et le **cortisol** chez l'humain (Arvat, 2001 ; Frieboes, 2004). Le GHRP-2 et le GHRP-6 font monter l'ACTH et le cortisol chez l'animal. L'ipamoréline est réputée épargner ces axes, mais sur la base de données animales. Une prolactine trop haute peut se manifester par une baisse de la libido, des troubles de l'érection, une sensibilité des mamelons ou, chez la femme, des troubles du cycle. Pour comprendre comment ces hormones s'articulent avec la testostérone, lisez notre guide [testostérone basse : lire son bilan sanguin](/blog/testosterone-basse-lire-son-bilan-sanguin).
+
+### Le sommeil
+
+Paradoxe intéressant : alors que la GH est associée au sommeil profond, l'hexaréline a **réduit le sommeil lent profond** chez 7 jeunes volontaires (Frieboes, 2004). Stimuler l'axe ne garantit pas un meilleur sommeil. Pour l'améliorer, les leviers classiques restent les plus fiables : voir nos [5 façons d'optimiser le sommeil profond](/blog/5-facons-optimiser-sommeil-profond).
+
+---
+
+## Les marqueurs à surveiller : IGF-1, glycémie, HbA1c et les autres
+
+Voici les marqueurs qu'un suivi sérieux contrôle avant de commencer, puis à intervalles réguliers. Le détail de leur interprétation se trouve dans notre article [peptides et bilan sanguin : les marqueurs à suivre](/blog/peptides-bilan-sanguin-marqueurs-a-suivre).
+
+| Marqueur | Pourquoi le suivre | Signal d'alerte |
+|---|---|---|
+| **IGF-1** | Reflet de l'exposition à la GH sur plusieurs jours | Valeur au-dessus de la norme pour votre âge et votre sexe |
+| **Glycémie à jeun** | La GH réduit la sensibilité à l'insuline | 1,10 g/L ou plus selon les seuils français (hyperglycémie modérée à jeun), ou hausse nette par rapport à votre valeur de départ |
+| **HbA1c** | Glycémie moyenne sur environ 3 mois | Hausse progressive, entrée dans la zone 5,7 à 6,4 % (prédiabète selon l'ADA) |
+| **Insuline à jeun (et HOMA-IR)** | Repère la résistance à l'insuline avant la glycémie | Hausse par rapport à votre valeur de départ |
+| **Prolactine** | Certains sécrétagogues l'augmentent | Valeur au-dessus de la norme, surtout avec des symptômes |
+| **Cortisol du matin** | Certains GHRP stimulent l'axe du stress | Valeur anormale associée à une fatigue ou un sommeil dégradé |
+| **Bilan lipidique, tension artérielle** | Suivi cardiovasculaire de base | Hausse de la tension, œdèmes |
+| **Poids, tour de taille, symptômes** | Rétention d'eau, canal carpien | Mains gonflées, fourmillements, chevilles enflées |
+
+Deux précisions de terrain. L'IGF-1 se lit **par rapport à l'âge** : 250 ng/mL n'a pas le même sens à 25 ans et à 55 ans, et les normes varient selon les laboratoires. Et un marqueur isolé ne veut rien dire : c'est l'évolution entre le bilan de départ et les contrôles qui compte. Pour la glycémie, notre [guide ultime de la glycémie](/blog/guide-ultime-glycemie) explique comment lire ces valeurs. Pour un panorama plus large, voyez aussi [les marqueurs sanguins de la santé](/blog/marqueurs-sanguins-sante).
+
+---
+
+## Statut réglementaire et liste de l'AMA
+
+- **Liste AMA 2026** : classe **S2.2.4, facteurs de libération de l'hormone de croissance**. Le CJC-1295 y est cité nommément parmi les analogues du GHRH, l'ipamoréline parmi les sécrétagogues, aux côtés du GHRP-2, du GHRP-6, de l'hexaréline et du MK-677. Interdits **en permanence**, en compétition comme hors compétition.
+- **France et Union européenne** : aucune autorisation de mise sur le marché pour le CJC-1295 ni pour l'ipamoréline.
+- **États-Unis** : aucune approbation de la FDA. En décembre 2024, le comité consultatif de la FDA sur les préparations magistrales a voté contre l'inscription de toutes les formes de CJC-1295, et la FDA mentionne pour cette molécule des effets indésirables graves dont une accélération du rythme cardiaque et des réactions vasodilatatrices. L'ipamoréline reste classée parmi les substances présentant des risques significatifs pour les établissements de préparation à grande échelle (FDA, 2024).
+
+Les analogues du GHRH et sécrétagogues approuvés le sont pour des indications précises et sur prescription, par exemple la tésamoréline pour la graisse viscérale liée au VIH aux États-Unis.
+
+---
+
+## Avant de stimuler l'axe : les leviers qui ont fait leurs preuves
+
+La sécrétion de GH répond à des facteurs que vous contrôlez :
+
+- **le sommeil** : une grande partie de la GH est libérée dans les premières heures de sommeil profond
+- **l'entraînement intense**, en particulier les séances de musculation exigeantes et les efforts à haute intensité
+- **la masse grasse viscérale** : l'excès de graisse abdominale est associé à une sécrétion de GH plus basse
+- **l'alcool le soir**, qui perturbe le sommeil profond
+- **l'apport en protéines**, qui conditionne ce que l'IGF-1 peut construire
+
+Si votre objectif est la composition corporelle, les bases bien exécutées (surcharge progressive, protéines, sommeil, [créatine](/blog/creatine-guide-complet)) apportent plus, plus sûrement, que n'importe quelle stimulation de l'axe. Et si vous stagnez malgré tout, le problème est souvent ailleurs : notre article [stagnation en musculation : pourquoi vous stagnez](/blog/stagnation-musculation-pourquoi-vous-stagnez) passe en revue les causes les plus fréquentes.
+
+Pour le cadre général, lisez notre [guide complet des peptides](/blog/peptides-guide-complet), et pour comprendre pourquoi deux personnes ne réagissent pas de la même façon, notre article [même peptide, résultats différents](/blog/meme-peptide-resultats-differents).
+
+Pour une vue d'ensemble de votre terrain hormonal et métabolique, l'[Anabolic Bioscan](/offers/anabolic-bioscan) identifie les vrais blocages avant d'ajouter quoi que ce soit, et l'[analyse Blood Analysis](/offers/blood-analysis) transforme vos résultats sanguins en priorités claires.
+
+---
+
+## FAQ : CJC-1295 et ipamoréline
+
+### Quelle est la différence entre CJC-1295 avec DAC et sans DAC ?
+
+Avec DAC, le CJC-1295 se fixe à l'albumine et reste actif plusieurs jours (demi-vie de 5,8 à 8,1 jours) : il relève en continu le niveau de base de la GH. Sans DAC, il agit brièvement et produit un pic de GH de courte durée. Seule la forme avec DAC a été étudiée chez l'humain dans des études publiées.
+
+### Le CJC-1295 et l'ipamoréline augmentent-ils vraiment l'IGF-1 ?
+
+Pour le CJC-1295 avec DAC, oui : l'IGF-1 a été multipliée par 1,5 à 3 après une injection chez des adultes en bonne santé, et augmentée de 45 % une semaine après l'injection dans une autre étude. Pour l'ipamoréline seule et pour l'association des deux, il n'existe pas de données publiées chez l'humain sur l'IGF-1 à moyen terme.
+
+### Quels sont les effets secondaires du CJC-1295 et de l'ipamoréline ?
+
+Dans les études sur le CJC-1295 : réactions au point d'injection, maux de tête, bouffées de chaleur avec baisse transitoire de la tension, diarrhée, accélération du rythme cardiaque. Pour toute stimulation durable de la GH, il faut ajouter la hausse de la glycémie, la rétention d'eau, les douleurs articulaires et le canal carpien. Les données à long terme n'existent pas.
+
+### L'ipamoréline donne-t-elle faim comme le GHRP-6 ?
+
+L'ipamoréline a été développée pour être plus sélective que le GHRP-6, qui imite fortement l'effet de la ghréline sur l'appétit. Chez l'animal, elle ne modifie pas le cortisol ni l'ACTH. Chez l'humain, les données sur l'appétit sont trop limitées pour trancher. Le MK-677, autre sécrétagogue, augmente nettement la faim les premiers mois.
+
+### Quelles analyses sanguines faire si l'on s'intéresse à ces peptides ?
+
+Au minimum, avant et pendant : IGF-1 interprétée selon l'âge, glycémie à jeun, HbA1c, insuline à jeun, prolactine, bilan lipidique, et le suivi de la tension artérielle. C'est l'évolution entre le bilan de départ et les contrôles qui permet de décider de continuer ou d'arrêter.
+
+### Le CJC-1295 et l'ipamoréline sont-ils autorisés ?
+
+Non. Aucun des deux n'a d'autorisation de mise sur le marché pour un usage humain en France ou aux États-Unis. Pour les sportifs, ils sont cités nommément dans la classe S2.2.4 de la liste 2026 de l'AMA et interdits en permanence.
+
+---
+
+## Le verdict : une pharmacologie réelle, un dossier clinique inachevé
+
+Le CJC-1295 et l'ipamoréline ne sont pas des placebos : ils agissent sur l'axe de la GH, et les études chez l'humain le confirment pour le CJC-1295 avec DAC. Mais leur dossier s'arrête au stade des essais précoces. La forme sans DAC n'a pas été étudiée, l'ipamoréline a échoué sur son seul essai de phase 2 et l'association des deux n'a jamais été testée. Et ce qu'on sait de la GH elle-même invite à la prudence : un gain de masse maigre modeste, souvent en partie hydrique, contre une glycémie qui monte et des effets indésirables qui s'accumulent.
+
+Ma position : optimisez d'abord ce qui fait vraiment varier votre GH (sommeil, entraînement, masse grasse). Si vous envisagez malgré tout de stimuler l'axe, faites-le avec un bilan de départ, des contrôles d'IGF-1, de glycémie et d'HbA1c, et des critères d'arrêt écrits à l'avance.
+
+> **Un programme qui travaille avec vos hormones, pas contre elles**
+>
+> L'accompagnement personnalisé par Achzod vous donne un programme d'entraînement et de nutrition construit pour vos objectifs, avec un suivi régulier de vos progrès, de votre récupération et de votre composition corporelle.
+>
+> [Découvrir l'accompagnement Achzod](https://www.achzodcoaching.com)
+
+> **Peptides Engine : savoir avant d'agir**
+>
+> Une analyse individualisée de votre profil hormonal, métabolique et sportif pour déterminer si une approche par peptides a sa place dans votre stratégie, avec un suivi de l'IGF-1, de la glycémie et de l'HbA1c, et des critères d'arrêt définis dès le départ.
+>
+> [Découvrir le Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Références
+
+1. Teichman SL, et al. Prolonged stimulation of growth hormone (GH) and insulin-like growth factor I secretion by CJC-1295, a long-acting analog of GH-releasing hormone, in healthy adults. *J Clin Endocrinol Metab.* 2006;91(3):799-805. [doi:10.1210/jc.2005-1536](https://doi.org/10.1210/jc.2005-1536)
+2. Ionescu M, Frohman LA. Pulsatile secretion of growth hormone (GH) persists during continuous stimulation by CJC-1295, a long-acting GH-releasing hormone analog. *J Clin Endocrinol Metab.* 2006;91(12):4792-4797. [doi:10.1210/jc.2006-1702](https://doi.org/10.1210/jc.2006-1702)
+3. Jetté L, et al. Human growth hormone-releasing factor (hGRF)1-29-albumin bioconjugates activate the GRF receptor on the anterior pituitary in rats: identification of CJC-1295 as a long-lasting GRF analog. *Endocrinology.* 2005;146(7):3052-3058. [doi:10.1210/en.2004-1286](https://doi.org/10.1210/en.2004-1286)
+4. Raun K, et al. Ipamorelin, the first selective growth hormone secretagogue. *Eur J Endocrinol.* 1998;139(5):552-561. [doi:10.1530/eje.0.1390552](https://doi.org/10.1530/eje.0.1390552)
+5. Gobburu JV, et al. Pharmacokinetic-pharmacodynamic modeling of ipamorelin, a growth hormone releasing peptide, in human volunteers. *Pharm Res.* 1999;16(9):1412-1416. [doi:10.1023/A:1018955126402](https://doi.org/10.1023/A:1018955126402)
+6. Beck DE, et al. Prospective, randomized, controlled, proof-of-concept study of the ghrelin mimetic ipamorelin for the management of postoperative ileus in bowel resection patients. *Int J Colorectal Dis.* 2014;29(12):1527-1534. [doi:10.1007/s00384-014-2030-8](https://doi.org/10.1007/s00384-014-2030-8)
+7. Arvat E, et al. Endocrine activities of ghrelin, a natural growth hormone secretagogue (GHS), in humans: comparison and interactions with hexarelin, a nonnatural peptidyl GHS, and GH-releasing hormone. *J Clin Endocrinol Metab.* 2001;86(3):1169-1174. [doi:10.1210/jcem.86.3.7314](https://doi.org/10.1210/jcem.86.3.7314)
+8. Frieboes RM, et al. Hexarelin decreases slow-wave sleep and stimulates the secretion of GH, ACTH, cortisol and prolactin during sleep in healthy volunteers. *Psychoneuroendocrinology.* 2004;29(7):851-860. [doi:10.1016/S0306-4530(03)00152-5](https://doi.org/10.1016/S0306-4530%2803%2900152-5)
+9. Nijland EA, et al. A five day treatment with daily subcutaneous injections of growth hormone-releasing peptide-2 causes response attenuation and does not stimulate insulin-like growth factor-I secretion in healthy young men. *Eur J Endocrinol.* 1998;139(4):395-401. [doi:10.1530/eje.0.1390395](https://doi.org/10.1530/eje.0.1390395)
+10. Nass R, et al. Effects of an oral ghrelin mimetic on body composition and clinical outcomes in healthy older adults: a randomized trial. *Ann Intern Med.* 2008;149(9):601-611. [doi:10.7326/0003-4819-149-9-200811040-00003](https://doi.org/10.7326/0003-4819-149-9-200811040-00003)
+11. Falutz J, et al. Metabolic effects of a growth hormone-releasing factor in patients with HIV. *N Engl J Med.* 2007;357(23):2359-2370. [doi:10.1056/NEJMoa072375](https://doi.org/10.1056/NEJMoa072375)
+12. Liu H, et al. Systematic review: the safety and efficacy of growth hormone in the healthy elderly. *Ann Intern Med.* 2007;146(2):104-115. [doi:10.7326/0003-4819-146-2-200701160-00005](https://doi.org/10.7326/0003-4819-146-2-200701160-00005)
+13. Møller N, Jørgensen JOL. Effects of growth hormone on glucose, lipid, and protein metabolism in human subjects. *Endocr Rev.* 2009;30(2):152-177. [doi:10.1210/er.2008-0027](https://doi.org/10.1210/er.2008-0027)
+14. Renehan AG, et al. Insulin-like growth factor (IGF)-I, IGF binding protein-3, and cancer risk: systematic review and meta-regression analysis. *Lancet.* 2004;363(9418):1346-1353. [doi:10.1016/S0140-6736(04)16044-3](https://doi.org/10.1016/S0140-6736%2804%2916044-3)
+15. Sigalos JT, Pastuszak AW. The Safety and Efficacy of Growth Hormone Secretagogues. *Sex Med Rev.* 2018;6(1):45-53. [doi:10.1016/j.sxmr.2017.02.004](https://doi.org/10.1016/j.sxmr.2017.02.004)
+16. Dominikowski A, et al. The emerging landscape of performance-enhancing peptides modulating GH-IGF1 axis: bridging the gap between clinical evidence and patient self-administration. *Front Endocrinol.* 2026;17:1822475. [doi:10.3389/fendo.2026.1822475](https://doi.org/10.3389/fendo.2026.1822475)
+17. U.S. Food and Drug Administration. Pharmacy Compounding Advisory Committee, réunion du 4 décembre 2024 : document d'évaluation du CJC-1295. [fda.gov/media/183819/download](https://www.fda.gov/media/183819/download)
+18. U.S. Food and Drug Administration. Pharmacy Compounding Advisory Committee, réunion du 4 décembre 2024 : présentation sur la sécurité clinique du CJC-1295. [fda.gov/media/183891/download](https://www.fda.gov/media/183891/download)
+19. U.S. Food and Drug Administration. Pharmacy Compounding Advisory Committee, réunion du 29 octobre 2024 : document d'évaluation de l'ipamoréline. [fda.gov/media/182088/download](https://www.fda.gov/media/182088/download)
+20. Agence mondiale antidopage. Liste des interdictions 2026 (classe S2.2.4). [wada-ama.org/fr/liste-des-interdictions](https://www.wada-ama.org/fr/liste-des-interdictions)
+
+*Cet article est informatif et ne remplace pas un avis médical. Le CJC-1295 et l'ipamoréline n'ont pas d'autorisation de mise sur le marché pour un usage humain. Aucun dosage ni protocole n'est donné ici, volontairement.*
+`,
+  },
+  {  id: "142",
+    slug: "ghk-cu-peptide-cuivre-peau-cheveux",
+    title: "GHK-Cu, le peptide de cuivre pour la peau et les cheveux : ce qui est prouvé, ce qui ne l'est pas",
+    seoTitle: "GHK-Cu : peptide de cuivre, peau et cheveux | APEXLABS",
+    excerpt: "Rides, densité de la peau, chute de cheveux, cicatrisation : ce que montrent vraiment les études sur le GHK-Cu, la différence entre topique et injectable et les attentes réalistes après 40 ans.",
+    metaDescription: "GHK-Cu, peptide de cuivre : études sur la peau, les cheveux et la cicatrisation, topique ou injectable, ménopause. Ce qui est prouvé, ce qui ne l'est pas.",
+    category: "femmes",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "16 min",
+    image: "/images/blog/ghk-cu-peptide-cuivre-peau-cheveux/ghk-cu-hero.webp",
+    content: `# GHK-Cu, le peptide de cuivre pour la peau et les cheveux : ce qui est prouvé, ce qui ne l'est pas
+
+## Introduction : le « peptide de jouvence » qui fait le buzz
+
+Vous l'avez peut-être vu passer sous le nom de « copper peptide », de « peptide de cuivre » ou de « Copper Tripeptide-1 » sur l'étiquette d'un sérum. Le GHK-Cu est partout : dans les routines anti-âge, dans les lotions pour cuir chevelu, dans les cabinets d'esthétique qui le proposent en microneedling, et désormais en injection sur certains réseaux sociaux. On lui prête la capacité de relancer le collagène, d'effacer les rides, de densifier les cheveux et d'accélérer la cicatrisation.
+
+Le GHK-Cu a un vrai point fort : c'est une molécule que votre corps fabrique, étudiée depuis plus de cinquante ans, avec des effets clairs sur les fibroblastes en laboratoire. Son point faible est moins connu : les études cliniques sur la peau sont peu nombreuses, souvent anciennes, rarement publiées en détail et très majoritairement liées aux entreprises qui le commercialisent. Quant à la forme injectable, elle n'a fait l'objet d'aucun essai chez l'humain.
+
+Ce guide s'adresse en particulier aux femmes qui voient leur peau et leurs cheveux changer avec le temps, et surtout autour de la ménopause. On y passe en revue les études sur la peau, les cheveux et la cicatrisation, la différence entre topique et injectable, et une ligne de partage nette entre ce qui est prouvé et ce qui ne l'est pas.
+
+> **L'essentiel en 30 secondes**
+>
+> - Le **GHK** est un tripeptide naturel (glycine, histidine, lysine) qui capte le cuivre pour former le **GHK-Cu**. Son taux sanguin passe d'environ **200 ng/mL à 20 ans à 80 ng/mL à 60 ans** (Pickart, 2015).
+> - En laboratoire, il **stimule la synthèse de collagène** par les fibroblastes à des concentrations infimes (Maquart, 1988) et module les enzymes qui remodèlent la matrice de la peau.
+> - **Peau** : plusieurs études de 12 semaines chez 41 à 71 femmes rapportent une baisse des rides et une peau plus dense, mais elles sont décrites surtout dans des revues signées par des auteurs liés à l'industrie, sans données détaillées accessibles.
+> - **Cheveux** : signaux en laboratoire et dans des formules combinées. **Aucun essai de qualité chez la femme** n'isole l'effet du GHK-Cu.
+> - **Cicatrisation** : un essai randomisé positif sur les ulcères du pied diabétique (Mulder, 1994), qui n'a pas débouché sur un médicament.
+> - **Injectable** : **aucune étude humaine**. Aux États-Unis, la FDA ne l'accepte que pour des voies non injectables dans son évaluation en cours.
+
+---
+
+## Qu'est-ce que le GHK-Cu ?
+
+### Un tripeptide découvert dans le sang
+
+Le **GHK** (glycyl-L-histidyl-L-lysine) est un petit peptide de trois acides aminés présent naturellement dans le plasma, la salive et l'urine. Il a été isolé en 1973 par le chercheur Loren Pickart dans l'albumine humaine, comme une activité capable de faire fonctionner du tissu hépatique âgé « comme du tissu jeune » (Pickart, 2015). Le GHK a une forte affinité pour le **cuivre** : il se lie à un ion cuivre pour former le complexe **GHK-Cu**, qui est la forme utilisée dans les cosmétiques sous le nom INCI *Copper Tripeptide-1*.
+
+### Une molécule qui baisse avec l'âge
+
+Le taux plasmatique de GHK est d'environ **200 ng/mL à 20 ans** et descend autour de **80 ng/mL à 60 ans** (Pickart, 2015). Cette baisse coïncide avec le déclin des capacités de réparation de la peau. Coïncider ne veut pas dire causer, mais c'est l'argument de départ de toute la recherche sur le sujet.
+
+### Un fragment libéré par le collagène lui-même
+
+Détail élégant : la séquence GHK est présente dans la chaîne alpha 2 du collagène de type I. Quand le collagène est dégradé sur le site d'une blessure, le GHK pourrait être libéré sur place et participer à la réparation (Maquart, 1988). C'est l'une des raisons pour lesquelles on le classe parmi les « matrikines », des fragments de la matrice qui envoient des signaux aux cellules.
+
+---
+
+## Les mécanismes : ce que fait le GHK-Cu dans la peau
+
+![Schéma des mécanismes du GHK-Cu dans la peau : apport de cuivre, stimulation des fibroblastes, synthèse de collagène et d'élastine, régulation des métalloprotéinases et de leurs inhibiteurs, angiogenèse](/images/blog/ghk-cu-peptide-cuivre-peau-cheveux/ghk-cu-mecanismes-peau.webp)
+
+### Collagène et matrice
+
+Sur des cultures de fibroblastes, le GHK-Cu augmente la synthèse de collagène à partir de concentrations extrêmement faibles (10⁻¹² à 10⁻¹¹ M), avec un maximum à 10⁻⁹ M, sans augmenter le nombre de cellules (Maquart, 1988). Il stimule aussi les glycosaminoglycanes (dermatane sulfate, chondroïtine sulfate) et la décorine, une protéine qui organise les fibres de collagène.
+
+### Construire et démolir : la régulation des MMP
+
+Le GHK-Cu ne fait pas que « produire » : il module à la fois les **métalloprotéinases (MMP)**, qui dégradent la matrice abîmée, et leurs **inhibiteurs (TIMP)** (Pickart, 2015). Une peau qui vieillit bien n'est pas une peau qui fabrique plus de collagène à tout prix, c'est une peau qui renouvelle correctement son collagène. C'est le mécanisme le plus intéressant de la molécule, et aussi le plus difficile à démontrer chez l'humain.
+
+### Le cuivre, cofacteur indispensable
+
+Le cuivre est nécessaire à la **lysyl oxydase**, l'enzyme qui relie entre elles les fibres de collagène et d'élastine. Le GHK sert en partie de transporteur, en apportant du cuivre aux cellules sous une forme peu toxique.
+
+### Les « 4 000 gènes » : un chiffre à lire avec prudence
+
+Vous lirez souvent que le GHK « réinitialise » plus de 4 000 gènes. Ce chiffre vient d'analyses de bases de données d'expression génique sur des lignées cellulaires (Pickart, 2018), pas de biopsies de peau humaine traitée. C'est une piste de recherche, pas un effet démontré sur votre visage.
+
+---
+
+## Les études sur la peau : ce qu'elles montrent vraiment
+
+### Ce qui est rapporté
+
+La revue de Pickart (2015, *BioMed Research International*) résume plusieurs études contre placebo menées chez des femmes autour de 50 ans :
+
+- **Collagène (cuisses, 1 mois)** : sur des biopsies, une hausse du collagène chez **70 % des femmes** traitées avec une crème au GHK-Cu, contre **50 %** avec une crème à la vitamine C et **40 %** avec l'acide rétinoïque
+- **Visage (71 femmes, 12 semaines)**, photovieillissement léger à avancé : peau plus ferme et plus claire, rides moins profondes, densité et épaisseur cutanées augmentées
+- **Contour des yeux (41 femmes, 12 semaines)** : crème au GHK-Cu supérieure au placebo et à une crème à la vitamine K sur les rides et la densité de la peau
+- **Visage (67 femmes de 50 à 59 ans, 12 semaines)** : amélioration de la fermeté, des rides fines et profondes, des taches pigmentaires, et hausse de la prolifération des kératinocytes sur biopsie
+
+### Pourquoi il faut nuancer
+
+Sur le papier, c'est convaincant. En pratique, ces résultats posent plusieurs problèmes :
+
+1. **Les données détaillées sont difficiles à trouver.** Ces études sont citées à partir de communications de congrès et de travaux industriels. Les revues qui les reprennent ne donnent ni les scores, ni les écarts, ni les tests statistiques complets.
+2. **Les auteurs ne sont pas indépendants.** La revue de 2015 est signée par le département de recherche et développement de Skin Biology, une entreprise qui commercialise des produits au peptide de cuivre, et son premier auteur est le découvreur du GHK. Les auteurs déclarent pourtant ne pas avoir de conflit d'intérêts.
+3. **La comparaison avec l'acide rétinoïque est fragile.** Un mois d'application sur la cuisse n'est pas un protocole de référence pour juger un rétinoïde, dont les effets se mesurent sur des mois.
+4. **Le contexte général** : une revue de 2026 sur les peptides en dermatologie esthétique conclut que les études humaines rapportent des améliorations sur certains critères (rides, hydratation, élasticité, densité), mais qu'elles sont souvent **petites, courtes, financées par l'industrie et menées avec des formules qui contiennent plusieurs actifs**, ce qui empêche d'attribuer l'effet au peptide (Yi, 2026).
+
+Ma lecture : il existe un signal cohérent en faveur du GHK-Cu topique sur la qualité de la peau. Ce n'est pas le niveau de preuve des rétinoïdes. Le rétinol à 0,4 % a, par exemple, été testé dans un essai randomisé publié en détail, en double aveugle, bras contre bras, chez 36 personnes âgées pendant 24 semaines, avec une amélioration significative des rides fines et une hausse du procollagène I sur biopsie (Kafi, 2007).
+
+> **Votre peau reflète aussi votre hygiène de vie**
+>
+> Sommeil, apports en protéines, glycémie, entraînement, gestion du stress : la qualité de la peau se construit aussi de l'intérieur. L'accompagnement personnalisé par Achzod vous propose un programme d'entraînement et de nutrition adapté à votre âge, à votre cycle ou à votre ménopause, avec un suivi régulier.
+>
+> [Découvrir l'accompagnement Achzod](https://www.achzodcoaching.com)
+
+---
+
+## Peau, ménopause et collagène : pourquoi le sujet vous concerne
+
+La ménopause accélère le vieillissement cutané. Dans une étude sur 32 femmes de 28 à 68 ans, les biopsies de peau montraient une **baisse significative du collagène de type I et III après la ménopause**, d'autant plus marquée que la ménopause était ancienne (Affinito, 1999). Les auteurs concluent que la perte de collagène cutané est un phénomène lié aux œstrogènes, pas seulement à l'âge.
+
+Ce que cela change pour vous :
+
+- **Les fondamentaux d'abord** : protection solaire quotidienne, rétinoïde adapté à votre tolérance, apport protéique suffisant. Les rétinoïdes sont contre-indiqués pendant la grossesse.
+- **Le traitement hormonal de la ménopause** est une discussion à avoir avec votre gynécologue : il a des effets sur la peau, mais il se décide sur des critères médicaux plus larges.
+- **Le GHK-Cu topique** peut trouver sa place en complément, avec des attentes réalistes.
+- **Le collagène par voie orale** a son propre dossier, que nous détaillons dans notre [guide du collagène pour la peau et les articulations](/blog/collagene-peau-articulations-guide-complet). Pour le terrain hormonal, voyez aussi [les suppléments de la santé féminine](/blog/supplements-sante-feminine-hormones-fertilite) et notre article sur [ménopause et glycémie](/blog/menopause-glycemie-explique).
+
+---
+
+## Cheveux : un espoir surtout en laboratoire
+
+![Flat-lay sombre : peigne en bois, flacon compte-gouttes ambré, coupelles de soin et branche d'eucalyptus sur lin noir et ardoise](/images/blog/ghk-cu-peptide-cuivre-peau-cheveux/ghk-cu-cheveux-routine.webp)
+
+### Ce que montrent les études
+
+- **En laboratoire** : un peptide de cuivre très proche, l'AHK-Cu (alanine à la place de la glycine), allonge les follicules pileux humains en culture et augmente la prolifération des cellules de la papille dermique, en limitant leur mort cellulaire (Pyo, 2007). Ce n'est pas le GHK-Cu, et ce n'est pas un cuir chevelu.
+- **Chez l'animal** : un peptide liant le cuivre (PC1031) a agrandi les follicules pileux chez le rat, avec un effet comparable au minoxidil topique (Uno et Kurata, 1993).
+- **Chez l'humain** : un essai randomisé coréen sur **45 hommes** atteints d'alopécie androgénétique a testé pendant 6 mois une lotion associant l'**acide 5-aminolévulinique et le GHK** (Lee, 2016). Le nombre de cheveux a augmenté de 52,6 et 71,5 selon la concentration contre 9,6 sous placebo, sans différence sur la longueur ni l'épaisseur. Des hommes uniquement, deux actifs associés : on ne peut pas isoler le rôle du GHK.
+- **La synthèse la plus récente** : une revue systématique de 2026 a retenu **14 essais cliniques** de peptides contre la chute de cheveux. Elle attribue un grade de recommandation B à des **formules combinées** contenant notamment de l'acétyl tétrapeptide-3, du biotinoyl tripeptide-1 et du GHK (Joerg, 2026). Encore une fois, ce sont des associations.
+
+### Ce que cela veut dire pour une femme qui perd ses cheveux
+
+Aucun essai de qualité n'a évalué le GHK-Cu seul chez la femme. Et la chute de cheveux féminine a souvent une cause identifiable qu'aucun sérum ne corrige : **carence en fer** (ferritine basse), **trouble thyroïdien**, **post-partum**, **régime trop restrictif**, **stress**, **alopécie androgénétique** ou changements hormonaux de la ménopause. Le bon ordre est donc :
+
+1. un bilan sanguin (ferritine, TSH, vitamine D, zinc selon le contexte) et un avis dermatologique
+2. le traitement de la cause, et les traitements qui ont fait leurs preuves (le minoxidil en tête pour l'alopécie androgénétique)
+3. éventuellement un soin au peptide de cuivre en complément, sans en attendre de miracle
+
+Pour la ferritine, lisez notre article sur [le fer, l'anémie et l'énergie chez les femmes sportives](/blog/fer-anemie-energie-femmes-athletes), et pour la vitamine D notre guide [vitamine D : soleil et supplémentation](/blog/vitamine-d-soleil-supplementation).
+
+> **Peptides Engine : l'approche individualisée plutôt que la tendance**
+>
+> Le Peptides Engine analyse votre profil (âge, statut hormonal, objectifs pour la peau, les cheveux ou la récupération, antécédents et analyses) pour vous dire si un peptide a du sens dans votre situation, sous quelle forme, et avec quel suivi. Vous repartez avec une analyse individualisée, des marqueurs à surveiller et des critères d'arrêt clairs. Aucune promesse de résultat.
+>
+> [Découvrir le Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Cicatrisation : le dossier clinique le plus solide
+
+C'est le domaine médical, et non cosmétique, qui a produit l'essai publié le plus rigoureux. Dans un essai multicentrique randomisé, contre placebo, avec évaluateur en aveugle, un gel de GHK-Cu (Iamin) a été testé sur des **ulcères neuropathiques du pied diabétique**, en plus de soins standardisés (Mulder, 1994) :
+
+- **fermeture médiane des plaies plantaires : 98,5 % contre 60,8 %** avec le gel sans principe actif
+- sur les plaies de plus de 100 mm², **89,2 % contre -10,3 %**, c'est-à-dire une aggravation sous placebo
+- **infections : 7 % contre 34 %** quand le traitement commençait juste après le nettoyage de la plaie
+
+Un résultat net, mais sur un essai ancien, jamais suivi d'un médicament autorisé à base de GHK-Cu. Les données de cicatrisation chez l'animal (rat, souris, porc, chien) sont nombreuses et cohérentes (Pickart, 2015). Pour une cicatrice d'acné ou une cicatrice chirurgicale, en revanche, on ne dispose pas d'essai contrôlé de qualité.
+
+---
+
+## Topique ou injectable : la différence qui change tout
+
+![Schéma comparatif du GHK-Cu topique et injectable : pénétration cutanée, études humaines disponibles, statut réglementaire et risques](/images/blog/ghk-cu-peptide-cuivre-peau-cheveux/ghk-cu-topique-vs-injectable.webp)
+
+### Le topique : une pénétration réelle mais limitée
+
+Le GHK-Cu est une molécule hydrophile, qui traverse mal la couche cornée, barrière grasse de l'épiderme (Ogórek, 2025). Une étude sur peau humaine en laboratoire montre pourtant qu'à 0,68 %, le cuivre du complexe traverse la peau dermatomée et s'y accumule en partie en réservoir (Hostynek, 2011). Ce sont des conditions de laboratoire, avec une application continue sur 48 heures, mais elles confirment qu'une fraction du produit atteint le derme.
+
+Ce qui fait la différence en pratique :
+
+- **la formulation** : concentration réelle, pH, stabilité, encapsulation en liposomes, emballage opaque et hermétique
+- **la régularité** : les études ont duré 12 semaines au minimum
+- **les associations** : beaucoup de marques conseillent de ne pas appliquer le GHK-Cu en même temps qu'un acide (AHA, acide ascorbique pur) pour préserver sa stabilité. C'est un conseil de formulation logique, pas une donnée clinique
+
+### Le microneedling : une voie à encadrer
+
+Le microneedling ouvre des microcanaux dans la peau et augmente l'absorption des actifs. C'est aussi ce qui le rend risqué avec des produits non conçus pour cet usage : des **granulomes du visage** et des réactions d'hypersensibilité générale ont été décrits chez trois femmes de 40 à 60 ans environ, après un microneedling réalisé avec un sérum cosmétique appliqué juste avant (Soltani-Arabshahi, 2014). Si vous y avez recours, faites-le chez un professionnel, avec un produit stérile prévu pour cette indication.
+
+### L'injectable : aucune étude humaine
+
+Les injections sous-cutanées de GHK-Cu vendues en ligne n'ont **aucun essai clinique publié** derrière elles. On ne connaît ni la tolérance, ni la dose, ni le devenir du cuivre apporté. Aux États-Unis, la FDA n'a remis le GHK-Cu dans sa liste de substances en cours d'évaluation pour les préparations magistrales que **pour les voies non injectables** (mai 2026). La demande concernant la voie injectable a été retirée, et la FDA conserve à son sujet des réserves sur le risque immunitaire et le manque de données de sécurité (FDA, 2026). Un apport de cuivre supplémentaire est aussi une vraie question en cas de maladie de Wilson ou de maladie hépatique.
+
+| Critère | GHK-Cu topique (sérum, crème) | GHK-Cu injectable |
+|---|---|---|
+| Études humaines | Plusieurs études de 12 semaines, peu détaillées, souvent liées à l'industrie | Aucune |
+| Pénétration | Limitée mais réelle, dépend fortement de la formulation | Systémique, non étudiée |
+| Effets indésirables connus | Rares : irritation, réaction de contact | Inconnus |
+| Statut en Europe | Ingrédient cosmétique (*Copper Tripeptide-1*) | Aucune autorisation de mise sur le marché |
+| Statut aux États-Unis | Voie non injectable en cours d'évaluation par la FDA | Demande retirée, réserves de la FDA sur la sécurité |
+| Grossesse et allaitement | Pas de données, prudence | À éviter |
+
+---
+
+## Ce qui est prouvé, ce qui ne l'est pas
+
+| Affirmation | Niveau de preuve | Notre verdict |
+|---|---|---|
+| Le GHK-Cu stimule le collagène des fibroblastes | Solide en laboratoire | Prouvé in vitro |
+| Le GHK baisse avec l'âge | Données plasmatiques | Établi, rôle causal non démontré |
+| Il réduit les rides en topique | Études de 12 semaines peu détaillées, liées à l'industrie | Plausible, preuve modérée à faible |
+| Il fait mieux que le rétinol | Comparaison isolée d'un mois sur la cuisse | Non démontré |
+| Il accélère la cicatrisation des plaies | Un essai randomisé sur le pied diabétique et de nombreuses études animales | Signal réel, à confirmer |
+| Il fait repousser les cheveux | In vitro, animal, formules combinées chez l'homme | Non démontré seul, rien de solide chez la femme |
+| Il « reprogramme » 4 000 gènes | Analyses de bases de données sur lignées cellulaires | Hypothèse de recherche |
+| L'injection est plus efficace que le topique | Aucune étude humaine | Non démontré, sécurité inconnue |
+
+---
+
+## Bien utiliser un soin au GHK-Cu
+
+Si vous voulez l'intégrer à votre routine :
+
+- **Choisissez un produit qui affiche l'INCI *Copper Tripeptide-1*** et, idéalement, une concentration. Une couleur bleue n'est pas une garantie de dosage.
+- **Introduisez-le seul** pendant deux semaines pour repérer une éventuelle irritation.
+- **Évaluez sur 12 semaines** avec des photos dans la même lumière, pas au miroir du matin.
+- **Gardez vos fondamentaux** : protection solaire, rétinoïde si vous le tolérez, hydratation.
+- **Demandez un avis médical** en cas de grossesse, d'allaitement, de maladie de Wilson, de dermatose active, ou si vous êtes sportive licenciée et qu'un doute existe sur un produit (l'AMA rappelle que les cosmétiques contenant des peptides ou facteurs de croissance interdits restent interdits).
+
+Pour faire le point sur ce qui se joue en dessous de la peau (hormones, carences, inflammation), le [Discovery Scan](/offers/discovery-scan) offre une première lecture globale de votre profil, et l'[analyse Blood Analysis](/offers/blood-analysis) transforme votre prise de sang en priorités claires. Pour la vue d'ensemble sur les peptides, lisez notre [guide complet des peptides](/blog/peptides-guide-complet), et pour les peptides dits réparateurs, notre comparatif [BPC-157 vs TB-500](/blog/bpc-157-vs-tb-500-differences).
+
+---
+
+## FAQ : GHK-Cu et peptides de cuivre
+
+### Le GHK-Cu fonctionne-t-il vraiment sur les rides ?
+
+Plusieurs études de 12 semaines chez 41 à 71 femmes rapportent moins de rides et une peau plus dense avec des crèmes au GHK-Cu, contre placebo. Mais ces travaux sont peu détaillés et souvent liés à l'industrie. Le signal est cohérent, le niveau de preuve reste inférieur à celui des rétinoïdes et de la protection solaire.
+
+### Le GHK-Cu fait-il repousser les cheveux ?
+
+Les données positives viennent de cultures de follicules, d'études animales et de lotions qui associent plusieurs actifs, testées surtout chez l'homme. Aucun essai de qualité ne montre un effet du GHK-Cu seul chez la femme. Avant tout soin, vérifiez les causes fréquentes de chute : ferritine, thyroïde, post-partum, alimentation, alopécie androgénétique.
+
+### Faut-il préférer le GHK-Cu topique ou injectable ?
+
+Le topique est le seul à avoir été étudié chez l'humain, et il dispose d'un statut d'ingrédient cosmétique. L'injectable n'a aucune étude clinique publiée, sa sécurité est inconnue et il n'est autorisé nulle part comme médicament. Nous le déconseillons en dehors d'un cadre de recherche encadré.
+
+### Peut-on associer le GHK-Cu au rétinol ou à la vitamine C ?
+
+Rien ne montre une interaction dangereuse avec le rétinol, mais l'association peut irriter : introduisez un actif à la fois. Beaucoup de formulateurs conseillent de ne pas appliquer le GHK-Cu en même temps qu'une vitamine C pure ou un acide exfoliant, pour préserver sa stabilité. Alterner matin et soir est une solution simple.
+
+### Quels sont les effets secondaires du GHK-Cu ?
+
+En application cutanée, les effets indésirables rapportés sont rares : rougeurs, picotements, réaction de contact. Le microneedling avec des produits non stériles expose à des réactions granulomateuses décrites dans la littérature. Pour la forme injectable, les effets secondaires ne sont pas connus faute d'études.
+
+### Le GHK-Cu est-il compatible avec la grossesse ?
+
+Il n'existe pas de données sur le GHK-Cu pendant la grossesse ou l'allaitement. Par prudence, demandez l'avis de votre médecin ou de votre sage-femme avant de l'utiliser, et évitez toute forme injectable. Les rétinoïdes, souvent utilisés dans les mêmes routines, sont eux contre-indiqués pendant la grossesse.
+
+---
+
+## Le verdict : un bon actif cosmétique, pas un élixir
+
+Le GHK-Cu mérite mieux que sa réputation de produit miracle, et moins que ses promesses marketing. En laboratoire, c'est l'une des molécules les mieux caractérisées pour le remodelage de la peau. En cicatrisation, un essai randomisé solide plaide en sa faveur. Sur les rides, les données sont encourageantes mais fragiles. Sur les cheveux, rien ne permet d'affirmer qu'il agit seul, encore moins chez la femme. Et l'injection relève de l'expérimentation sans filet.
+
+Ma position : en sérum, comme complément d'une routine qui repose sur la protection solaire et un rétinoïde, c'est une option raisonnable. Pour les cheveux, cherchez d'abord la cause. Et laissez les seringues de côté tant qu'aucune étude ne justifie de les sortir.
+
+> **Prendre soin de vous de l'intérieur**
+>
+> L'accompagnement personnalisé par Achzod, c'est un programme d'entraînement et de nutrition construit pour votre corps et votre période de vie (cycle, grossesse passée, ménopause), avec un suivi régulier pour garder le cap.
+>
+> [Découvrir l'accompagnement Achzod](https://www.achzodcoaching.com)
+
+> **Peptides Engine : une analyse avant toute décision**
+>
+> Une analyse individualisée de votre profil pour savoir si un peptide, et lequel, a sa place dans votre stratégie, avec un suivi, des marqueurs à contrôler et des critères d'arrêt définis dès le départ.
+>
+> [Découvrir le Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Références
+
+1. Pickart L, Vasquez-Soltero JM, Margolina A. GHK Peptide as a Natural Modulator of Multiple Cellular Pathways in Skin Regeneration. *Biomed Res Int.* 2015;2015:648108. [doi:10.1155/2015/648108](https://doi.org/10.1155/2015/648108)
+2. Pickart L, Margolina A. Regenerative and Protective Actions of the GHK-Cu Peptide in the Light of the New Gene Data. *Int J Mol Sci.* 2018;19(7):1987. [doi:10.3390/ijms19071987](https://doi.org/10.3390/ijms19071987)
+3. Maquart FX, et al. Stimulation of collagen synthesis in fibroblast cultures by the tripeptide-copper complex glycyl-L-histidyl-L-lysine-Cu2+. *FEBS Lett.* 1988;238(2):343-346. [doi:10.1016/0014-5793(88)80509-x](https://doi.org/10.1016/0014-5793%2888%2980509-x)
+4. Yi KH, et al. Peptides in Aesthetic Dermatology: Classification, Fibroblast-Centered Mechanisms, Delivery Technologies, and Clinical Evidence. *Life (Basel).* 2026;16(10):1660. [doi:10.3390/life16101660](https://doi.org/10.3390/life16101660)
+5. Kafi R, et al. Improvement of naturally aged skin with vitamin A (retinol). *Arch Dermatol.* 2007;143(5):606-612. [doi:10.1001/archderm.143.5.606](https://doi.org/10.1001/archderm.143.5.606)
+6. Affinito P, et al. Effects of postmenopausal hypoestrogenism on skin collagen. *Maturitas.* 1999;33(3):239-247. [doi:10.1016/S0378-5122(99)00077-8](https://doi.org/10.1016/S0378-5122%2899%2900077-8)
+7. Pyo HK, et al. The effect of tripeptide-copper complex on human hair growth in vitro. *Arch Pharm Res.* 2007;30(7):834-839. [doi:10.1007/BF02978833](https://doi.org/10.1007/BF02978833)
+8. Uno H, Kurata S. Chemical agents and peptides affect hair growth. *J Invest Dermatol.* 1993;101(1 Suppl):143S-147S. [doi:10.1111/1523-1747.ep12363275](https://doi.org/10.1111/1523-1747.ep12363275)
+9. Lee WJ, et al. Efficacy of a Complex of 5-Aminolevulinic Acid and Glycyl-Histidyl-Lysine Peptide on Hair Growth. *Ann Dermatol.* 2016;28(4):438-443. [doi:10.5021/ad.2016.28.4.438](https://doi.org/10.5021/ad.2016.28.4.438)
+10. Joerg L, Zafar K, Jagdeo J. Peptides for Hair Growth and Treatment of Hair Loss and Alopecia: A Systematic Review. *J Drugs Dermatol.* 2026;25(11):1026-1032. [doi:10.36849/JDD.9736](https://doi.org/10.36849/JDD.9736)
+11. Mulder GD, et al. Enhanced healing of ulcers in patients with diabetes by topical treatment with glycyl-l-histidyl-l-lysine copper. *Wound Repair Regen.* 1994;2(4):259-269. [doi:10.1046/j.1524-475X.1994.20406.x](https://doi.org/10.1046/j.1524-475X.1994.20406.x)
+12. Hostynek JJ, Dreher F, Maibach HI. Human skin penetration of a copper tripeptide in vitro as a function of skin layer. *Inflamm Res.* 2011;60(1):79-86. [doi:10.1007/s00011-010-0238-9](https://doi.org/10.1007/s00011-010-0238-9)
+13. Ogórek K, et al. Are We Ready to Measure Skin Permeation of Modern Antiaging GHK-Cu Tripeptide Encapsulated in Liposomes? *Molecules.* 2025;30(1):136. [doi:10.3390/molecules30010136](https://doi.org/10.3390/molecules30010136)
+14. Soltani-Arabshahi R, et al. Facial allergic granulomatous reaction and systemic hypersensitivity associated with microneedle therapy for skin rejuvenation. *JAMA Dermatol.* 2014;150(1):68-72. [doi:10.1001/jamadermatol.2013.6955](https://doi.org/10.1001/jamadermatol.2013.6955)
+15. U.S. Food and Drug Administration. Bulk Drug Substances Nominated for Use in Compounding Under Section 503A (mise à jour de mai 2026 sur le GHK-Cu). [fda.gov/media/94155/download](https://www.fda.gov/media/94155/download)
+16. Agence mondiale antidopage. Liste des interdictions 2026 et questions fréquentes sur les cosmétiques contenant des peptides. [wada-ama.org/fr/liste-des-interdictions](https://www.wada-ama.org/fr/liste-des-interdictions)
+
+*Cet article est informatif et ne remplace pas un avis médical ou dermatologique. Le GHK-Cu n'a pas d'autorisation de mise sur le marché en tant que médicament. Aucun dosage ni protocole d'injection n'est donné ici, volontairement.*
+`,
+  },
+  {  id: "143",
+    slug: "mots-c-ss-31-peptides-mitochondries",
+    title: "MOTS-c et SS-31 : les peptides mitochondriaux, ce que la science montre vraiment",
+    seoTitle: "MOTS-c et SS-31 : peptides mitochondriaux et preuves | APEXLABS",
+    excerpt: "MOTS-c, peptide codé par vos mitochondries et activateur de l'AMPK, et SS-31 (élamipretide), approuvé en 2025 pour le syndrome de Barth : mécanismes, essais humains, échecs, statut antidopage et ce que ça change vraiment pour un pratiquant.",
+    metaDescription: "MOTS-c et SS-31 (élamipretide) : mécanismes, AMPK, essais cliniques, approbation FDA 2025 pour le syndrome de Barth, statut antidopage et limites réelles.",
+    category: "longevite",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "17 min",
+    image: "/images/blog/mots-c-ss-31-peptides-mitochondries/mots-c-ss-31-hero.webp",
+    content: `# MOTS-c et SS-31 : les peptides mitochondriaux, ce que la science montre vraiment
+
+## Introduction : deux peptides, deux histoires très différentes
+
+MOTS-c et SS-31 sont souvent rangés dans la même case sur les forums : « peptides mitochondriaux », « énergie cellulaire », « anti-âge ». C'est pratique, mais c'est faux. Ces deux molécules n'ont presque rien en commun, à part le fait de viser la mitochondrie.
+
+Le **MOTS-c** est un peptide que votre corps fabrique lui-même, à partir de l'ADN de vos propres mitochondries. Il agit comme un signal hormonal, augmente pendant l'effort et active l'AMPK, le capteur d'énergie de la cellule. Son dossier humain se résume pour l'instant à des mesures de taux sanguins et à un essai de phase 1 sur un analogue.
+
+Le **SS-31**, ou élamipretide, est une molécule de synthèse conçue pour se fixer à la cardiolipine, un lipide de la membrane interne des mitochondries. Il a franchi un cap que très peu de « peptides de performance » franchiront : une approbation accélérée de la FDA en septembre 2025, pour une maladie génétique rare, le syndrome de Barth. Mais il a aussi échoué dans plusieurs essais randomisés.
+
+Dans cet article, je décortique les deux dossiers sans le vernis marketing : mécanismes, essais positifs et négatifs, portée réelle de l'approbation de 2025, statut antidopage, et la seule façon sérieuse d'aborder ces molécules : mesurer, encadrer, savoir quand s'arrêter.
+
+> **L'essentiel en 30 secondes**
+>
+> - Le **MOTS-c** est un peptide de 16 acides aminés codé par l'ADN mitochondrial. Chez la souris, il active l'**AMPK** et protège de la résistance à l'insuline induite par un régime gras (Lee, 2015).
+> - Chez l'humain, l'effort l'augmente : **x 11,9 dans le muscle** et **x 1,5 dans le sang** après une séance de vélo chez 10 hommes jeunes (Reynolds, 2021). Aucun essai publié n'a testé le MOTS-c natif comme traitement chez l'humain.
+> - Le **SS-31 (élamipretide)** se fixe à la **cardiolipine** et stabilise la chaîne respiratoire. Il a échoué dans l'infarctus, l'insuffisance cardiaque et les myopathies mitochondriales primaires (MMPOWER-3, 218 patients).
+> - Le **19 septembre 2025**, la FDA lui a accordé une **approbation accélérée** pour le **syndrome de Barth** (patients de 30 kg et plus), sur la base de la force des extenseurs du genou. Un essai de confirmation reste exigé.
+> - Le MOTS-c figure sur la **liste des interdictions de l'AMA** (S4.4.1), en et hors compétition. Aucun des deux n'est autorisé comme produit de performance.
+> - L'entraînement reste l'activateur mitochondrial le mieux documenté, et le moins cher.
+
+---
+
+## Pourquoi les mitochondries attirent autant les chercheurs (et le marketing)
+
+### Une centrale électrique qui vieillit
+
+Vos mitochondries produisent l'essentiel de l'ATP qui fait contracter vos muscles. Elles gèrent aussi l'oxydation des graisses, une partie du signal inflammatoire et la mort cellulaire programmée. Avec l'âge et la sédentarité, leur nombre et leur qualité baissent : moins d'ATP produit par molécule d'oxygène, plus de radicaux libres, une membrane interne moins bien organisée.
+
+Ce déclin est associé à la perte de force, à la baisse de VO2max et à la résistance à l'insuline. D'où l'idée : si l'on « répare » la mitochondrie, on ralentit tout le reste.
+
+### Trois angles d'attaque
+
+On peut recycler les mitochondries usées (l'angle de l'[urolithine A](/blog/urolithine-a-mitophagie-muscle-longevite)), soutenir leur carburant (l'angle du [NAD+ et du NMN](/blog/nad-nmn-niacine-longevite-energie)), ou envoyer un signal et protéger leur structure : c'est là que se placent le MOTS-c (signal) et le SS-31 (structure). Les deux premières stratégies passent par des compléments oraux. La troisième passe par des peptides injectables, ce qui change complètement le niveau de risque et le cadre légal.
+
+---
+
+## MOTS-c : un peptide fabriqué par vos propres mitochondries
+
+### Une découverte de 2015
+
+Pendant longtemps, on pensait que l'ADN mitochondrial ne codait que 13 protéines de la chaîne respiratoire, plus quelques ARN. En 2015, l'équipe de Changhan Lee et Pinchas Cohen (Université de Californie du Sud) a identifié une courte séquence cachée dans le gène de l'ARN ribosomique 12S. Elle code un peptide de **16 acides aminés** : le MOTS-c, pour *mitochondrial open reading frame of the 12S rRNA-c* (Lee, 2015).
+
+Ce que l'étude fondatrice a montré, chez la souris et sur cellules :
+
+- l'organe cible principal semble être le **muscle squelettique**
+- le MOTS-c **freine le cycle des folates** et la synthèse des purines, ce qui fait s'accumuler un intermédiaire appelé AICAR
+- cet AICAR **active l'AMPK**, l'enzyme qui s'allume quand la cellule manque d'énergie, comme pendant un effort
+- chez la souris, le traitement a **empêché la résistance à l'insuline** liée à l'âge et au régime riche en graisses, ainsi que la **prise de poids** induite par ce régime
+
+### Un peptide qui parle au noyau
+
+En 2018, la même équipe a montré qu'en situation de stress métabolique (privation de glucose), le MOTS-c **migre de la mitochondrie vers le noyau** de la cellule, selon un mécanisme qui dépend de l'AMPK (Kim, 2018). Une fois dans le noyau, il module l'expression de nombreux gènes, notamment ceux de la réponse antioxydante, en interagissant avec le facteur NRF2.
+
+![Schéma du mécanisme du MOTS-c : de l'ADN mitochondrial au muscle, activation de l'AMPK, captation du glucose et passage dans le noyau](/images/blog/mots-c-ss-31-peptides-mitochondries/mots-c-mecanisme-ampk.webp)
+
+### Pourquoi on parle de « mimétique de l'exercice »
+
+L'étude de Reynolds et al. (2021, *Nature Communications*) est celle qui a lancé l'étiquette. Elle contient deux volets.
+
+**Chez l'humain** : 10 hommes jeunes et sédentaires (24,5 ans en moyenne, IMC de 24) ont pédalé sur un vélo stationnaire. Les chercheurs ont prélevé du muscle et du sang avant, pendant et après l'effort, puis après 4 heures de repos :
+
+- dans le muscle, le MOTS-c a été multiplié par **11,9** après l'effort, et restait élevé après 4 heures
+- dans le sang, il a augmenté de **1,6 fois pendant** et de **1,5 fois après** l'effort, avant de revenir à la normale en 4 heures
+
+**Chez la souris** : des injections de MOTS-c ont amélioré la capacité physique chez des animaux jeunes, d'âge moyen et âgés. Un traitement commencé très tard dans la vie des animaux (à 23,5 mois) a amélioré la capacité physique et des marqueurs de « durée de vie en bonne santé ».
+
+Lisez bien : l'effort **fait monter** le MOTS-c chez l'humain, et le MOTS-c **injecté améliore la performance** chez la souris. Personne n'a montré qu'en injecter à un humain reproduit les effets de l'entraînement. « Mimétique de l'exercice » est une hypothèse de travail, pas un résultat clinique.
+
+Point de transparence : les deux auteurs principaux du programme MOTS-c (Lee et Cohen) étaient consultants et actionnaires de CohBar, l'entreprise qui développait un analogue du MOTS-c. C'est déclaré dans les publications.
+
+### Un indice génétique intéressant
+
+Une variante de l'ADN mitochondrial, appelée m.1382A>C, modifie un acide aminé du MOTS-c (on parle de K14Q-MOTS-c). Elle n'existe pratiquement que dans les populations d'Asie du Nord-Est :
+
+- une première publication a proposé qu'elle puisse contribuer à la longévité exceptionnelle observée au Japon (Fuku, 2015). C'est une hypothèse, pas une démonstration.
+- une méta-analyse de trois cohortes (**27 527 personnes**) a ensuite montré que les **hommes** porteurs de cette variante avaient une **prévalence plus élevée de diabète de type 2**, et seulement chez les moins actifs physiquement (Zempo, 2021). Chez la souris, la forme K14Q perd l'effet sensibilisateur à l'insuline.
+
+Ce signal soutient un rôle réel du MOTS-c dans le métabolisme humain. Il ne dit rien sur l'intérêt d'en injecter.
+
+---
+
+## Ce que le MOTS-c n'a pas encore prouvé chez l'humain
+
+### Le seul essai clinique publié concerne un analogue
+
+Le seul produit dérivé du MOTS-c testé chez l'humain est le **CB4211**, un analogue modifié développé par CohBar. Ce n'est pas le peptide natif vendu sur internet. Les résultats de phase 1b (2021) :
+
+- **20 personnes obèses** avec une stéatose hépatique (au moins 10 % de graisse dans le foie) ont terminé l'étude, 11 sous CB4211 et 9 sous placebo
+- durée : **4 semaines**, en unité clinique fermée avec une alimentation standardisée
+- ALT (enzyme hépatique) : **- 21 %** sous CB4211 contre **+ 4 %** sous placebo
+- glycémie à jeun : **- 6 %** contre 0 %
+- graisse du foie : baisse **comparable dans les deux groupes** (environ 5 points), donc pas d'effet propre démontré
+- tolérance jugée bonne, avec surtout des réactions au point d'injection
+
+Ces résultats viennent de l'entreprise (communiqué, poster de congrès) ; je n'ai pas trouvé de publication dans une revue à comité de lecture. Quatre semaines, 20 personnes, un analogue : un début, rien de plus.
+
+### Un premier essai de phase 2 vient de démarrer
+
+Un essai de phase 2 (NCT07505745), enregistré en mars 2026, recrute **120 adultes prédiabétiques en surpoids ou obèses** pour tester le MOTS-c sur 12 semaines, avec comme critère principal la sensibilité à l'insuline mesurée par une hyperglycémie provoquée. Le promoteur est une société privée. Les résultats ne sont pas attendus avant plusieurs mois.
+
+### Ce que les autorités ont relevé
+
+Lors de l'évaluation des peptides proposés pour les préparations magistrales aux États-Unis, la FDA n'a identifié **aucune étude de sécurité chez l'humain** pour le MOTS-c. Ses préoccupations générales pour ce type de peptides injectables portent sur l'**immunogénicité** (le risque que l'organisme fabrique des anticorps contre la molécule), les **impuretés** liées à la synthèse et la caractérisation du principe actif.
+
+Traduction pratique : si vous vous injectez du MOTS-c, vous faites une expérience sur vous-même, avec un produit dont vous ne connaissez ni la pureté ni l'effet à long terme.
+
+> **Votre progression mérite mieux que des suppositions**
+>
+> Avant de chercher un peptide, vérifiez que votre entraînement, votre alimentation et votre récupération sont réellement optimisés. Avec l'accompagnement personnalisé d'Achzod, vous obtenez un programme d'entraînement et de nutrition construit pour votre profil, ajusté au fil de vos résultats, avec un suivi régulier.
+>
+> [Découvrir le coaching Achzod](https://www.achzodcoaching.com)
+
+---
+
+## SS-31 (élamipretide) : le peptide qui cible la cardiolipine
+
+### Ce qu'est la cardiolipine
+
+La cardiolipine est un lipide présent presque uniquement dans la **membrane interne des mitochondries**. Elle sert d'échafaudage aux complexes de la chaîne respiratoire et donne leur forme aux crêtes, ces replis où se fabrique l'ATP. Quand la cardiolipine est oxydée ou mal construite, les crêtes se désorganisent, la production d'ATP chute et la fuite de radicaux libres augmente.
+
+### Comment agit le SS-31
+
+Le SS-31 est un **tétrapeptide de synthèse** (quatre acides aminés, dont deux modifiés) développé par Hazel Szeto. Sa structure lui permet de traverser les membranes et de se concentrer dans la membrane interne mitochondriale, où il se lie à la cardiolipine (Szeto, 2014). Effets décrits dans les modèles précliniques :
+
+- stabilisation des crêtes mitochondriales
+- meilleur couplage de la chaîne respiratoire, donc plus d'ATP pour le même oxygène
+- moins de production de radicaux libres
+
+![Schéma de l'action du SS-31 : fixation à la cardiolipine dans la membrane interne mitochondriale, stabilisation de la chaîne respiratoire et production d'ATP](/images/blog/mots-c-ss-31-peptides-mitochondries/ss-31-cardiolipine-schema.webp)
+
+### Chez la personne âgée : un effet mesurable, mais fugace
+
+L'étude de Roshanravan et al. (2021, *PLoS One*) a testé **une seule perfusion** d'élamipretide chez **39 adultes de 60 à 85 ans** en bonne santé, sélectionnés pour avoir des mitochondries peu performantes. Le muscle étudié : un petit muscle de la main (premier interosseux dorsal), mesuré par spectroscopie par résonance magnétique.
+
+- juste après la perfusion de 2 heures, la **capacité maximale de production d'ATP** a augmenté par rapport au placebo (significatif en pourcentage, à la limite de la significativité en valeur absolue)
+- **7 jours plus tard, plus aucune différence**, ce qui correspond à la demi-vie courte de la molécule
+- **aucun effet sur la résistance à la fatigue** du muscle
+
+Financement : Stealth BioTherapeutics, le fabricant, qui a participé à la conception de l'étude. Résultat honnête : la molécule fait ce qu'elle promet au niveau mitochondrial, mais ça ne s'est pas traduit par une meilleure fonction musculaire.
+
+### Les essais qui ont échoué
+
+C'est la partie que les vendeurs de « SS-31 de recherche » oublient toujours :
+
+- **Infarctus du myocarde (EMBRACE STEMI, 2016)** : chez des patients traités par angioplastie pour un premier infarctus antérieur, l'élamipretide n'a **pas réduit la taille de l'infarctus**, ni amélioré les critères d'IRM, d'angiographie ou cliniques. Tolérance correcte.
+- **Insuffisance cardiaque (PROGRESS-HF, 2020)** : **71 patients**, 4 semaines de traitement. Pas de différence significative sur le volume du ventricule gauche par rapport au placebo.
+- **Myopathies mitochondriales primaires (MMPOWER-3, 2023)** : **218 patients** sur 24 semaines, le plus grand essai du programme. **Aucun des deux critères principaux atteint** (distance au test de marche de 6 minutes et fatigue). Une analyse de sous-groupe chez les patients porteurs d'une anomalie de l'ADN nucléaire montre **+ 25 mètres** au test de marche par rapport au placebo, mais les auteurs la qualifient eux-mêmes de génératrice d'hypothèses.
+
+Trois indications, trois échecs sur le critère principal.
+
+### Le syndrome de Barth : l'histoire de l'approbation de 2025
+
+Le syndrome de Barth est une maladie génétique très rare, liée au chromosome X, qui touche presque exclusivement les garçons. Une mutation du gène *TAZ* empêche la cardiolipine d'être correctement construite. Conséquences : cardiomyopathie souvent dès la petite enfance, faiblesse musculaire, fatigue, baisse des globules blancs. C'est la maladie où le mécanisme du SS-31 a le plus de sens.
+
+**L'essai TAZPOWER (Reid Thompson, 2021, *Genetics in Medicine*)** :
+
+- **12 patients**, essai croisé randomisé en double aveugle : 12 semaines sous élamipretide, 12 semaines sous placebo
+- **partie 1 : aucun des deux critères principaux atteint** (test de marche de 6 minutes et score de symptômes)
+- **partie 2, en ouvert** : 10 patients ont continué, 8 ont atteint 36 semaines. Gain de **95,9 mètres** au test de marche et amélioration du score de symptômes, de la force des extenseurs du genou et de certains paramètres cardiaques
+- un des auteurs était salarié de Stealth BioTherapeutics
+
+**Le parcours réglementaire** :
+
+- **15 mai 2025** : la FDA refuse dans un premier temps le dossier (lettre de réponse complète)
+- **19 septembre 2025** : la FDA accorde une **approbation accélérée** à l'élamipretide, sous le nom **Forzinity**, pour **améliorer la force musculaire** chez les patients atteints du syndrome de Barth **pesant au moins 30 kg**
+- la décision repose sur un **critère intermédiaire** : la force des extenseurs du genou mesurée au dynamomètre, jugée « raisonnablement susceptible » de prédire un bénéfice clinique
+- la FDA exige un **essai de confirmation** ; le maintien de l'autorisation en dépend
+
+Selon Reuters, l'approbation a été signée par le directeur du bureau concerné **malgré les objections de plusieurs examinateurs**, qui relevaient l'échec face au placebo dans l'essai contrôlé et l'absence de lien démontré entre le traitement et les progrès dans l'étude ouverte. Le directeur s'est appuyé sur une étude de 10 patients suivie sur 192 semaines, où la force du genou augmentait de plus de 45 %, ainsi que sur la rareté et la gravité de la maladie.
+
+![Chronologie de l'élamipretide de 2016 à 2025 : essais EMBRACE STEMI, PROGRESS-HF, TAZPOWER, MMPOWER-3, refus puis approbation accélérée de la FDA](/images/blog/mots-c-ss-31-peptides-mitochondries/elamipretide-chronologie.webp)
+
+### Ce que cette approbation veut dire pour vous
+
+Un peptide mitochondrial est devenu médicament, dans un cadre précis : une maladie génétique rare, suivie par des spécialistes, avec l'obligation de prouver ensuite le bénéfice. Cela ne dit **rien** sur la performance, la récupération ou le vieillissement d'une personne en bonne santé : aucune étude ne le montre. Et le « SS-31 de recherche » vendu en ligne n'a pas le contrôle qualité d'un médicament.
+
+> **Peptides Engine : une analyse de votre profil, pas une liste de molécules à la mode**
+>
+> Peptides Engine part de vos objectifs, de votre historique, de vos antécédents et de votre biologie pour déterminer si un peptide a du sens dans votre situation, lequel, et ce qu'il faut surveiller. Le rapport intègre les contre-indications, les marqueurs sanguins à contrôler avant et pendant, et des critères d'arrêt clairs, avec des formules de suivi.
+>
+> [Découvrir Peptides Engine](/offers/peptides-engine)
+
+---
+
+## MOTS-c, SS-31, urolithine A, NAD+ : le comparatif
+
+| Critère | MOTS-c | SS-31 (élamipretide) | Urolithine A | Précurseurs du NAD+ (NMN, NR) |
+|---|---|---|---|---|
+| Nature | Peptide naturel codé par l'ADN mitochondrial | Tétrapeptide de synthèse | Métabolite du microbiote | Vitamines B3 et dérivés |
+| Cible principale | Signal métabolique (AMPK, noyau) | Cardiolipine, membrane interne | Recyclage des mitochondries (mitophagie) | Réserves de NAD+ |
+| Voie d'administration étudiée | Injection | Injection ou perfusion | Orale | Orale |
+| Preuves chez l'humain | Hausse naturelle à l'effort ; un analogue testé 4 semaines chez 20 personnes | Plusieurs essais randomisés, majoritairement négatifs ; approbation accélérée pour le syndrome de Barth | Plusieurs petits essais randomisés, effets modestes | Plusieurs essais, effets surtout sur les taux de NAD+ |
+| Statut | Non approuvé ; interdit par l'AMA | Médicament pour une seule maladie rare (États-Unis) | Complément alimentaire | Statut variable selon les pays |
+| Profil de risque | Inconnu chez l'humain, pureté non garantie | Réactions au point d'injection ; hors indication, inconnu | Bonne tolérance à court terme | Bonne tolérance à court terme |
+
+Les deux molécules les plus médiatisées sur les réseaux sont celles dont les preuves chez une personne en bonne santé sont les plus minces.
+
+---
+
+## L'entraînement reste le premier activateur mitochondrial
+
+![Rameur et vélo stationnaire dans une salle d'entraînement sombre éclairée par un néon jaune](/images/blog/mots-c-ss-31-peptides-mitochondries/mitochondries-entrainement.webp)
+
+### Ce que fait déjà une séance
+
+Relisez les mécanismes. Le MOTS-c active l'AMPK. L'effort active l'AMPK. L'AMPK, en phosphorylant l'enzyme ULK1, est nécessaire au recyclage des mitochondries induit par l'exercice (Laker, 2017). Et l'effort fait grimper votre MOTS-c musculaire de près de 12 fois en une séance.
+
+L'entraînement fait donc, gratuitement et avec des décennies de recul, ce que les peptides mitochondriaux promettent de faire en injection.
+
+### Ma lecture de coach
+
+- **Endurance de base** : deux à trois séances par semaine en [zone 2](/blog/zone-2-cardio-longevite) restent le meilleur investissement pour la densité mitochondriale.
+- **Intervalles intenses** : une séance courte et dure par semaine stimule fortement l'AMPK.
+- **Musculation** : elle préserve la masse musculaire, donc le volume de tissu riche en mitochondries.
+- **Sommeil et alimentation** : sans eux, aucune molécule ne compensera. Une [créatine](/blog/creatine-guide-complet) bien prise et un apport protéique suffisant font plus pour vos performances qu'un peptide expérimental.
+
+Si vous voulez aller plus loin sur le recyclage mitochondrial, lisez notre guide sur l'[urolithine A](/blog/urolithine-a-mitophagie-muscle-longevite), et pour le carburant cellulaire, celui sur le [NAD+ et le NMN](/blog/nad-nmn-niacine-longevite-energie).
+
+---
+
+## Statut réglementaire et antidopage
+
+### Ce que dit la loi
+
+- **MOTS-c** : aucune autorisation de mise sur le marché, nulle part. Il n'est approuvé pour aucun usage humain.
+- **Élamipretide** : approuvé aux États-Unis uniquement, sous le nom Forzinity, pour le syndrome de Barth chez les patients de 30 kg et plus. En dehors de cette indication et des États-Unis, je n'ai trouvé aucune autorisation de mise sur le marché.
+- Les produits vendus comme « peptides de recherche » ou « non destinés à la consommation humaine » ne sont pas des médicaments. Leur pureté, leur dosage réel et leur stérilité ne sont pas garantis.
+
+### Pour les sportifs contrôlés
+
+Le **MOTS-c est explicitement nommé** dans la liste des interdictions de l'Agence mondiale antidopage, section **S4.4.1** (activateurs de l'AMPK, comme l'AICAR), **interdit en permanence**, en et hors compétition. Les substances de la section S4.4 ne sont pas des « substances spécifiées », ce qui expose à des sanctions plus lourdes. L'agence antidopage américaine (USADA) juge très improbable l'obtention d'une autorisation d'usage thérapeutique pour le MOTS-c, faute d'usage médical reconnu.
+
+Le SS-31 n'est pas nommé dans la liste. La section **S0** vise les substances sans aucune approbation pour un usage thérapeutique humain ; depuis l'autorisation américaine de 2025, son classement n'est donc plus évident et dépend de l'interprétation des autorités. Si vous êtes soumis aux contrôles, posez la question à votre fédération ou à votre agence antidopage avant toute prise.
+
+---
+
+## Si le sujet vous intéresse : l'encadrement avant la molécule
+
+Je ne vous dirai pas comment utiliser ces peptides. Mais un encadrement sérieux pose toujours les mêmes questions :
+
+1. **Quel problème mesurable voulez-vous régler ?** Sans objectif chiffré, vous ne saurez jamais si ça marche.
+2. **Avez-vous un point de départ ?** Glycémie à jeun, HbA1c, insuline, bilan lipidique, enzymes hépatiques, fonction rénale, CRP ultrasensible. Notre guide sur le [bilan sanguin autour des peptides](/blog/peptides-bilan-sanguin-marqueurs-a-suivre) détaille les marqueurs par famille.
+3. **Les fondamentaux sont-ils en place ?** Si vous dormez six heures et ne faites pas de cardio, la réponse est non.
+4. **Quels signaux doivent vous faire arrêter ?** Réaction locale qui s'étend, fièvre, malaise, marqueur qui sort des normes.
+5. **Pourquoi votre voisin a-t-il eu un résultat et pas vous ?** C'est le sujet de notre article sur la [variabilité de réponse aux peptides](/blog/meme-peptide-resultats-differents).
+
+Pour une vue d'ensemble de la famille, notre [guide complet des peptides](/blog/peptides-guide-complet) pose les bases. Et pour transformer vos résultats de prise de sang en priorités claires, l'[analyse Blood Analysis](/offers/blood-analysis) lit vos biomarqueurs dans une logique performance et prévention.
+
+---
+
+## FAQ : MOTS-c et SS-31
+
+### Le MOTS-c fait-il maigrir ?
+
+Chez la souris, oui : il a empêché la prise de poids sous régime riche en graisses (Lee, 2015). Chez l'humain, aucune étude publiée n'a montré de perte de poids avec le MOTS-c natif. L'analogue CB4211 a seulement montré une tendance non significative à la baisse du poids sur 4 semaines chez 20 personnes.
+
+### Le MOTS-c remplace-t-il l'entraînement ?
+
+Non. L'effort augmente naturellement le MOTS-c dans le muscle (x 11,9 après une séance de vélo dans l'étude de Reynolds, 2021). Les effets sur la performance n'ont été montrés que chez la souris. L'étiquette « mimétique de l'exercice » reste une hypothèse.
+
+### Le SS-31 est-il approuvé par la FDA ?
+
+Oui, mais pour une seule indication. Le 19 septembre 2025, la FDA a accordé une approbation accélérée à l'élamipretide (Forzinity) pour améliorer la force musculaire dans le syndrome de Barth, chez les patients de 30 kg et plus. Un essai de confirmation est exigé. Ce n'est pas une approbation pour la performance ou l'anti-âge.
+
+### Le SS-31 améliore-t-il les performances sportives ?
+
+Aucune étude ne le montre chez une personne en bonne santé. Chez des adultes de 60 à 85 ans, une perfusion unique a augmenté la capacité de production d'ATP d'un muscle de la main pendant quelques heures, sans améliorer la résistance à la fatigue (Roshanravan, 2021).
+
+### Le MOTS-c est-il interdit en compétition ?
+
+Oui. Il est explicitement listé par l'Agence mondiale antidopage dans la section S4.4.1 (activateurs de l'AMPK), interdit en permanence, en et hors compétition. Une autorisation d'usage thérapeutique est très improbable, faute d'usage médical reconnu.
+
+### Quelle différence entre MOTS-c et urolithine A ?
+
+Le MOTS-c est un peptide injectable qui envoie un signal métabolique via l'AMPK, sans essai clinique publié chez l'humain. L'urolithine A est un complément oral qui stimule le recyclage des mitochondries, avec plusieurs petits essais randomisés chez l'humain. Les deux ne sont pas interchangeables, et aucun ne remplace l'entraînement.
+
+---
+
+## Conclusion : un mécanisme fascinant, des preuves encore minces
+
+Le MOTS-c a ouvert un champ de recherche passionnant : la mitochondrie n'est pas seulement une centrale électrique, elle envoie des signaux qui pilotent le métabolisme de tout l'organisme. Mais en 2026, son dossier chez l'humain tient en une phrase : il augmente quand vous faites du sport, et un analogue a été testé pendant 4 semaines chez 20 personnes.
+
+Le SS-31 a un parcours plus long et plus contrasté. Une approbation accélérée pour une maladie génétique rare, obtenue malgré des réserves internes à la FDA, et des échecs dans l'infarctus, l'insuffisance cardiaque et les myopathies mitochondriales. Rien qui justifie son usage par un pratiquant en bonne santé.
+
+Ma position : **l'entraînement d'abord**, parce qu'il active exactement les voies que ces peptides essaient de reproduire. Ensuite, des mesures objectives. Et si vous envisagez un peptide, un cadre qui commence par votre bilan et se termine par des critères d'arrêt.
+
+> **Passez à un accompagnement qui mesure vos progrès**
+>
+> Un programme d'entraînement et de nutrition conçu pour votre profil, des ajustements basés sur vos résultats et un suivi régulier : c'est l'accompagnement personnalisé proposé par Achzod.
+>
+> [Commencer avec le coaching Achzod](https://www.achzodcoaching.com)
+
+> **Vous envisagez un peptide ? Commencez par votre profil**
+>
+> Peptides Engine analyse vos objectifs, vos antécédents, vos traitements et vos marqueurs pour vous dire si une approche par peptide a du sens pour vous, avec les contrôles à prévoir, les contre-indications et les critères d'arrêt. Sans promesse de résultat.
+>
+> [Lancer mon analyse Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Références
+
+1. Lee C, et al. The mitochondrial-derived peptide MOTS-c promotes metabolic homeostasis and reduces obesity and insulin resistance. *Cell Metab.* 2015;21(3):443-454. [doi:10.1016/j.cmet.2015.02.009](https://doi.org/10.1016/j.cmet.2015.02.009) (PMID 25738459)
+2. Kim KH, et al. The mitochondrial-encoded peptide MOTS-c translocates to the nucleus to regulate nuclear gene expression in response to metabolic stress. *Cell Metab.* 2018;28(3):516-524.e7. [doi:10.1016/j.cmet.2018.06.008](https://doi.org/10.1016/j.cmet.2018.06.008) (PMID 29983246)
+3. Reynolds JC, et al. MOTS-c is an exercise-induced mitochondrial-encoded regulator of age-dependent physical decline and muscle homeostasis. *Nat Commun.* 2021;12(1):470. [doi:10.1038/s41467-020-20790-0](https://doi.org/10.1038/s41467-020-20790-0) (PMID 33473109)
+4. Fuku N, et al. The mitochondrial-derived peptide MOTS-c: a player in exceptional longevity? *Aging Cell.* 2015;14(6):921-923. [doi:10.1111/acel.12389](https://doi.org/10.1111/acel.12389) (PMID 26289118)
+5. Zempo H, et al. A pro-diabetogenic mtDNA polymorphism in the mitochondrial-derived peptide, MOTS-c. *Aging (Albany NY).* 2021;13(2):1692-1717. [doi:10.18632/aging.202529](https://doi.org/10.18632/aging.202529) (PMID 33468709)
+6. CohBar Inc. Topline results from the Phase 1a/1b study of CB4211 (communiqué du 10 août 2021, déposé auprès de la SEC). [sec.gov](https://www.sec.gov/Archives/edgar/data/1522602/000121390021041377/ea145151ex99-2_cohbar.htm)
+7. ClinicalTrials.gov. MOTS-c for Improving Insulin Sensitivity in Adults With Prediabetes and Overweight/Obesity. NCT07505745. [clinicaltrials.gov](https://clinicaltrials.gov/study/NCT07505745)
+8. Szeto HH. First-in-class cardiolipin-protective compound as a therapeutic agent to restore mitochondrial bioenergetics. *Br J Pharmacol.* 2014;171(8):2029-2050. [doi:10.1111/bph.12461](https://doi.org/10.1111/bph.12461) (PMID 24117165)
+9. Roshanravan B, et al. In vivo mitochondrial ATP production is improved in older adult skeletal muscle after a single dose of elamipretide in a randomized trial. *PLoS One.* 2021;16(7):e0253849. [doi:10.1371/journal.pone.0253849](https://doi.org/10.1371/journal.pone.0253849) (PMID 34264994)
+10. Gibson CM, et al. EMBRACE STEMI study: a Phase 2a trial to evaluate the safety, tolerability, and efficacy of intravenous MTP-131 on reperfusion injury in patients undergoing primary percutaneous coronary intervention. *Eur Heart J.* 2016;37(16):1296-1303. [doi:10.1093/eurheartj/ehv597](https://doi.org/10.1093/eurheartj/ehv597) (PMID 26586786)
+11. Butler J, et al. Effects of elamipretide on left ventricular function in patients with heart failure with reduced ejection fraction: the PROGRESS-HF phase 2 trial. *J Card Fail.* 2020;26(5):429-437. [doi:10.1016/j.cardfail.2020.02.001](https://doi.org/10.1016/j.cardfail.2020.02.001) (PMID 32068002)
+12. Karaa A, et al. Efficacy and safety of elamipretide in individuals with primary mitochondrial myopathy: the MMPOWER-3 randomized clinical trial. *Neurology.* 2023;101(3):e238-e252. [doi:10.1212/WNL.0000000000207402](https://doi.org/10.1212/WNL.0000000000207402) (PMID 37268435)
+13. Reid Thompson W, et al. A phase 2/3 randomized clinical trial followed by an open-label extension to evaluate the effectiveness of elamipretide in Barth syndrome, a genetic disorder of mitochondrial cardiolipin metabolism. *Genet Med.* 2021;23(3):471-478. [doi:10.1038/s41436-020-01006-8](https://doi.org/10.1038/s41436-020-01006-8) (PMID 33077895)
+14. U.S. Food and Drug Administration. FDA grants accelerated approval to first treatment for Barth syndrome (19 septembre 2025). [fda.gov](https://www.fda.gov/news-events/press-announcements/fda-grants-accelerated-approval-first-treatment-barth-syndrome) ; lettre d'approbation NDA 215244. [accessdata.fda.gov](https://www.accessdata.fda.gov/drugsatfda_docs/appletter/2025/215244Orig1s000ltr.pdf)
+15. Reuters. US FDA cleared pricey rare disease drug over reviewer objections (5 novembre 2025). [reuters.com](https://www.reuters.com/business/healthcare-pharmaceuticals/us-fda-cleared-pricey-rare-disease-drug-over-reviewer-objections-2025-11-05)
+16. Laker RC, et al. Ampk phosphorylation of Ulk1 is required for targeting of mitochondria to lysosomes in exercise-induced mitophagy. *Nat Commun.* 2017;8:548. [doi:10.1038/s41467-017-00520-9](https://doi.org/10.1038/s41467-017-00520-9)
+17. Agence mondiale antidopage. Liste des interdictions 2026, section S4.4.1. [wada-ama.org](https://www.wada-ama.org/sites/default/files/2025-09/2026list_en_final_clean_september_2025.pdf) ; USADA. What is the MOTS-c peptide? [usada.org](https://www.usada.org/spirit-of-sport/what-is-mots-c-peptide)
+18. Health Affairs Forefront. FDA advisory committee's vote may open a drug-compounding back door for unapproved peptides (août 2026). [healthaffairs.org](https://www.healthaffairs.org/content/forefront/fda-advisory-committee-s-vote-may-open-drug-compounding-back-door-unapproved-peptides)
+
+*Cet article est informatif et ne remplace pas un avis médical. Il ne contient aucune recommandation de dosage ni d'utilisation. Les peptides cités ne sont pas approuvés pour un usage de performance ou de bien-être.*
+`,
+  },
+  {  id: "144",
+    slug: "meme-peptide-resultats-differents",
+    title: "Même peptide, résultats différents : pourquoi votre voisin progresse et pas vous",
+    seoTitle: "Même peptide, résultats différents : pourquoi | APEXLABS",
+    excerpt: "Pourquoi le même peptide donne des résultats opposés d'une personne à l'autre : génétique, état de départ, pureté réelle du produit, sommeil, nutrition, entraînement, attentes et suivi. Et ce qu'un encadrement change vraiment.",
+    metaDescription: "Même peptide, résultats différents : génétique, bilan sanguin, pureté, contrefaçons, sommeil, attentes et suivi. Les 6 facteurs qui expliquent l'écart.",
+    category: "biohacking",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "16 min",
+    image: "/images/blog/meme-peptide-resultats-differents/meme-peptide-resultats-hero.webp",
+    content: `# Même peptide, résultats différents : pourquoi votre voisin progresse et pas vous
+
+## Introduction : la même molécule ne donne pas le même résultat
+
+Votre partenaire d'entraînement vous jure qu'un peptide a changé sa récupération. Vous essayez la même chose, et vous ne voyez rien. Ou pire : des effets secondaires, et aucun bénéfice. Sur les forums, la conclusion tombe vite : « mauvais produit », « pas assez longtemps », « tu n'es pas répondeur ».
+
+La réalité est plus intéressante, et plus utile. Le même peptide donne des résultats différents pour des raisons identifiables : votre biologie, votre point de départ, la qualité réelle du produit, votre sommeil, votre alimentation, votre entraînement, vos attentes et la façon dont vous mesurez ce qui se passe. La plupart de ces facteurs se contrôlent. Très peu de gens les contrôlent.
+
+Même les médicaments peptidiques approuvés, fabriqués selon les normes pharmaceutiques et testés sur des milliers de patients, donnent des réponses très dispersées. Alors imaginez avec des produits de qualité inconnue, pris sans bilan ni suivi.
+
+Dans cet article, je passe en revue les six facteurs qui expliquent l'écart entre deux personnes sous le même peptide, études à l'appui, et ce qu'un encadrement sérieux change concrètement.
+
+> **L'essentiel en 30 secondes**
+>
+> - Même un médicament approuvé donne des réponses dispersées : sous sémaglutide, **86 %** des patients perdent au moins 5 % de leur poids, mais **seulement la moitié** atteint 15 % (STEP 1, 1 961 adultes).
+> - La génétique pèse lourd : sous un même programme d'entraînement, l'héritabilité de la réponse de la VO2max atteint **47 %** (HERITAGE, 481 personnes).
+> - Votre **point de départ** compte : bilan sanguin, glycémie, IGF-1, thyroïde, inflammation. Sans bilan initial, vous ne pouvez pas interpréter le résultat.
+> - La **pureté** est un facteur majeur : des produits achetés sans ordonnance affichaient **7 à 14 % de pureté** au lieu des 99 % annoncés (Ashraf, 2024).
+> - **Sommeil, nutrition et entraînement** modifient la réponse : dormir 5 h 30 au lieu de 8 h 30 pendant un régime réduit de 55 % la part de gras perdu (Nedeltcheva, 2010).
+> - Les **attentes** faussent le ressenti : l'effet placebo sur la performance sportive est faible à modéré (d = 0,38 sur 32 études).
+> - La seule façon de savoir ce qui marche pour vous : **bilan avant, suivi pendant, critères d'arrêt définis à l'avance**.
+
+---
+
+## Même peptide, résultats différents : ce que montrent les médicaments approuvés
+
+### L'exemple des GLP-1
+
+Les analogues du GLP-1 sont les peptides les mieux étudiés de la planète. Ils sont fabriqués sous normes pharmaceutiques, approuvés pour l'obésité et le diabète de type 2, et se prennent sur prescription médicale. Ce sont donc le meilleur terrain pour observer la variabilité « pure », sans problème de qualité de produit.
+
+**STEP 1 (Wilding, 2021, *NEJM*)** : 1 961 adultes en surpoids ou obèses, sans diabète, suivis 68 semaines sous sémaglutide ou placebo, avec un accompagnement hygiéno-diététique.
+
+- perte de poids moyenne : **- 14,9 %** sous sémaglutide contre **- 2,4 %** sous placebo
+- **86,4 %** des patients sous sémaglutide ont perdu au moins 5 % de leur poids
+- **69,1 %** ont perdu au moins 10 %
+- **50,5 %** ont perdu au moins 15 %
+
+Autrement dit, sur 100 personnes traitées avec la même molécule, à la même dose cible, avec le même accompagnement, environ 14 n'ont pas atteint 5 % de perte de poids, pendant que la moitié dépassait 15 %. La moyenne de 15 % cache une dispersion énorme.
+
+**SURMOUNT-1 (Jastreboff, 2022, *NEJM*)** : même constat avec le tirzépatide, chez 2 539 adultes sur 72 semaines. À la dose la plus élevée, 91 % des patients perdent au moins 5 %, et 57 % dépassent 20 %. Là encore, une partie importante reste loin de la moyenne.
+
+### Ce que ça veut dire pour vous
+
+Si un médicament approuvé, testé sur des milliers de personnes, donne des réponses allant du simple au triple, un peptide expérimental testé sur 20 rongeurs ne vous garantit rien. La « moyenne » publiée dans une étude n'est pas votre résultat. C'est une tendance de groupe.
+
+![Schéma des six facteurs qui expliquent l'écart de réponse entre deux personnes sous le même peptide](/images/blog/meme-peptide-resultats-differents/six-facteurs-reponse-peptide.webp)
+
+---
+
+## Facteur 1 : la variabilité individuelle (génétique, âge, sexe)
+
+### Le précédent de l'entraînement
+
+L'étude HERITAGE (Bouchard, 1999, *Journal of Applied Physiology*) a soumis **481 adultes sédentaires** issus de **98 familles** au même programme d'endurance pendant **20 semaines**, avec des tests de VO2max standardisés avant et après.
+
+- gain moyen de VO2max : environ **400 mL/min**
+- mais certains n'ont presque rien gagné, quand d'autres ont gagné **plus de 1 L/min**
+- la variance de la réponse était **2,5 fois plus grande entre les familles qu'à l'intérieur des familles**
+- héritabilité estimée de la réponse : jusqu'à **47 %**
+
+Même stimulus, même durée, même encadrement : la réponse varie du simple au double, et une grande partie de cet écart est familiale. Aucune raison de penser que les peptides échappent à cette règle.
+
+### Ce qui varie d'une personne à l'autre
+
+- **Les récepteurs** : un peptide agit en se fixant à un récepteur. Leur nombre, leur sensibilité et leurs variantes génétiques diffèrent d'un individu à l'autre.
+- **Le peptide lui-même** : un exemple concret est la variante m.1382A>C de l'ADN mitochondrial, qui modifie le peptide MOTS-c. Sur **27 527 personnes**, les hommes porteurs de cette variante avaient une prévalence plus élevée de diabète de type 2, surtout s'ils étaient peu actifs (Zempo, 2021). Le détail est dans notre article sur les [peptides mitochondriaux MOTS-c et SS-31](/blog/mots-c-ss-31-peptides-mitochondries).
+- **L'âge** : la sécrétion d'hormone de croissance, la sensibilité à l'insuline et la capacité de récupération changent avec les décennies.
+- **Le sexe** : profil hormonal, composition corporelle et cycle menstruel influencent la réponse à de nombreuses molécules.
+- **Les traitements en cours** : un médicament peut potentialiser, masquer ou contrarier l'effet recherché.
+
+Vous ne changerez pas votre génétique. Mais vous pouvez cesser de vous comparer à un inconnu et mesurer votre propre réponse.
+
+---
+
+## Facteur 2 : votre état de départ et votre bilan sanguin
+
+### Le même stimulus n'a pas le même effet selon d'où vous partez
+
+C'est le facteur le plus sous-estimé. Prenez deux personnes qui envisagent un peptide qui stimule l'axe de l'hormone de croissance :
+
+- la première a un IGF-1 bas, dort mal et s'entraîne peu
+- la seconde a déjà un IGF-1 dans le haut des normes, une glycémie limite et dort bien
+
+Elles n'ont ni la même marge de progression, ni le même niveau de risque. Chez la première, le problème principal est peut-être le sommeil. Chez la seconde, augmenter encore l'axe GH/IGF-1 peut dégrader une glycémie déjà fragile. Dans l'essai de 2 ans sur le MK-677, un sécrétagogue oral de l'hormone de croissance, chez 65 adultes de 60 à 81 ans, la glycémie à jeun a augmenté en moyenne de **0,3 mmol/L (5 mg/dL)** et la sensibilité à l'insuline a baissé (Nass, 2008). Sur une personne déjà prédiabétique, ce n'est pas un détail.
+
+### Les marqueurs qui changent l'interprétation
+
+- **Glycémie à jeun, HbA1c, insuline** : votre point de départ métabolique.
+- **IGF-1** : indispensable pour tout ce qui touche à l'axe de l'hormone de croissance.
+- **TSH, T4 libre** : une thyroïde lente explique à elle seule fatigue, prise de poids et mauvaise récupération.
+- **Ferritine, NFS** : un déficit en fer ou une anémie plombe l'endurance et la récupération.
+- **Vitamine D, CRP ultrasensible** : statut de base et inflammation de bas grade.
+- **Bilan hépatique et rénal** : la capacité de votre organisme à éliminer ce que vous lui apportez.
+- **Testostérone, prolactine** selon le profil, comme détaillé dans notre guide [testostérone basse : lire son bilan sanguin](/blog/testosterone-basse-lire-son-bilan-sanguin).
+
+Notre article sur les [marqueurs à suivre autour d'un peptide](/blog/peptides-bilan-sanguin-marqueurs-a-suivre) détaille tout cela, famille par famille. Et si vous voulez savoir ce que votre médecin ne demande presque jamais, lisez notre guide sur les [marqueurs du bilan sanguin que le médecin ne demande pas](/blog/bilan-sanguin-marqueurs-que-medecin-ne-demande-pas).
+
+### Sans bilan de départ, pas d'interprétation possible
+
+Si vous ne savez pas où vous partez, vous ne saurez jamais ce que le peptide a fait. Une amélioration de la récupération peut venir d'une semaine de vacances. Une fatigue peut venir d'une carence en fer qui existait avant. Le bilan initial est votre référence. Sans lui, vous lisez du bruit.
+
+> **Avant la molécule, optimisez ce qui pèse le plus**
+>
+> Dans la plupart des cas, l'écart entre deux personnes se joue d'abord sur l'entraînement, l'alimentation et la récupération. L'accompagnement personnalisé d'Achzod vous donne un programme d'entraînement et de nutrition construit pour votre profil, ajusté selon vos résultats, avec un suivi régulier.
+>
+> [Découvrir le coaching Achzod](https://www.achzodcoaching.com)
+
+---
+
+## Facteur 3 : la pureté réelle du produit et les contrefaçons
+
+### Ce qu'on trouve quand on analyse les produits
+
+C'est le facteur dont personne ne veut parler, parce qu'il remet en cause l'achat lui-même. Une équipe de l'Université de Pécs (Hongrie) et de l'Université de Californie à San Diego a acheté du sémaglutide sur des sites qui le vendaient sans ordonnance, puis l'a analysé en laboratoire (Ashraf, 2024, *JAMA Network Open*).
+
+- sur **1 080 liens** issus des moteurs de recherche, **317** menaient à des pharmacies en ligne, dont **134 (42 %) illégales**
+- **6 commandes** passées : **3 n'ont jamais été livrées**, avec des demandes de paiement supplémentaire de 650 à 1 200 dollars pour un prétendu dédouanement, une arnaque confirmée par les douanes
+- les 3 produits reçus obtenaient **8 ou 9 points sur 22** à la grille de contrôle de la Fédération internationale pharmaceutique, contre 22 pour le produit authentique
+- **pureté mesurée : 7 à 14 %**, contre 99 % annoncés sur l'étiquette
+- **quantité de sémaglutide supérieure de 29 à 39 %** à celle indiquée : un risque direct de surdosage
+- un échantillon contenait un taux élevé d'**endotoxines**, signe d'une contamination bactérienne pendant la fabrication
+
+Limite de l'étude : un petit nombre de produits testés, justement à cause des arnaques à la livraison. Mais le message est limpide. Deux personnes qui achètent « le même peptide » sur deux sites différents ne s'injectent pas la même chose.
+
+### Les risques propres aux peptides injectables
+
+Quand la FDA a évalué le BPC-157 pour les préparations magistrales, elle a pointé trois problèmes qui valent pour beaucoup de peptides vendus « pour la recherche » :
+
+- le risque d'**immunogénicité** : l'organisme peut fabriquer des anticorps contre le peptide ou ses impuretés, ce qui réduit l'effet ou déclenche des réactions
+- les **impuretés liées à la synthèse** (séquences tronquées, agrégats)
+- la difficulté de **caractériser le principe actif**, faute de monographie officielle
+
+Un peptide sous-dosé ne fera rien ; surdosé ou contaminé, il peut faire du mal. Dans les deux cas, vos conclusions seront fausses. C'est l'une des raisons pour lesquelles nos articles sur le [BPC-157](/blog/bpc-157-tendons-intestin-etudes) et sur le [GHK-Cu](/blog/ghk-cu-peptide-cuivre-peau-cheveux) insistent autant sur le statut réglementaire.
+
+### Ce que dit la réglementation
+
+- La plupart des peptides vendus en ligne (BPC-157, TB-500, MOTS-c, CJC-1295, ipamoréline...) **ne sont pas approuvés pour l'usage humain**.
+- Les GLP-1 comme le sémaglutide ou le tirzépatide sont **approuvés** pour certaines indications et se prennent **sur prescription médicale**, avec un produit issu du circuit pharmaceutique.
+- Pour les sportifs contrôlés, une grande partie de ces molécules figure sur la **liste des interdictions de l'Agence mondiale antidopage** (sections S0, S2 ou S4 selon la molécule).
+
+Pour le panorama complet des familles et de leur statut, voyez notre [guide complet des peptides](/blog/peptides-guide-complet).
+
+---
+
+## Facteur 4 : sommeil, nutrition et entraînement
+
+![Chambre sombre et apaisante, lit en lin anthracite, rideau occultant et lampe de chevet à la lueur jaune](/images/blog/meme-peptide-resultats-differents/sommeil-recuperation-peptides.webp)
+
+### Le sommeil, premier modulateur hormonal
+
+Chez l'homme, une grande partie de la sécrétion d'hormone de croissance se produit pendant le sommeil profond. L'analyse de Van Cauter et al. (2000, *JAMA*) sur **149 hommes en bonne santé de 16 à 83 ans** montre :
+
+- une part de sommeil lent profond qui chute de **18,9 %** de la nuit entre 16 et 25 ans à **3,4 %** entre 36 et 50 ans
+- un déclin parallèle de la sécrétion d'hormone de croissance d'environ **372 µg par décennie** sur cette période
+- une association entre sécrétion d'hormone de croissance et sommeil profond **indépendante de l'âge**
+
+Si vous prenez un peptide censé soutenir l'axe de l'hormone de croissance tout en dormant cinq heures par nuit, vous travaillez contre vous. Le peptide amplifie un système que votre mode de vie éteint. Notre article sur [CJC-1295 et ipamoréline](/blog/cjc-1295-ipamoreline-hormone-de-croissance-igf-1) développe ce point.
+
+### Le sommeil change aussi ce que vous perdez
+
+L'étude de Nedeltcheva et al. (2010, *Annals of Internal Medicine*) a placé **10 adultes en surpoids** sous restriction calorique modérée pendant **14 jours**, une fois avec 8 h 30 de sommeil possible, une fois avec 5 h 30, dans un essai croisé :
+
+- avec moins de sommeil, la part de poids perdue sous forme de **gras a baissé de 55 %**
+- la perte de **masse non grasse a augmenté de 60 %** (2,4 kg contre 1,5 kg)
+- la faim a augmenté
+
+Petite étude, courte, mais le message colle à ce que je vois en coaching : deux personnes sous le même protocole de perte de poids, l'une qui dort bien et l'autre non, n'obtiennent pas la même composition corporelle.
+
+### La nutrition et l'entraînement décident de ce que devient le poids perdu
+
+Avec les GLP-1, c'est flagrant. Dans le sous-groupe de STEP 1 suivi par DXA (140 participants), la masse grasse a baissé de **19,3 %** et la masse maigre de **9,7 %** sous sémaglutide. Selon les calculs publiés, **40 à 45 %** du poids perdu correspondait à de la masse maigre, qui inclut le muscle mais aussi l'eau et les organes.
+
+Ce qui fait la différence entre deux patients : l'apport en protéines, la pratique de la musculation et le suivi de la composition corporelle. C'est tout le sujet de notre guide [GLP-1 : préserver le muscle sous sémaglutide ou tirzépatide](/blog/glp-1-semaglutide-tirzepatide-preserver-muscle). Le peptide fait baisser le poids. Votre alimentation et votre entraînement décident si vous perdez du gras ou du muscle.
+
+Même logique pour un peptide « de récupération » : si votre volume d'entraînement dépasse votre capacité de récupération, aucune molécule ne compensera. Commencez par vérifier les raisons de votre [stagnation en musculation](/blog/stagnation-musculation-pourquoi-vous-stagnez).
+
+> **Peptides Engine : partir de votre profil, pas de la molécule à la mode**
+>
+> Peptides Engine analyse vos objectifs, votre historique, vos antécédents, vos traitements et votre biologie pour déterminer si un peptide a du sens dans votre situation, et lequel. Le rapport intègre les contre-indications, les marqueurs sanguins à contrôler avant et pendant, et des critères d'arrêt clairs, avec des formules de suivi. Aucune promesse de résultat : un cadre pour décider et mesurer.
+>
+> [Découvrir Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Facteur 5 : vos attentes, et le piège du ressenti
+
+### L'effet placebo existe aussi en salle
+
+La revue systématique de Hurst et al. (2020, *European Journal of Sport Science*) a regroupé **32 études** et **1 513 participants** sur l'effet placebo et nocebo dans la performance sportive :
+
+- effet placebo : **d = 0,36**
+- effet nocebo (le placebo inversé, quand on s'attend à un effet négatif) : **d = 0,37**
+- effet global : **d = 0,38**, soit un effet faible à modéré, mais bien réel
+
+Un effet de cette taille suffit largement à vous faire croire qu'un produit « marche » sur une séance, ou à vous faire ressentir des effets secondaires imaginaires parce que vous avez lu des témoignages inquiétants.
+
+### Pourquoi le ressenti ne suffit pas
+
+- **Vous voulez que ça marche** : vous avez payé, vous avez pris un risque, vous cherchez la confirmation.
+- **Plusieurs choses changent en même temps** : vous commencez un peptide au moment où vous reprenez le sommeil, le régime et l'entraînement. Qu'est-ce qui a agi ?
+- **La régression vers la moyenne** : vous commencez souvent un produit au pire moment (blessure, fatigue). L'amélioration aurait peut-être eu lieu de toute façon.
+- **Les témoignages sont biaisés** : ceux qui ont vu un effet en parlent. Ceux qui n'ont rien vu se taisent.
+
+La solution n'est pas de tout ignorer, c'est de définir à l'avance **ce que vous allez mesurer** : un marqueur sanguin, une performance chiffrée, une mesure de composition corporelle, un score de douleur noté chaque semaine.
+
+---
+
+## Facteur 6 : le suivi et les critères d'arrêt
+
+### Ce qui sépare une expérience d'un essai improvisé
+
+Un essai clinique ne se contente pas de donner une molécule. Il définit à l'avance qui peut y participer, ce qu'on mesure, à quel moment, et dans quels cas on arrête. C'est exactement ce qui manque à la plupart des gens qui testent un peptide par eux-mêmes.
+
+Un suivi sérieux repose sur quatre éléments :
+
+1. **Un objectif mesurable**, défini avant de commencer.
+2. **Un bilan initial**, pour avoir une référence.
+3. **Des contrôles intermédiaires**, pour voir si les marqueurs évoluent dans le bon sens, ou dans le mauvais.
+4. **Des critères d'arrêt écrits à l'avance**, pour ne pas décider sous le coup de l'émotion.
+
+### Exemples de critères d'arrêt
+
+- un marqueur qui sort des normes (glycémie, enzymes hépatiques, IGF-1 très élevé, fonction rénale)
+- une réaction au point d'injection qui s'étend, rougit, chauffe ou s'accompagne de fièvre
+- des œdèmes, des fourmillements, des douleurs articulaires nouvelles
+- des troubles digestifs persistants, des malaises, des palpitations
+- l'absence de tout changement mesurable après la durée prévue
+
+Le dernier critère est le plus négligé. Un produit qui ne donne rien de mesurable n'est pas un produit à « prolonger pour voir » : c'est un produit à arrêter.
+
+![Schéma du cycle encadré : objectif, bilan initial, choix individualisé, suivi, réévaluation, poursuite ou arrêt](/images/blog/meme-peptide-resultats-differents/cycle-encadrement-peptide.webp)
+
+---
+
+## Les six facteurs en un tableau
+
+| Facteur | Ce qui varie d'une personne à l'autre | Ce que vous pouvez contrôler |
+|---|---|---|
+| Variabilité individuelle | Génétique, récepteurs, âge, sexe, traitements | Mesurer votre propre réponse au lieu de vous comparer |
+| État de départ | IGF-1, glycémie, thyroïde, fer, inflammation | Faire un bilan sanguin complet avant toute décision |
+| Pureté du produit | Dosage réel, impuretés, contamination, contrefaçon | Refuser les produits sans traçabilité ; privilégier le circuit médical quand il existe |
+| Sommeil, nutrition, entraînement | Durée et qualité du sommeil, protéines, volume d'entraînement | Corriger les fondamentaux avant d'ajouter une molécule |
+| Attentes | Effet placebo et nocebo, biais de confirmation | Définir à l'avance des critères mesurables |
+| Suivi | Contrôles, durée, critères d'arrêt | Planifier les contrôles et écrire les critères d'arrêt dès le départ |
+
+---
+
+## Ce qu'un encadrement change concrètement
+
+### Sans encadrement
+
+Vous choisissez un peptide parce qu'il est populaire. Vous l'achetez sur un site sans traçabilité. Vous ne faites pas de bilan. Vous changez en même temps votre alimentation et votre entraînement. Au bout de quelques semaines, vous vous sentez « un peu mieux », ou « rien du tout ». Vous ne savez pas pourquoi. Vous continuez, vous arrêtez, ou vous ajoutez un deuxième produit.
+
+### Avec encadrement
+
+- **Le choix part de votre profil**, pas de la tendance : objectif, antécédents, traitements, contre-indications.
+- **Un bilan sanguin de départ** fixe la référence et écarte les situations à risque.
+- **Les fondamentaux sont vérifiés** : sommeil, apport protéique, volume d'entraînement.
+- **Les contrôles sont planifiés**, avec les marqueurs adaptés à la famille de peptides.
+- **Les critères d'arrêt sont écrits** avant de commencer.
+- **La décision finale repose sur des données** : poursuivre, ajuster ou arrêter.
+
+Dans bien des cas, cette démarche aboutit à une conclusion simple : le peptide n'est pas la priorité, et le vrai levier est ailleurs. C'est aussi un résultat.
+
+---
+
+## Pourquoi Peptides Engine
+
+Peptides Engine a été conçu pour répondre exactement au problème de cet article : la même molécule ne convient pas à tout le monde, et la décision doit partir de vous.
+
+- **Une analyse de profil complète** : objectifs, historique d'entraînement, antécédents médicaux, traitements, tolérance et biologie.
+- **Une sélection justifiée par votre situation**, et non par la popularité d'une molécule. Si rien n'est justifié, le rapport le dit.
+- **Les contre-indications et les signaux d'alerte** propres à votre profil.
+- **Les marqueurs sanguins à contrôler** avant et pendant, en lien avec l'[analyse Blood Analysis](/offers/blood-analysis).
+- **Des critères d'arrêt clairs**, définis à l'avance.
+- **Des formules avec suivi** pour réévaluer à partir de vos résultats réels.
+
+Peptides Engine ne promet aucun résultat et ne remplace ni un diagnostic ni une ordonnance. Il vous donne ce qui manque à la plupart des gens qui se lancent seuls : un cadre pour décider, mesurer et s'arrêter à temps.
+
+---
+
+## FAQ : pourquoi un peptide ne marche pas pareil chez tout le monde
+
+### Pourquoi un peptide marche chez quelqu'un et pas chez moi ?
+
+Parce que la réponse dépend de votre génétique, de votre point de départ biologique, de la qualité réelle du produit, de votre sommeil, de votre alimentation, de votre entraînement et de vos attentes. Même avec un médicament approuvé comme le sémaglutide, environ 14 % des patients de l'essai STEP 1 n'ont pas atteint 5 % de perte de poids, quand la moitié dépassait 15 %.
+
+### Existe-t-il des « non-répondeurs » aux peptides ?
+
+Il existe des personnes qui répondent peu à une molécule donnée, comme il existe des personnes qui répondent peu à un programme d'entraînement (étude HERITAGE). Mais avant de conclure que vous êtes non-répondeur, il faut éliminer les autres causes : produit sous-dosé ou contrefait, point de départ déjà optimal, sommeil insuffisant, alimentation inadaptée, absence de mesure objective.
+
+### Comment savoir si mon peptide est authentique ?
+
+Sans analyse en laboratoire, c'est impossible à vérifier. Dans l'étude d'Ashraf (2024), des produits achetés sans ordonnance affichaient 99 % de pureté sur l'étiquette pour 7 à 14 % mesurés. La plupart des peptides vendus en ligne ne sont pas approuvés pour l'usage humain et n'ont aucune garantie de qualité. Pour les GLP-1, le seul circuit fiable est la prescription médicale et la pharmacie.
+
+### Faut-il faire une prise de sang avant de prendre un peptide ?
+
+Oui. Le bilan de départ sert de référence pour interpréter le résultat et permet d'écarter les situations à risque (glycémie élevée, fonction rénale ou hépatique altérée, IGF-1 déjà haut). Les marqueurs à suivre dépendent de la famille de peptides.
+
+### Le sommeil change-t-il vraiment l'effet d'un peptide ?
+
+Pour les peptides qui agissent sur l'axe de l'hormone de croissance, oui : une grande partie de cette hormone est sécrétée pendant le sommeil profond, et sa sécrétion suit la quantité de sommeil profond indépendamment de l'âge (Van Cauter, 2000). En période de perte de poids, dormir moins augmente aussi la perte de masse non grasse (Nedeltcheva, 2010).
+
+### Combien de temps attendre avant de conclure ?
+
+La durée dépend de la molécule et de l'objectif, et doit être fixée avant de commencer, avec des contrôles intermédiaires. L'essentiel est de décider à l'avance ce qui sera mesuré et à quel moment. Un produit qui ne donne aucun changement mesurable après la durée prévue doit être arrêté, pas prolongé indéfiniment.
+
+---
+
+## Conclusion : arrêtez de vous comparer, commencez à mesurer
+
+Votre voisin a peut-être eu un vrai résultat. Il a peut-être eu un placebo. Il a peut-être corrigé son sommeil en même temps. Il partait peut-être d'un point plus bas que vous. Ou son produit contenait réellement ce qui était écrit sur l'étiquette, et pas le vôtre. Vous ne le saurez jamais, et ça n'a aucune importance.
+
+Ce qui compte, c'est votre réponse à vous. Elle dépend de facteurs que vous pouvez en grande partie contrôler : la qualité de vos fondamentaux, un bilan sanguin de départ, un choix justifié par votre profil, des contrôles planifiés et des critères d'arrêt écrits avant de commencer.
+
+Ma position est nette : **un peptide sans bilan, sans suivi et sans critère d'arrêt n'est pas une stratégie, c'est un pari**. Et dans la majorité des cas que je vois, le plus gros gain est ailleurs : dans le sommeil, l'alimentation et l'entraînement. Si, après tout ça, un peptide a du sens pour vous, il mérite un cadre sérieux.
+
+> **Corrigez d'abord ce qui pèse le plus**
+>
+> Programme d'entraînement et de nutrition construit pour votre profil, ajustements basés sur vos résultats et suivi régulier : l'accompagnement personnalisé d'Achzod s'attaque d'abord aux leviers qui font la plus grande différence.
+>
+> [Commencer avec le coaching Achzod](https://www.achzodcoaching.com)
+
+> **Peptides Engine : la décision part de vous**
+>
+> Arrêtez de copier le protocole d'un inconnu. Peptides Engine analyse votre profil complet, vous dit si un peptide est justifié dans votre situation, lequel, avec quelles contre-indications, quels marqueurs contrôler et quels critères d'arrêt. Avec des formules de suivi pour décider sur des données, pas sur un ressenti.
+>
+> [Lancer mon analyse Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Références
+
+1. Wilding JPH, et al. Once-weekly semaglutide in adults with overweight or obesity. *N Engl J Med.* 2021;384(11):989-1002. [doi:10.1056/NEJMoa2032183](https://doi.org/10.1056/NEJMoa2032183) (PMID 33567185)
+2. Jastreboff AM, et al. Tirzepatide once weekly for the treatment of obesity. *N Engl J Med.* 2022;387(3):205-216. [doi:10.1056/NEJMoa2206038](https://doi.org/10.1056/NEJMoa2206038) (PMID 35658024)
+3. Bouchard C, et al. Familial aggregation of VO2max response to exercise training: results from the HERITAGE Family Study. *J Appl Physiol.* 1999;87(3):1003-1008. [doi:10.1152/jappl.1999.87.3.1003](https://doi.org/10.1152/jappl.1999.87.3.1003) (PMID 10484570)
+4. Zempo H, et al. A pro-diabetogenic mtDNA polymorphism in the mitochondrial-derived peptide, MOTS-c. *Aging (Albany NY).* 2021;13(2):1692-1717. [doi:10.18632/aging.202529](https://doi.org/10.18632/aging.202529) (PMID 33468709)
+5. Nass R, et al. Effects of an oral ghrelin mimetic on body composition and clinical outcomes in healthy older adults: a randomized trial. *Ann Intern Med.* 2008;149(9):601-611. [doi:10.7326/0003-4819-149-9-200811040-00003](https://doi.org/10.7326/0003-4819-149-9-200811040-00003) (PMID 18981485)
+6. Ashraf AR, et al. Safety and risk assessment of no-prescription online semaglutide purchases. *JAMA Netw Open.* 2024;7(8):e2428280. [doi:10.1001/jamanetworkopen.2024.28280](https://doi.org/10.1001/jamanetworkopen.2024.28280) (PMID 39093567)
+7. U.S. Food and Drug Administration. Certain bulk drug substances for use in compounding that may present significant safety risks (BPC-157). [fda.gov](https://www.fda.gov/drugs/human-drug-compounding/certain-bulk-drug-substances-use-compounding-may-present-significant-safety-risks)
+8. Van Cauter E, Leproult R, Plat L. Age-related changes in slow wave sleep and REM sleep and relationship with growth hormone and cortisol levels in healthy men. *JAMA.* 2000;284(7):861-868. [doi:10.1001/jama.284.7.861](https://doi.org/10.1001/jama.284.7.861) (PMID 10938176)
+9. Nedeltcheva AV, et al. Insufficient sleep undermines dietary efforts to reduce adiposity. *Ann Intern Med.* 2010;153(7):435-441. [doi:10.7326/0003-4819-153-7-201010050-00006](https://doi.org/10.7326/0003-4819-153-7-201010050-00006) (PMID 20921542)
+10. Wilding JPH, et al. Impact of semaglutide on body composition in adults with overweight or obesity: exploratory analysis of the STEP 1 study. *J Endocr Soc.* 2021;5(Suppl 1):A16-A17. [doi:10.1210/jendso/bvab048.030](https://doi.org/10.1210/jendso/bvab048.030)
+11. Neeland IJ, et al. Changes in lean body mass with glucagon-like peptide-1-based therapies and mitigation strategies. *Diabetes Obes Metab.* 2024;26(Suppl 4):16-27. [doi:10.1111/dom.15728](https://doi.org/10.1111/dom.15728)
+12. Hurst P, et al. The placebo and nocebo effect on sports performance: a systematic review. *Eur J Sport Sci.* 2020;20(3):279-292. [doi:10.1080/17461391.2019.1655098](https://doi.org/10.1080/17461391.2019.1655098) (PMID 31414966)
+13. Agence mondiale antidopage. Liste des interdictions 2026. [wada-ama.org](https://www.wada-ama.org/sites/default/files/2025-09/2026list_en_final_clean_september_2025.pdf)
+
+*Cet article est informatif et ne remplace pas un avis médical. Il ne contient aucune recommandation de dosage ni d'utilisation. La plupart des peptides cités ne sont pas approuvés pour l'usage humain ; les GLP-1 approuvés se prennent uniquement sur prescription médicale.*
+`,
+  },
+  {  id: "145",
+    slug: "peptides-bilan-sanguin-marqueurs-a-suivre",
+    title: "Peptides et bilan sanguin : les marqueurs à suivre avant, pendant et après",
+    seoTitle: "Peptides et bilan sanguin : les marqueurs à suivre | APEXLABS",
+    excerpt: "IGF-1, glycémie, HbA1c, insuline, lipides, foie, reins, NFS, prolactine, TSH, CRP : les marqueurs du bilan sanguin à suivre autour d'un peptide, famille par famille, avec un tableau avant, pendant et après.",
+    metaDescription: "Peptides et bilan sanguin : IGF-1, glycémie, HbA1c, lipides, foie, reins, NFS, prolactine, TSH, CRP. Les marqueurs à suivre avant, pendant et après.",
+    category: "hormones",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "16 min",
+    image: "/images/blog/peptides-bilan-sanguin-marqueurs-a-suivre/peptides-bilan-sanguin-hero.webp",
+    content: `# Peptides et bilan sanguin : les marqueurs à suivre avant, pendant et après
+
+## Introduction : le bilan sanguin, la partie que tout le monde saute
+
+Sur les forums, on parle des peptides comme de recettes : telle molécule pour la récupération, telle autre pour la sèche, telle combinaison pour l'hormone de croissance. On parle beaucoup moins de ce qui devrait précéder toute décision : le bilan sanguin.
+
+C'est pourtant lui qui répond aux trois questions que personne ne peut trancher à l'œil. Est-ce que votre point de départ permet d'envisager cette famille de peptides sans risque évident ? Qu'est-ce qui change vraiment pendant la prise ? Et est-ce que tout est revenu à la normale après l'arrêt ?
+
+Ce guide détaille, famille par famille, les marqueurs du bilan sanguin à suivre autour d'un peptide : IGF-1, glycémie, HbA1c, insuline, bilan lipidique, fonction hépatique et rénale, NFS, prolactine, TSH, CRP. Avec, pour chaque famille, un tableau clair : ce qu'on mesure avant, pendant, après, et pourquoi.
+
+Un point avant de commencer : cet article ne donne aucun dosage ni protocole. La plupart des peptides cités ne sont pas approuvés pour l'usage humain. Les GLP-1 approuvés se prennent sur prescription médicale, et c'est votre médecin qui pilote leur suivi. Le but ici est de vous aider à comprendre ce qu'un suivi sérieux doit contenir.
+
+> **L'essentiel en 30 secondes**
+>
+> - Un bilan sanguin sert à trois choses : fixer une **référence**, repérer les **contre-indications**, détecter tôt une **dérive**.
+> - Le **socle commun** à toutes les familles : NFS, glycémie à jeun, HbA1c, insuline, bilan lipidique, ASAT, ALAT, GGT, créatinine et DFG, CRP ultrasensible, TSH.
+> - **Axe de l'hormone de croissance** : l'IGF-1 est le marqueur central, avec la glycémie. Sous MK-677, la glycémie à jeun a augmenté de **5 mg/dL** en moyenne chez des seniors (Nass, 2008).
+> - **GLP-1** : sous sémaglutide, la lipase augmente en moyenne de **39 %** et l'amylase de 15 à 16 % (notice Wegovy). La fonction rénale se surveille en cas de vomissements ou de diarrhée.
+> - **Prolactine et cortisol** : certains sécrétagogues (hexaréline, GHRP-2, GHRP-6) les stimulent, l'ipamoréline beaucoup moins dans les études animales.
+> - **Piège classique** : une séance de musculation intense peut faire monter ASAT et ALAT pendant **au moins 7 jours** (Pettersson, 2008). Prélevez au repos.
+
+---
+
+## Pourquoi faire un bilan sanguin avant un peptide
+
+### Trois rôles, pas un seul
+
+**1. Fixer votre référence.** Sans valeur de départ, aucune valeur ultérieure n'a de sens. Une glycémie à 0,98 g/L sous traitement est-elle normale pour vous ? Elle l'est si vous partiez de 0,95. Elle l'est beaucoup moins si vous partiez de 0,82.
+
+**2. Repérer les contre-indications.** Certaines situations rendent une famille de peptides franchement déconseillée : un prédiabète avant de stimuler l'axe de l'hormone de croissance, une fonction rénale altérée avant une molécule éliminée par le rein, un IGF-1 déjà haut, une inflammation inexpliquée.
+
+**3. Détecter tôt une dérive.** La plupart des effets indésirables biologiques sont silencieux au début. Une HbA1c qui grimpe, des enzymes hépatiques qui doublent, une lipase qui s'envole : vous ne les sentez pas, vous les mesurez.
+
+### Pourquoi c'est encore plus vrai avec des produits non contrôlés
+
+Quand des chercheurs ont analysé du sémaglutide acheté sans ordonnance, ils ont trouvé une pureté de 7 à 14 % au lieu des 99 % annoncés, une quantité de principe actif supérieure de 29 à 39 % à l'étiquette, et un échantillon contaminé par des endotoxines (Ashraf, 2024). Avec un produit dont vous ne connaissez ni le contenu réel ni la pureté, le bilan sanguin devient votre seul contrôle qualité indirect. Nous détaillons ce point dans notre article sur la [variabilité de réponse aux peptides](/blog/meme-peptide-resultats-differents).
+
+![Schéma de la chronologie du suivi biologique : bilan initial avant, contrôle intermédiaire pendant, bilan de fin et de retour à la normale après](/images/blog/peptides-bilan-sanguin-marqueurs-a-suivre/chronologie-bilan-avant-pendant-apres.webp)
+
+---
+
+## Le socle commun : les marqueurs du bilan sanguin peptides pour tout le monde
+
+Quelle que soit la famille de peptides, ces marqueurs forment la base. Ils couvrent le sang, le métabolisme, le foie, les reins, l'inflammation et la thyroïde.
+
+| Marqueur | Ce qu'il mesure | Pourquoi il compte autour d'un peptide |
+|---|---|---|
+| NFS (numération formule sanguine) | Globules rouges, blancs, plaquettes | Repère anémie, infection, inflammation, anomalie hématologique de départ |
+| Glycémie à jeun | Sucre sanguin du matin | Premier signal d'une dérive métabolique |
+| HbA1c | Moyenne glycémique sur environ 3 mois | Plus stable que la glycémie, détecte une tendance de fond |
+| Insuline à jeun (et indice HOMA) | Sensibilité à l'insuline | Repère une insulinorésistance que la glycémie seule masque |
+| Bilan lipidique | Cholestérol total, LDL, HDL, triglycérides | Certaines familles l'améliorent, d'autres peuvent le perturber |
+| ASAT, ALAT, GGT | Foie (et muscle pour ASAT et ALAT) | Toxicité hépatique, mais attention à l'entraînement récent |
+| Créatinine et DFG | Fonction rénale | Élimination des molécules, déshydratation, interprétation selon la masse musculaire |
+| CRP ultrasensible | Inflammation de bas grade | Référence inflammatoire, réaction à un produit contaminé |
+| TSH | Thyroïde | Fatigue, poids, récupération ; interactions avec l'axe de l'hormone de croissance |
+
+Pour aller plus loin sur ces marqueurs et leurs zones optimales, lisez notre guide des [marqueurs sanguins de santé](/blog/marqueurs-sanguins-sante) et celui des [marqueurs que le médecin ne demande pas](/blog/bilan-sanguin-marqueurs-que-medecin-ne-demande-pas).
+
+### Les deux pièges d'interprétation chez les sportifs
+
+**L'entraînement fait monter les enzymes « du foie ».** Dans l'étude de Pettersson et al. (2008, *British Journal of Clinical Pharmacology*), **15 hommes en bonne santé**, habitués à une activité modérée mais pas à la musculation, ont réalisé une heure de musculation. Résultat : ASAT, ALAT, LDH, CK et myoglobine ont augmenté de façon significative et sont restés élevés **au moins 7 jours**, alors que la GGT, la bilirubine et les phosphatases alcalines restaient normales. Une ALAT élevée après une grosse séance de jambes n'est pas forcément un problème de foie. D'où l'intérêt de la GGT, et d'un prélèvement à distance des séances intenses.
+
+**La créatinine dépend de votre masse musculaire.** Une masse musculaire importante et la supplémentation en [créatine](/blog/creatine-guide-complet) élèvent la créatinine sans atteinte rénale. Le DFG calculé peut alors paraître faussement bas. La cystatine C aide à trancher quand le doute persiste.
+
+> **Un bilan n'a de valeur que s'il change vos décisions**
+>
+> Les résultats de prise de sang ne servent à rien s'ils ne se traduisent pas en ajustements concrets d'entraînement, d'alimentation et de récupération. L'accompagnement personnalisé d'Achzod construit votre programme d'entraînement et de nutrition à partir de votre profil, puis l'ajuste selon vos résultats, avec un suivi régulier.
+>
+> [Découvrir le coaching Achzod](https://www.achzodcoaching.com)
+
+---
+
+## Famille 1 : les sécrétagogues de l'hormone de croissance
+
+### Les molécules concernées
+
+Cette famille regroupe les analogues de la GHRH (CJC-1295, sermoréline, tésamoréline) et les agonistes du récepteur de la ghréline (ipamoréline, GHRP-2, GHRP-6, hexaréline, et le MK-677 par voie orale). Seule la tésamoréline est aujourd'hui approuvée, aux États-Unis, pour une indication précise : l'excès de graisse abdominale chez certains patients vivant avec le VIH. Les autres ne sont pas approuvées pour l'usage humain, et toutes figurent sur la liste des interdictions de l'Agence mondiale antidopage (section S2). Le fonctionnement de ces molécules est détaillé dans notre article sur [CJC-1295 et ipamoréline](/blog/cjc-1295-ipamoreline-hormone-de-croissance-igf-1).
+
+### Ce que montrent les études
+
+- **IGF-1** : après une seule injection de CJC-1295, l'IGF-1 a été multiplié par **1,5 à 3** pendant 9 à 11 jours chez des adultes en bonne santé de 21 à 61 ans (Teichman, 2006). Sous tésamoréline, l'IGF-1 a augmenté de **81 %** en 26 semaines chez 412 patients (Falutz, 2007).
+- **Glycémie et insuline** : dans l'essai de 2 ans sur le MK-677 chez **65 adultes de 60 à 81 ans**, la glycémie à jeun a augmenté en moyenne de **0,3 mmol/L (5 mg/dL)** et la sensibilité à l'insuline a baissé (Nass, 2008). Sous tésamoréline, aucune différence significative de glycémie n'a été observée sur 26 semaines.
+- **Prolactine et cortisol** : chez l'humain, l'hexaréline stimule nettement la prolactine, l'ACTH et le cortisol en plus de l'hormone de croissance (Arvat, 2001). Les sécrétagogues ont une légère activité de libération de prolactine (Ghigo, 2001). L'ipamoréline s'est montrée beaucoup plus sélective chez l'animal : pas d'élévation de l'ACTH ni du cortisol au-delà de ce qu'induit la GHRH, même à forte dose, et pas d'effet sur la prolactine chez le porc (Raun, 1998).
+- **Thyroïde** : chez des patients hypopituitaires, le traitement par hormone de croissance a démasqué une **hypothyroïdie centrale chez 36 à 47 %** de patients jusque-là normaux sur le plan thyroïdien (Behan, 2011). Ces données concernent l'hormone de croissance elle-même, chez des patients malades, mais elles justifient de contrôler TSH et T4 libre.
+- **IGF-1 et risque à long terme** : une méta-analyse de 21 études (3 609 cas) associe des concentrations d'IGF-1 élevées à un risque modérément augmenté de cancer de la prostate et de cancer du sein avant la ménopause (Renehan, 2004). C'est une association épidémiologique, pas une preuve de causalité, mais elle explique pourquoi un IGF-1 durablement au-dessus des normes n'est pas un objectif.
+
+### Tableau de suivi : sécrétagogues de l'hormone de croissance
+
+| Marqueur | Avant | Pendant | Après | Pourquoi |
+|---|---|---|---|---|
+| IGF-1 | Oui | Oui | Oui | Marqueur central de l'axe ; vérifier qu'il reste dans les normes pour l'âge |
+| Glycémie à jeun, HbA1c, insuline | Oui | Oui | Oui | Hausse de la glycémie et baisse de la sensibilité à l'insuline décrites (MK-677) |
+| Bilan lipidique | Oui | Selon contexte | Oui | Peut évoluer avec la composition corporelle |
+| Prolactine | Oui | Si symptômes ou GHRP non sélectif | Selon contexte | Stimulée par certains sécrétagogues |
+| Cortisol du matin | Selon contexte | Si symptômes | Selon contexte | Stimulé par l'hexaréline et les GHRP non sélectifs |
+| TSH, T4 libre | Oui | Oui | Selon contexte | L'hormone de croissance peut démasquer une hypothyroïdie centrale |
+| ASAT, ALAT, GGT, créatinine | Oui | Oui | Oui | Tolérance générale |
+| NFS, CRP ultrasensible | Oui | Selon contexte | Oui | Référence générale et inflammation |
+
+Signaux à ne pas ignorer : œdèmes, fourmillements ou engourdissements des mains, douleurs articulaires nouvelles, soif et envie d'uriner inhabituelles.
+
+---
+
+## Famille 2 : les GLP-1 et autres incrétines
+
+### Un cadre médical, pas un « peptide de forum »
+
+Le sémaglutide (Ozempic, Wegovy) et le tirzépatide (Mounjaro, Zepbound) sont des médicaments approuvés pour le diabète de type 2 et l'obésité. Ils se prennent **sur prescription médicale**, et c'est le médecin prescripteur qui décide du suivi biologique. Les produits « de recherche » vendus en ligne n'offrent aucune garantie de contenu, comme l'a montré l'étude d'Ashraf (2024).
+
+### Ce que dit la notice
+
+La notice américaine de Wegovy mentionne notamment :
+
+- **Pancréatite aiguë** : observée sous agonistes du GLP-1 ; le traitement doit être arrêté si elle est suspectée.
+- **Lipase et amylase** : dans les essais de perte de poids, augmentation moyenne de **39 %** pour la lipase et de **15 à 16 %** pour l'amylase, absente sous placebo.
+- **Atteinte de la vésicule biliaire** : des lithiases ont été rapportées dans les essais.
+- **Insuffisance rénale aiguë par déshydratation** : la fonction rénale doit être surveillée chez les patients qui ont des vomissements, des diarrhées ou une déshydratation.
+- **Hypoglycémie** : risque accru en association avec l'insuline ou un sécrétagogue de l'insuline.
+- **Fréquence cardiaque** : à surveiller régulièrement.
+
+### Le marqueur que tout le monde oublie : la composition corporelle
+
+Le sang ne dit pas tout. Dans le sous-groupe de l'essai STEP 1 suivi par DXA, la masse maigre a baissé de **9,7 %** sous sémaglutide, contre 19,3 % pour la masse grasse. Une partie importante du poids perdu n'est donc pas du gras. Le suivi de la composition corporelle, l'apport en protéines et la musculation sont au cœur de notre guide [GLP-1 : préserver le muscle](/blog/glp-1-semaglutide-tirzepatide-preserver-muscle).
+
+### Tableau de suivi : GLP-1 et incrétines
+
+| Marqueur | Avant | Pendant | Après | Pourquoi |
+|---|---|---|---|---|
+| Glycémie à jeun, HbA1c | Oui | Oui | Oui | Effet attendu à vérifier ; risque d'hypoglycémie avec certains traitements |
+| Insuline à jeun | Oui | Selon contexte | Selon contexte | Suivre l'évolution de la sensibilité à l'insuline |
+| Bilan lipidique | Oui | Oui | Oui | Évolue en général avec la perte de poids |
+| ASAT, ALAT, GGT | Oui | Oui | Oui | Stéatose hépatique fréquente au départ ; suivi de l'évolution |
+| Lipase, amylase | Oui | Si douleurs abdominales | Selon contexte | Hausse moyenne décrite ; pancréatite à éliminer en cas de symptômes |
+| Créatinine et DFG | Oui | Oui, surtout si troubles digestifs | Oui | Risque d'insuffisance rénale aiguë par déshydratation |
+| NFS, ferritine, vitamine B12 | Oui | Selon contexte | Selon contexte | Apports alimentaires réduits sur la durée |
+| Composition corporelle (DXA ou impédancemétrie) | Oui | Oui | Oui | Préserver la masse maigre |
+
+> **Peptides Engine : une décision construite sur votre profil**
+>
+> Peptides Engine analyse vos objectifs, vos antécédents, vos traitements et vos marqueurs pour déterminer si un peptide a du sens dans votre situation, lequel, et ce qu'il faut contrôler. Le rapport précise les contre-indications, les marqueurs à suivre avant et pendant, et des critères d'arrêt clairs, avec des formules de suivi. Sans dosage miracle ni promesse de résultat.
+>
+> [Découvrir Peptides Engine](/offers/peptides-engine)
+
+---
+
+## Famille 3 : les peptides dits de réparation (BPC-157, TB-500)
+
+![Centrifugeuse de laboratoire ouverte avec des tubes d'échantillons disposés en cercle, dans un laboratoire sombre éclairé en jaune](/images/blog/peptides-bilan-sanguin-marqueurs-a-suivre/laboratoire-centrifugeuse.webp)
+
+### Ce qu'on sait, et surtout ce qu'on ne sait pas
+
+Le BPC-157 et le TB-500 (fragment de la thymosine bêta-4) sont présentés comme des accélérateurs de cicatrisation des tendons, des muscles et de l'intestin. Les données reposent très majoritairement sur l'animal. La FDA a relevé pour le BPC-157 un risque d'**immunogénicité**, des **impuretés** liées à la synthèse et « peu ou pas » de données de sécurité chez l'humain. Elle n'a identifié **aucune étude de sécurité humaine** pour le TB-500. Aucun des deux n'est approuvé pour l'usage humain, et les deux relèvent de la liste des interdictions de l'Agence mondiale antidopage. Le détail est dans nos articles sur le [BPC-157](/blog/bpc-157-tendons-intestin-etudes) et sur la [comparaison BPC-157 et TB-500](/blog/bpc-157-vs-tb-500-differences).
+
+### Ce que le bilan peut (et ne peut pas) faire
+
+Aucun marqueur sanguin ne mesure l'effet de ces peptides sur un tendon. Le bilan sert ici à deux choses : vérifier un point de départ sain, et détecter une réaction générale (inflammation, atteinte hépatique ou rénale, réaction à un produit contaminé). L'efficacité, elle, se juge sur des critères fonctionnels notés à l'avance : douleur, amplitude, charge tolérée.
+
+### Tableau de suivi : BPC-157 et TB-500
+
+| Marqueur | Avant | Pendant | Après | Pourquoi |
+|---|---|---|---|---|
+| NFS | Oui | Selon contexte | Oui | Référence ; repérer une réaction ou une infection |
+| CRP ultrasensible | Oui | Oui | Oui | Inflammation générale, réaction à un produit impur |
+| ASAT, ALAT, GGT | Oui | Oui | Oui | Tolérance hépatique, en l'absence de données humaines |
+| Créatinine et DFG | Oui | Oui | Oui | Tolérance rénale |
+| Glycémie à jeun, bilan lipidique | Oui | Selon contexte | Selon contexte | Référence métabolique |
+| Critères fonctionnels (douleur, amplitude, charge) | Oui | Oui | Oui | Seule mesure de l'effet recherché |
+
+Antécédent de cancer : à discuter impérativement avec un médecin avant tout peptide qui agit sur la croissance ou la réparation tissulaire, faute de données de sécurité.
+
+---
+
+## Famille 4 : les peptides mitochondriaux et métaboliques (MOTS-c, SS-31)
+
+### Le contexte
+
+Le MOTS-c est un peptide codé par l'ADN mitochondrial qui active l'AMPK. Il n'est approuvé pour aucun usage humain et figure explicitement sur la liste de l'Agence mondiale antidopage (S4.4.1). Le SS-31 (élamipretide) a obtenu en septembre 2025 une approbation accélérée aux États-Unis pour le seul syndrome de Barth ; sa notice prévoit une réduction de dose en cas d'insuffisance rénale sévère. Tout est détaillé dans notre article sur les [peptides mitochondriaux MOTS-c et SS-31](/blog/mots-c-ss-31-peptides-mitochondries).
+
+### Pourquoi le métabolisme est au centre
+
+Les effets décrits chez l'animal portent sur la sensibilité à l'insuline, la glycémie et le poids. L'analogue CB4211 testé chez 20 personnes a modifié l'ALAT et la glycémie à jeun en 4 semaines. Ce sont donc les marqueurs logiques à suivre, avec la fonction rénale pour le SS-31.
+
+### Tableau de suivi : peptides mitochondriaux
+
+| Marqueur | Avant | Pendant | Après | Pourquoi |
+|---|---|---|---|---|
+| Glycémie à jeun, HbA1c, insuline | Oui | Oui | Oui | Cible métabolique principale décrite |
+| Bilan lipidique | Oui | Oui | Oui | Référence métabolique |
+| ASAT, ALAT, GGT | Oui | Oui | Oui | Signal hépatique observé avec l'analogue CB4211 |
+| Créatinine et DFG | Oui | Oui | Oui | Élimination rénale (SS-31) |
+| CRP ultrasensible, NFS | Oui | Selon contexte | Oui | Référence générale et inflammation |
+| Performances mesurées (test d'effort, puissance, VO2max estimée) | Oui | Oui | Oui | Seule façon de juger un effet sur la capacité physique |
+
+---
+
+## Famille 5 : peptides cutanés et mélanocortines (GHK-Cu, bremelanotide, mélanotan)
+
+### GHK-Cu
+
+Le GHK-Cu est un complexe peptide-cuivre surtout étudié en application cutanée (peau, cuir chevelu). En usage topique, aucun bilan spécifique n'est justifié par les données disponibles. Pour toute autre voie d'administration, il n'existe pas de données de sécurité humaine suffisantes : un bilan général (NFS, hépatique, rénal) est le minimum, et une maladie du métabolisme du cuivre impose un avis médical. Voir notre article sur le [GHK-Cu](/blog/ghk-cu-peptide-cuivre-peau-cheveux).
+
+### Bremelanotide et mélanotan
+
+Le bremelanotide (Vyleesi) est approuvé aux États-Unis pour la baisse du désir sexuel acquise chez la femme non ménopausée. Sa notice décrit une **hausse transitoire de la pression artérielle et une baisse de la fréquence cardiaque après chaque injection**, résolue en général en 12 heures, une **hyperpigmentation localisée** chez 1 % des patientes et des **nausées** chez 40 %. Il n'est pas recommandé chez les personnes à haut risque cardiovasculaire. Le mélanotan II, vendu pour le bronzage, n'est approuvé nulle part.
+
+### Tableau de suivi : peptides cutanés et mélanocortines
+
+| Marqueur | Avant | Pendant | Après | Pourquoi |
+|---|---|---|---|---|
+| Pression artérielle et fréquence cardiaque | Oui | Oui | Selon contexte | Hausse transitoire de la tension décrite (bremelanotide) |
+| Bilan lipidique, glycémie | Oui | Selon contexte | Selon contexte | Évaluation du risque cardiovasculaire de départ |
+| ASAT, ALAT, créatinine | Oui | Selon contexte | Oui | Tolérance générale |
+| NFS | Oui | Selon contexte | Selon contexte | Référence |
+| Examen de la peau et des grains de beauté | Oui | Oui | Oui | Hyperpigmentation décrite avec les mélanocortines |
+
+---
+
+## La matrice récapitulative : quels marqueurs pour quelle famille
+
+![Matrice des marqueurs sanguins à suivre selon la famille de peptides : hormone de croissance, GLP-1, réparation, mitochondriaux, mélanocortines](/images/blog/peptides-bilan-sanguin-marqueurs-a-suivre/matrice-marqueurs-familles-peptides.webp)
+
+Lisez la matrice comme une base de discussion, pas comme une ordonnance. Votre âge, vos antécédents, vos traitements et vos symptômes peuvent justifier d'ajouter des marqueurs : testostérone et LH chez l'homme qui se plaint de fatigue (voir notre guide sur la [testostérone basse et le bilan sanguin](/blog/testosterone-basse-lire-son-bilan-sanguin)), ferritine chez la femme qui s'entraîne beaucoup, vitamine D en hiver.
+
+---
+
+## Bien faire sa prise de sang : les règles qui évitent les faux résultats
+
+1. **À jeun**, le matin, idéalement entre 7 h et 10 h : glycémie, insuline, lipides et cortisol en dépendent.
+2. **Pas de séance intense dans les jours qui précèdent**, surtout en musculation : ASAT, ALAT et CK peuvent rester élevées au moins 7 jours (Pettersson, 2008).
+3. **Même laboratoire, mêmes conditions** à chaque contrôle : les techniques et les normes varient d'un laboratoire à l'autre.
+4. **Signalez vos compléments** : la biotine fausse certains dosages hormonaux (dont la TSH), la créatine élève la créatinine.
+5. **Notez le contexte** : maladie récente, manque de sommeil, régime très restrictif, voyage. Un résultat isolé ne vaut rien sans son contexte.
+6. **Comparez à votre référence**, pas seulement aux normes du laboratoire. Une valeur dans les normes mais qui a beaucoup bougé mérite une explication.
+
+C'est exactement le travail de l'[analyse Blood Analysis](/offers/blood-analysis) : lire vos résultats en zones optimales, les comparer à vos bilans précédents et en tirer des priorités.
+
+---
+
+## Les signaux biologiques qui doivent faire arrêter
+
+Ces critères doivent être écrits avant de commencer, et discutés avec un professionnel de santé :
+
+- **IGF-1 au-dessus des normes pour l'âge**
+- **Glycémie à jeun ou HbA1c qui franchit le seuil du prédiabète**, ou une hausse nette par rapport à votre référence
+- **ASAT ou ALAT nettement élevées** en dehors de tout entraînement intense récent, surtout si la GGT suit
+- **Baisse significative du DFG**
+- **Lipase élevée avec douleurs abdominales**
+- **CRP qui grimpe sans explication**, fièvre, réaction au point d'injection qui s'étend
+- **Prolactine ou cortisol anormaux** avec des symptômes (baisse de libido, troubles de l'érection, écoulement mammaire, fatigue inhabituelle)
+- **Hausse de la tension** au-delà de votre référence
+
+Et le critère le plus simple : **aucun changement mesurable** après la durée prévue.
+
+---
+
+## FAQ : peptides et bilan sanguin
+
+### Quelle prise de sang faire avant de prendre un peptide ?
+
+Le socle commun comprend la NFS, la glycémie à jeun, l'HbA1c, l'insuline à jeun, le bilan lipidique, ASAT, ALAT et GGT, la créatinine avec le DFG, la CRP ultrasensible et la TSH. On ajoute ensuite les marqueurs propres à la famille : IGF-1 pour l'axe de l'hormone de croissance, lipase et amylase pour les GLP-1, prolactine et cortisol pour certains sécrétagogues.
+
+### Quel est le marqueur le plus important pour les peptides de l'hormone de croissance ?
+
+L'IGF-1. C'est le reflet le plus stable de l'activité de l'axe de l'hormone de croissance. Il doit être mesuré avant, pendant et après, et rester dans les normes pour l'âge. La glycémie et l'HbA1c viennent juste derrière, car la sensibilité à l'insuline peut baisser sous certains sécrétagogues.
+
+### Les peptides font-ils monter les enzymes du foie ?
+
+Les données humaines manquent pour la plupart des peptides non approuvés. En revanche, l'entraînement intense fait monter ASAT et ALAT pendant au moins 7 jours. Avant de conclure à un problème hépatique, il faut vérifier la GGT et refaire un prélèvement à distance des séances.
+
+### Faut-il surveiller la prolactine sous peptides ?
+
+Oui pour certains sécrétagogues de l'hormone de croissance. L'hexaréline et les GHRP non sélectifs stimulent la prolactine et le cortisol chez l'humain. L'ipamoréline est plus sélective dans les études animales, mais un dosage de départ reste utile, et un contrôle s'impose en cas de baisse de libido ou de troubles de l'érection.
+
+### Quel bilan sanguin sous sémaglutide ou tirzépatide ?
+
+C'est le médecin prescripteur qui le définit. Il comprend en général glycémie, HbA1c, bilan lipidique, enzymes hépatiques et fonction rénale, avec une attention particulière aux reins en cas de vomissements ou de diarrhée, et à la lipase en cas de douleurs abdominales. La composition corporelle mérite aussi d'être suivie pour préserver le muscle.
+
+### Combien de temps après l'arrêt refaire un bilan ?
+
+L'objectif du bilan de fin est de vérifier que tout est revenu à votre référence. Le délai dépend de la molécule et de ce qui a bougé pendant la prise ; il se décide à l'avance avec un professionnel. Un marqueur qui ne revient pas à sa valeur de départ justifie un avis médical.
+
+---
+
+## Conclusion : mesurer avant, pendant, après, ou ne pas commencer
+
+Un peptide sans bilan sanguin, c'est une expérience sans point de départ, sans contrôle et sans fin. Vous ne savez pas ce que vous aviez avant, vous ne voyez pas ce qui dérive pendant, et vous ne vérifiez pas que tout revient après.
+
+Le socle est simple : NFS, glycémie, HbA1c, insuline, lipides, foie, reins, CRP, TSH. Ajoutez l'IGF-1 pour l'axe de l'hormone de croissance, la lipase et la fonction rénale pour les GLP-1, la prolactine et le cortisol pour les sécrétagogues non sélectifs, la tension pour les mélanocortines. Prélevez à jeun, au repos, dans le même laboratoire, et comparez toujours à votre propre référence.
+
+Ma position : **pas de bilan, pas de peptide**. Et dans bien des cas, ce bilan montre que la priorité est ailleurs : une glycémie qui dérive, une thyroïde lente, un fer bas, un sommeil insuffisant.
+
+> **Faites parler votre bilan sanguin**
+>
+> Blood Analysis lit vos biomarqueurs dans une logique performance et prévention : zones optimales, et pas seulement normes du laboratoire, et priorités claires selon votre profil. Le point de départ idéal avant toute décision, peptide ou non.
+>
+> [Analyser mon bilan avec Blood Analysis](/offers/blood-analysis)
+
+> **Peptides Engine : le bon peptide, ou aucun**
+>
+> Peptides Engine croise votre profil, vos antécédents, vos traitements et vos marqueurs pour vous dire si un peptide est justifié, lequel, avec quelles contre-indications, quels contrôles sanguins et quels critères d'arrêt. Avec des formules de suivi pour décider sur vos résultats réels.
+>
+> [Lancer mon analyse Peptides Engine](/offers/peptides-engine)
+
+> **Transformez vos résultats en progrès concrets**
+>
+> Programme d'entraînement et de nutrition construit pour votre profil, ajustements selon vos résultats et suivi régulier : l'accompagnement personnalisé d'Achzod.
+>
+> [Commencer avec le coaching Achzod](https://www.achzodcoaching.com)
+
+Pour une vue d'ensemble de la famille des peptides, notre [guide complet des peptides](/blog/peptides-guide-complet) pose toutes les bases.
+
+---
+
+## Références
+
+1. Teichman SL, et al. Prolonged stimulation of growth hormone (GH) and insulin-like growth factor I secretion by CJC-1295, a long-acting analog of GH-releasing hormone, in healthy adults. *J Clin Endocrinol Metab.* 2006;91(3):799-805. [doi:10.1210/jc.2005-1536](https://doi.org/10.1210/jc.2005-1536) (PMID 16352683)
+2. Falutz J, et al. Metabolic effects of a growth hormone-releasing factor in patients with HIV. *N Engl J Med.* 2007;357(23):2359-2370. [doi:10.1056/NEJMoa072375](https://doi.org/10.1056/NEJMoa072375) (PMID 18057338)
+3. Nass R, et al. Effects of an oral ghrelin mimetic on body composition and clinical outcomes in healthy older adults: a randomized trial. *Ann Intern Med.* 2008;149(9):601-611. [doi:10.7326/0003-4819-149-9-200811040-00003](https://doi.org/10.7326/0003-4819-149-9-200811040-00003) (PMID 18981485)
+4. Arvat E, et al. Endocrine activities of ghrelin, a natural growth hormone secretagogue (GHS), in humans: comparison and interactions with hexarelin, a nonnatural peptidyl GHS, and GH-releasing hormone. *J Clin Endocrinol Metab.* 2001;86(3):1169-1174. [doi:10.1210/jcem.86.3.7314](https://doi.org/10.1210/jcem.86.3.7314) (PMID 11238504)
+5. Ghigo E, et al. Biologic activities of growth hormone secretagogues in humans. *Endocrine.* 2001;14(1):87-93. [doi:10.1385/ENDO:14:1:087](https://doi.org/10.1385/ENDO:14:1:087) (PMID 11322506)
+6. Raun K, et al. Ipamorelin, the first selective growth hormone secretagogue. *Eur J Endocrinol.* 1998;139(5):552-561. [doi:10.1530/eje.0.1390552](https://doi.org/10.1530/eje.0.1390552) (PMID 9849822)
+7. Behan LA, Monson JP, Agha A. The interaction between growth hormone and the thyroid axis in hypopituitary patients. *Clin Endocrinol (Oxf).* 2011;74(3):281-288. [doi:10.1111/j.1365-2265.2010.03815.x](https://doi.org/10.1111/j.1365-2265.2010.03815.x) (PMID 20455887)
+8. Renehan AG, et al. Insulin-like growth factor (IGF)-I, IGF binding protein-3, and cancer risk: systematic review and meta-regression analysis. *Lancet.* 2004;363(9418):1346-1353. [doi:10.1016/S0140-6736(04)16044-3](https://doi.org/10.1016/S0140-6736(04)16044-3) (PMID 15110491)
+9. Novo Nordisk. WEGOVY (semaglutide) : notice américaine (Prescribing Information), sections 5 et 6. [dailymed.nlm.nih.gov](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b)
+10. Wilding JPH, et al. Impact of semaglutide on body composition in adults with overweight or obesity: exploratory analysis of the STEP 1 study. *J Endocr Soc.* 2021;5(Suppl 1):A16-A17. [doi:10.1210/jendso/bvab048.030](https://doi.org/10.1210/jendso/bvab048.030)
+11. Ashraf AR, et al. Safety and risk assessment of no-prescription online semaglutide purchases. *JAMA Netw Open.* 2024;7(8):e2428280. [doi:10.1001/jamanetworkopen.2024.28280](https://doi.org/10.1001/jamanetworkopen.2024.28280) (PMID 39093567)
+12. Pettersson J, et al. Muscular exercise can cause highly pathological liver function tests in healthy men. *Br J Clin Pharmacol.* 2008;65(2):253-259. [doi:10.1111/j.1365-2125.2007.03001.x](https://doi.org/10.1111/j.1365-2125.2007.03001.x) (PMID 17764474)
+13. U.S. Food and Drug Administration. Certain bulk drug substances for use in compounding that may present significant safety risks. [fda.gov](https://www.fda.gov/drugs/human-drug-compounding/certain-bulk-drug-substances-use-compounding-may-present-significant-safety-risks) ; Health Affairs Forefront, août 2026 (synthèse des données de sécurité humaine des peptides évalués). [healthaffairs.org](https://www.healthaffairs.org/content/forefront/fda-advisory-committee-s-vote-may-open-drug-compounding-back-door-unapproved-peptides)
+14. Stealth BioTherapeutics. FORZINITY (elamipretide) : notice américaine (Prescribing Information). [accessdata.fda.gov](https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/215244s000lbl.pdf)
+15. Cosette Pharmaceuticals. VYLEESI (bremelanotide) : notice américaine (Prescribing Information). [dailymed.nlm.nih.gov](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=f1d0c1b5-2f39-4bad-a6a4-0066e3ad5dcf)
+16. Agence mondiale antidopage. Liste des interdictions 2026. [wada-ama.org](https://www.wada-ama.org/sites/default/files/2025-09/2026list_en_final_clean_september_2025.pdf)
+
+*Cet article est informatif et ne remplace pas un avis médical. Il ne contient aucune recommandation de dosage ni d'utilisation. La plupart des peptides cités ne sont pas approuvés pour l'usage humain ; les médicaments approuvés se prennent uniquement sur prescription, avec un suivi défini par le médecin.*
+`,
+  },
+  {  id: "146",
+    slug: "bilan-sanguin-marqueurs-que-medecin-ne-demande-pas",
+    title: "Bilan sanguin : les 15 marqueurs que votre médecin ne demande pas (et les zones à viser)",
+    seoTitle: "Bilan sanguin : 15 marqueurs oubliés | APEXLABS",
+    excerpt: "ApoB, Lp(a), insuline à jeun, HOMA-IR, ferritine, CRP ultrasensible, cystatine C : les 15 marqueurs absents du bilan de routine, leurs normes de laboratoire et les zones que je vise, études à l'appui.",
+    metaDescription: "Bilan sanguin complet : ApoB, Lp(a), insuline, HOMA-IR, ferritine, CRP-us, cystatine C... 15 marqueurs, normes de labo et zones visées, études à l'appui.",
+    category: "longevite",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "17 min",
+    image: "/images/blog/bilan-sanguin-marqueurs-que-medecin-ne-demande-pas/bilan-sanguin-hero.webp",
+    content: `# Bilan sanguin : les 15 marqueurs que votre médecin ne demande pas (et les zones à viser)
+
+## Introduction : « tout est normal », et pourtant
+
+Vous sortez du laboratoire avec une feuille sans rien en gras. Glycémie normale, cholestérol correct, NFS sans histoire. Votre médecin vous dit que tout va bien. Et vous, vous êtes fatigué, votre tour de taille grimpe, vos séances plafonnent.
+
+Le problème ne vient pas forcément de votre médecin. Il vient du **bilan sanguin de routine**, conçu pour dépister la maladie déclarée (diabète, anémie, insuffisance rénale), pas pour repérer une dérive qui s'installe sur dix ans. Et les « normes » du laboratoire ne disent pas ce qui est optimal : elles décrivent 95 % d'une population de référence souvent sédentaire, en surpoids et carencée.
+
+Ce guide passe en revue les **15 marqueurs sanguins** qui manquent presque toujours au bilan standard. Pour chacun : ce qu'il ajoute, la norme du laboratoire, la zone que je vise chez un adulte en bonne santé qui s'entraîne, et les pièges d'interprétation.
+
+> **L'essentiel en 30 secondes**
+>
+> - Le bilan de routine dépiste la maladie. Il ne mesure ni le **nombre de particules athérogènes** (ApoB), ni le **risque génétique** (Lp(a)), ni la **résistance à l'insuline** avant que la glycémie ne bouge.
+> - Les normes de laboratoire sont des **intervalles statistiques**, pas des cibles de santé. Une insuline à jeun à 20 mUI/L est « normale » sur la feuille et défavorable dans les études.
+> - Les 3 marqueurs qui changent le plus souvent la donne : **ApoB, Lp(a), insuline à jeun avec HOMA-IR**.
+> - Chez le pratiquant, deux pièges reviennent : une **créatinine** gonflée par le muscle ou la créatine (d'où la **cystatine C**), et une **testostérone libre** dosée par une méthode peu fiable.
+> - Les zones « optimales » de cet article sont des repères argumentés, **pas des diagnostics**.
+
+---
+
+## Pourquoi le bilan sanguin de routine passe à côté de l'essentiel
+
+### Une norme de laboratoire n'est pas une zone optimale
+
+Un intervalle de référence se construit en mesurant un marqueur chez quelques centaines de personnes dites en bonne santé, puis en gardant les 95 % du milieu. Deux limites en découlent :
+
+1. **Il décrit une population, pas un risque.** Si la population de référence est en surpoids, la borne haute de l'insuline ou de la GGT monte avec elle.
+2. **Il ignore le continuum.** Dans l'étude ARIC, à une HbA1c de 5,5-6,0 %, valeur rarement signalée, le risque de diabète est presque doublé par rapport à 5,0-5,5 % (Selvin, 2010).
+
+Autre exemple : l'intervalle du magnésium sérique (0,75 à 0,95 mmol/L) a été tiré de la distribution de l'enquête NHANES I de 1974, et non d'issues cliniques. Des chercheurs plaident pour relever la borne basse à 0,85 mmol/L (Costello, 2016).
+
+### Ce que contient un bilan standard
+
+En France, un bilan de contrôle comprend en général : NFS, glycémie à jeun, bilan lipidique, créatinine avec DFG estimé, transaminases, parfois TSH et ferritine. C'est utile, et insuffisant pour savoir où vous en êtes.
+
+![Schéma des 15 marqueurs absents du bilan de routine, regroupés par système : cœur et vaisseaux, glycémie et insuline, fer et foie, hormones et thyroïde, vitamines, minéraux et reins](/images/blog/bilan-sanguin-marqueurs-que-medecin-ne-demande-pas/bilan-sanguin-15-marqueurs-schema.webp)
+
+Pour les marqueurs de base, lisez aussi notre guide des [marqueurs sanguins de la santé](/blog/marqueurs-sanguins-sante).
+
+---
+
+## Cœur et vaisseaux : 5 marqueurs absents du bilan lipidique
+
+### 1. ApoB : compter les particules plutôt que peser le cholestérol
+
+Chaque particule athérogène (VLDL, IDL, LDL, Lp(a)) porte **une seule molécule d'apolipoprotéine B**. Doser l'ApoB revient à compter les particules capables d'entrer dans la paroi artérielle. Le LDL-cholestérol mesure la quantité de cholestérol transportée, qui varie d'une particule à l'autre.
+
+Sniderman (2019, *JAMA Cardiology*) résume le raisonnement : le cholestérol n'entre dans l'artère qu'à l'intérieur des particules à ApoB, et leur nombre dans le sang détermine combien s'y piègent. Quand LDL-c et ApoB divergent (triglycérides élevés, résistance à l'insuline, graisse abdominale), **c'est l'ApoB qui prédit le mieux le risque**.
+
+- **Norme du laboratoire** : souvent jusqu'à 1,20 à 1,30 g/L.
+- **Recommandations ESC/EAS 2019** : ApoB sous 1,00 g/L en risque modéré, 0,80 g/L en risque élevé, 0,65 g/L en risque très élevé (Mach, 2020).
+- **Ma zone visée** sans antécédent : **sous 0,90 g/L**, sous 0,80 g/L s'il existe d'autres facteurs de risque.
+
+### 2. Lp(a) : le risque génétique que personne ne mesure
+
+La lipoprotéine(a) est une particule LDL portant une protéine supplémentaire, l'apolipoprotéine(a). Son taux est **déterminé presque entièrement par la génétique** et bouge à peine avec l'alimentation ou le sport.
+
+Le consensus de la Société européenne d'athérosclérose (Kronenberg, 2022) s'appuie sur des données portant sur des centaines de milliers de personnes : l'association entre Lp(a) et maladies cardiovasculaires est **causale et continue**, même avec un LDL très bas. Elle est aussi liée au rétrécissement de la valve aortique.
+
+- **Recommandation** : un dosage **au moins une fois dans la vie** chez l'adulte.
+- **Repères** : sous 30 mg/dL (environ 75 nmol/L), risque exclu ; au-dessus de 50 mg/dL (environ 105 nmol/L), risque augmenté. Environ une personne sur cinq dépasse ce seuil.
+- **Ma lecture** : une Lp(a) élevée ne se corrige pas avec le mode de vie. Elle impose d'être plus strict sur l'ApoB, la tension et la glycémie. Prévenez vos proches : c'est héréditaire.
+
+### 3. Homocystéine : un marqueur modeste, mais révélateur
+
+L'homocystéine monte en cas de carence en vitamines B12, B9 ou B6, d'insuffisance rénale, d'hypothyroïdie ou de variante génétique MTHFR.
+
+La méta-analyse de l'Homocysteine Studies Collaboration (2002, *JAMA*) a regroupé 30 études et plus de 6 000 événements : une homocystéine plus basse de 25 % (environ 3 µmol/L) était associée à **11 % de risque coronarien et 19 % de risque d'AVC en moins**. Les auteurs parlent d'un prédicteur « au plus modeste », et les essais de supplémentation en vitamines B n'ont pas réduit les infarctus.
+
+- **Norme du laboratoire** : jusqu'à 15 µmol/L.
+- **Ma zone visée** : **sous 10 µmol/L**.
+- **Son vrai intérêt** : détecter une carence en B12 ou en folates (végétariens, metformine, anti-acides au long cours).
+
+### 4. CRP ultrasensible : l'inflammation de bas grade
+
+La CRP classique repère l'infection. La **CRP ultrasensible (CRP-us)** mesure l'inflammation chronique silencieuse liée à la graisse viscérale, au tabac, au manque de sommeil.
+
+Ridker (2016, *JACC*) donne les repères : **moins de 1 mg/L, risque cardiovasculaire relatif bas ; 1 à 3 mg/L, moyen ; plus de 3 mg/L, élevé**. Dans l'essai JUPITER, chez des personnes au LDL normal mais à la CRP-us supérieure à 2 mg/L, une statine a réduit de 47 % les infarctus, AVC et décès cardiovasculaires.
+
+- **Norme du laboratoire** : souvent « inférieure à 5 mg/L », seuil pensé pour l'infection.
+- **Ma zone visée** : **sous 1 mg/L**.
+- **Piège du sportif** : une séance très intense, un rhume ou une blessure font grimper la CRP plusieurs jours. Prélevez **après 48 à 72 heures sans séance traumatisante**. Au-dessus de 10 mg/L, on recontrôle.
+
+### 5. Oméga-3 index : votre statut réel en EPA et DHA
+
+L'oméga-3 index mesure la part d'EPA et de DHA dans les membranes des globules rouges, reflet des apports des 2 à 3 derniers mois.
+
+Harris et von Schacky (2004) ont proposé deux repères : **8 % et plus** associé à la meilleure protection cardiaque, **4 % et moins** à la plus faible. En 2021, une analyse de 17 cohortes (42 466 personnes, suivi médian de 16 ans) a montré une mortalité toutes causes **plus basse de 15 à 18 %** dans le quintile le plus élevé d'oméga-3 à longue chaîne (Harris, 2021). Ce sont des données d'observation, qui ne prouvent pas l'effet d'une supplémentation.
+
+- **Ma zone visée** : **8 à 11 %**. Plus de détails dans notre [guide des oméga-3](/blog/omega-3-guide-complet-bienfaits).
+
+---
+
+## Glycémie et insuline : voir venir le diabète dix ans avant
+
+### 6. Insuline à jeun et HOMA-IR : le marqueur le plus sous-estimé
+
+La glycémie reste normale tant que le pancréas compense en produisant plus d'insuline. Chez beaucoup de personnes, **l'insuline grimpe des années avant la glycémie**.
+
+Le HOMA-IR combine les deux : **glycémie à jeun (mmol/L) × insuline à jeun (mUI/L) / 22,5**. Dans l'étude de Matthews (1985), il était corrélé à 0,88 avec le clamp euglycémique, la méthode de référence. Sa précision individuelle reste limitée (coefficient de variation d'environ 31 %) : on raisonne sur des mesures répétées.
+
+Dans la cohorte espagnole EPIRCE (2 459 adultes de 20 à 92 ans), le seuil de HOMA-IR qui repérait le mieux le syndrome métabolique était de **1,85 chez les hommes non diabétiques** et d'environ 2,05 en population générale, loin du 90e percentile (3,46) souvent utilisé (Gayoso-Diz, 2013).
+
+- **Norme du laboratoire pour l'insuline** : souvent 2 à 25 mUI/L.
+- **Ma zone visée** : **insuline à jeun sous 8 mUI/L, HOMA-IR sous 1,5**, alerte au-delà de 2.
+- **Condition** : 10 à 12 heures de jeûne et un second dosage avant de conclure.
+
+Voir aussi notre [guide de la glycémie](/blog/guide-ultime-glycemie) et l'article sur la [graisse viscérale](/blog/graisse-viscerale-longevite).
+
+### 7. HbA1c : la moyenne des trois derniers mois
+
+L'hémoglobine glyquée reflète la glycémie moyenne des 8 à 12 dernières semaines. Dans l'étude ARIC (Selvin, 2010, *NEJM*), 11 092 adultes sans diabète ont été suivis environ 15 ans. Par rapport à 5,0-5,5 %, le risque de diabète était multiplié par **1,86 entre 5,5 et 6,0 %** et par **4,48 entre 6,0 et 6,5 %**. L'HbA1c prédisait aussi le risque cardiovasculaire.
+
+- **Norme du laboratoire** : moins de 5,7 %.
+- **Ma zone visée** : **4,8 à 5,4 %**.
+- **Piège** : une carence en fer fait monter l'HbA1c artificiellement, une hémolyse la fait baisser. Lisez-la avec la ferritine.
+
+---
+
+> **Vous voulez un plan construit sur vos propres chiffres ?**
+>
+> Connaître ses marqueurs ne sert à rien si rien ne change ensuite. Avec l'accompagnement personnalisé par Achzod, votre programme d'entraînement et votre nutrition sont construits à partir de vos données (bilan sanguin, composition corporelle, contraintes de vie), puis ajustés au fil d'un suivi régulier.
+>
+> [Découvrir le coaching Achzod](https://www.achzodcoaching.com)
+
+---
+
+## Fer et foie : deux pièges fréquents chez les sportifs
+
+### 8. Ferritine et saturation de la transferrine : toujours ensemble
+
+La ferritine reflète vos réserves de fer, la saturation de la transferrine (CST) le fer disponible pour fabriquer les globules rouges.
+
+- **Ferritine sous 30 µg/L** : carence en fer, même avec une hémoglobine normale. C'est le seuil le plus utilisé dans les recommandations recensées par Peyrin-Biroulet (2015).
+- **Ferritine haute avec CRP élevée** : l'inflammation, l'alcool et la stéatose font monter la ferritine et peuvent masquer une carence.
+- **Saturation au-dessus de 45 % de façon répétée** : pensez à l'hémochromatose, maladie génétique fréquente en Europe du Nord, et parlez-en à votre médecin.
+
+Chez les sportifs, la carence en fer touche **15 à 35 % des femmes et 5 à 11 % des hommes** selon les cohortes (Sim, 2019), en partie parce que l'hepcidine, qui bloque l'absorption du fer, augmente après un effort intense.
+
+- **Normes du laboratoire** : ferritine de 30 à 400 µg/L chez l'homme ; saturation de 20 à 40 %.
+- **Ma zone visée** : **ferritine de 50 à 150 µg/L chez l'homme**, au moins 50 µg/L chez la femme active ; **saturation de 25 à 40 %**. Voir notre article [fer, anémie et énergie](/blog/fer-anemie-energie-femmes-athletes).
+
+### 9. GGT : bien plus qu'un marqueur d'alcool
+
+La gamma-glutamyltransférase reflète la consommation d'alcool, mais aussi la **stéatose hépatique** et le **stress oxydatif**. Dans la cohorte British Women's Heart and Health (2 961 femmes) et une méta-analyse de 10 études prospectives, une GGT plus élevée était associée aux événements coronariens et aux AVC, **y compris chez les non-buveuses** (Fraser, 2007).
+
+- **Norme du laboratoire** : jusqu'à 55 à 60 UI/L chez l'homme.
+- **Ma zone visée** : **sous 25 à 30 UI/L chez l'homme, sous 20 chez la femme**. C'est une position de coach fondée sur le continuum de risque, pas un seuil officiel.
+- **À savoir** : les transaminases montent après une séance lourde, car elles sont aussi présentes dans le muscle. La GGT n'est pas musculaire : c'est le marqueur hépatique à regarder chez le pratiquant.
+
+![Centrifugeuse de laboratoire ouverte avec des tubes de sang séparés en plasma et globules rouges](/images/blog/bilan-sanguin-marqueurs-que-medecin-ne-demande-pas/bilan-sanguin-centrifugeuse.webp)
+
+---
+
+## Hormones et thyroïde : ce que la TSH et la testostérone totale ne disent pas
+
+### 10. Testostérone libre : la bonne méthode ou rien
+
+Environ 1 à 3 % de la testostérone circule sous forme libre, la fraction active. Quand la SHBG est très haute ou très basse, la testostérone totale devient trompeuse.
+
+Beaucoup de laboratoires proposent une « testostérone libre » par **immunodosage direct avec analogue**. Vermeulen (1999) a montré que cette méthode ne donne qu'une fraction de la valeur réelle, fraction qui varie avec la SHBG. Les méthodes fiables sont la **dialyse à l'équilibre** et le **calcul à partir de la testostérone totale, de la SHBG et de l'albumine**, retenu par l'Endocrine Society (Bhasin, 2018).
+
+- **Repère** : dans l'étude EMAS, l'hypogonadisme tardif associait trois symptômes sexuels, une testostérone totale sous 11 nmol/L et une **testostérone libre calculée sous 220 pmol/L (64 pg/mL)** (Wu, 2010).
+- La méthode complète est détaillée dans notre article sur la [testostérone basse et la lecture du bilan](/blog/testosterone-basse-lire-son-bilan-sanguin).
+
+### 11. SHBG : un indicateur métabolique déguisé en hormone
+
+La SHBG est fabriquée par le foie, et l'insuline freine sa production.
+
+- **SHBG basse** : souvent associée à la résistance à l'insuline, au surpoids abdominal et à la stéatose.
+- **SHBG haute** : âge, déficit calorique prolongé, hyperthyroïdie, maladie du foie, certains médicaments.
+
+Les normes vont en général de 15 à 50 nmol/L chez l'homme. Je ne fixe pas de cible : je regarde sa **tendance** et sa cohérence avec l'insuline. Une SHBG qui chute pendant que le tour de taille monte raconte une histoire claire.
+
+### 12. T3 libre : le thermomètre de votre disponibilité énergétique
+
+La TSH dépiste l'hypothyroïdie franche, pas la baisse de conversion de T4 en T3 (l'hormone active) quand l'énergie manque.
+
+Loucks et Heath (1994) l'ont mesuré chez 27 femmes non entraînées, sur 4 jours d'exercice à apports contrôlés : la **T3 a chuté de 16 % et la T3 libre de 9 %** dès que la disponibilité énergétique passait sous environ 25 kcal par kilo de masse maigre et par jour. Petit échantillon, durée courte, population féminine : le principe reste parlant pour tout pratiquant en sèche prolongée.
+
+- **Norme du laboratoire** : environ 3,1 à 6,8 pmol/L, selon la technique.
+- **Ma lecture** : une T3 libre dans le tiers inférieur avec une TSH normale, chez quelqu'un qui enchaîne les régimes, oriente d'abord vers un **déficit énergétique**.
+
+---
+
+> **Peptides : l'encadrement commence par la prise de sang**
+>
+> Les peptides (BPC-157, CJC-1295, ipamoréline...) ne sont pas approuvés pour l'usage humain en dehors d'éventuelles autorisations de mise sur le marché, et la plupart figurent sur la liste des substances interdites de l'AMA. Si vous vous y intéressez, la seule démarche défendable passe par une analyse de profil individualisée, un **bilan sanguin avant et pendant**, des critères d'arrêt définis à l'avance et un suivi. C'est le cadre du Peptides Engine, sans promesse de résultat.
+>
+> [Découvrir l'analyse Peptides Engine](/offers/peptides-engine)
+
+Les marqueurs à suivre dans ce contexte sont détaillés dans [peptides et bilan sanguin](/blog/peptides-bilan-sanguin-marqueurs-a-suivre) et le cadre général dans le [guide complet des peptides](/blog/peptides-guide-complet).
+
+---
+
+## Vitamines, minéraux et reins : les angles morts du pratiquant
+
+### 13. Vitamine D (25-OH) : utile, sans fétichisme
+
+- En 2011, l'Endocrine Society définissait la carence sous **20 ng/mL (50 nmol/L)** et visait **au moins 30 ng/mL** chez les personnes à risque (Holick, 2011).
+- En 2024, elle a révisé sa position : **pas de dépistage systématique**, pas de cible optimale démontrée pour prévenir les maladies, pas de supplémentation au-delà des apports recommandés chez l'adulte sain de moins de 75 ans (Demay, 2024).
+
+Ma position : je dose la vitamine D chez les personnes à risque (peau foncée, peu de soleil, surpoids, hiver, sport en salle toute l'année) et je vise **30 à 50 ng/mL (75 à 125 nmol/L)**. Au-delà de 100 ng/mL, le risque d'hypercalcémie apparaît. Voir notre guide [vitamine D et supplémentation](/blog/vitamine-d-soleil-supplementation).
+
+### 14. Magnésium érythrocytaire : mieux que le sérique, mais imparfait
+
+Moins de 1 % du magnésium corporel se trouve dans le sérum, que l'organisme maintient stable en puisant dans les os et les cellules. Un magnésium sérique normal n'exclut donc pas un déficit, alors qu'environ la moitié des Américains ont des apports inférieurs aux besoins moyens (Costello, 2016).
+
+Le **magnésium érythrocytaire** reflète mieux le stock intracellulaire. Mais sa méthode n'est pas standardisée et aucun seuil n'a été validé sur des issues cliniques.
+
+- **Ma lecture** : magnésium sérique **au-dessus de 0,85 mmol/L** et érythrocytaire **dans la moitié haute de la norme du laboratoire**. Voir notre article sur le [magnésium](/blog/magnesium-types-bienfaits-dosage).
+
+### 15. Cystatine C : le vrai DFG du pratiquant musclé
+
+Le DFG est estimé à partir de la créatinine, qui dépend de la **masse musculaire**, de la **viande consommée** et de la **supplémentation en créatine**. Un pratiquant de 90 kg sec qui prend de la créatine peut afficher un DFG estimé à 70 mL/min avec des reins normaux. D'où des inquiétudes inutiles et des arrêts injustifiés de la [créatine](/blog/creatine-guide-complet).
+
+La cystatine C, produite à rythme stable par toutes les cellules, dépend peu du muscle. Dans 11 cohortes de population générale et 5 cohortes de patients rénaux (Shlipak, 2013, *NEJM*), le DFG calculé avec la cystatine C prédisait mieux le décès et l'insuffisance rénale terminale que celui calculé avec la créatinine. Les équations CKD-EPI 2021 combinant les deux sont les plus précises (Inker, 2021).
+
+- **Norme du laboratoire** : environ 0,6 à 1,0 mg/L.
+- **Ma lecture** : chez tout pratiquant musclé ou sous créatine au DFG limite, c'est le premier examen à demander avant de s'alarmer.
+
+---
+
+## Tableau récapitulatif : normes du laboratoire et zones visées
+
+![Tableau comparant la norme habituelle du laboratoire et la zone visée en prévention pour l'ApoB, l'insuline à jeun, l'HbA1c, la ferritine, la CRP ultrasensible, l'homocystéine, la GGT et la vitamine D](/images/blog/bilan-sanguin-marqueurs-que-medecin-ne-demande-pas/bilan-sanguin-normes-vs-optimal.webp)
+
+| Marqueur | Norme habituelle du labo | Zone visée | Piège principal |
+|---|---|---|---|
+| ApoB | < 1,20-1,30 g/L | < 0,90 g/L (< 0,80 si risque) | Discordance avec le LDL-c |
+| Lp(a) | Variable | < 30 mg/dL (< 75 nmol/L) | Unités différentes selon le labo |
+| Homocystéine | < 15 µmol/L | < 10 µmol/L | Reins, médicaments |
+| CRP ultrasensible | < 5 mg/L | < 1 mg/L | Séance intense, infection |
+| Oméga-3 index | Non défini | 8 à 11 % | Peu disponible en routine |
+| Insuline / HOMA-IR | 2-25 mUI/L | < 8 mUI/L ; < 1,5 | Jeûne incomplet |
+| HbA1c | < 5,7 % | 4,8 à 5,4 % | Carence en fer, hémolyse |
+| Ferritine + saturation | 30-400 µg/L ; 20-40 % | 50-150 µg/L ; 25-40 % | Inflammation |
+| GGT | < 55-60 UI/L (homme) | < 25-30 UI/L (homme) | Alcool, médicaments |
+| Testostérone libre | Selon méthode | Calculée, lue avec la SHBG | Immunodosage direct |
+| SHBG | 15-50 nmol/L (homme) | Tendance stable | Basse si insulinorésistance |
+| T3 libre | 3,1-6,8 pmol/L | Hors tiers inférieur | Déficit calorique |
+| Vitamine D | > 20 ou 30 ng/mL | 30 à 50 ng/mL | Saison, surpoids |
+| Magnésium érythrocytaire | Selon le labo | Moitié haute | Méthode non standardisée |
+| Cystatine C | 0,6-1,0 mg/L | Dans la norme | Rarement prescrite |
+
+Ces zones sont mes repères de coach pour un adulte en bonne santé, fondés sur les études citées. Elles ne remplacent pas une interprétation médicale.
+
+---
+
+## Préparer son bilan et le lire sans s'affoler
+
+### Les conditions de prélèvement
+
+En France, la plupart de ces analyses peuvent se faire sans ordonnance, à vos frais. Pour des résultats exploitables :
+
+- **à jeun depuis 10 à 12 heures**, le matin avant 10 h
+- **pas de séance intense dans les 48 heures**, pas d'infection en cours
+- **signalez la créatine et la biotine** (qui fausse certains immunodosages, dont la thyroïde)
+- **même laboratoire, mêmes conditions** d'un bilan à l'autre
+
+La Lp(a) se dose une fois. ApoB, insuline, HbA1c, ferritine et vitamine D : une fois par an, ou 8 à 12 semaines après un changement important.
+
+### Trois règles d'interprétation
+
+1. **Un chiffre isolé ne veut rien dire.** Insuline haute, SHBG basse, GGT et triglycérides en hausse racontent la même histoire de résistance à l'insuline.
+2. **On se compare à soi-même**, bilan après bilan, dans les mêmes conditions.
+3. **Le mode de vie d'abord.** Entraînement, sommeil, perte de graisse viscérale et alimentation font l'essentiel du travail. Les compléments viennent ensuite, si un marqueur le justifie.
+
+> **Transformez votre prise de sang en priorités claires**
+>
+> Avec la [Blood Analysis](/offers/blood-analysis), vous déposez le PDF de vos résultats et recevez une lecture de vos biomarqueurs orientée performance et prévention, avec des priorités d'action. Deux bilans peuvent être comparés pour mesurer l'évolution après 2 à 3 mois.
+
+Pour croiser hormones, sommeil, nutrition et entraînement, l'[Anabolic Bioscan](/offers/anabolic-bioscan) identifie les blocages avant d'ajouter quoi que ce soit. Et si vos marqueurs sont propres mais vos progrès à l'arrêt, lisez [pourquoi vous stagnez en musculation](/blog/stagnation-musculation-pourquoi-vous-stagnez).
+
+---
+
+## FAQ : bilan sanguin complet
+
+### Quels examens demander pour un bilan sanguin complet ?
+
+Au-delà du bilan standard, les plus utiles sont l'ApoB, la Lp(a) une fois dans la vie, l'insuline à jeun avec HOMA-IR, l'HbA1c, la ferritine avec la saturation, la CRP ultrasensible et la GGT. Selon le contexte : vitamine D, homocystéine, cystatine C, et testostérone totale avec SHBG et albumine.
+
+### Peut-on faire une prise de sang sans ordonnance ?
+
+Oui. En France, la plupart des laboratoires réalisent les analyses sans ordonnance, à vos frais. Discutez ensuite des résultats avec votre médecin, surtout si une valeur sort des normes.
+
+### Pourquoi mon médecin ne prescrit-il pas l'ApoB ou la Lp(a) ?
+
+Le dépistage de routine repose encore sur le LDL-cholestérol, et ces dosages ne sont pas toujours remboursés hors contexte. Les recommandations européennes de 2019 et le consensus de 2022 plaident pourtant pour l'ApoB en cas de triglycérides élevés ou de surpoids, et pour la Lp(a) au moins une fois chez tout adulte.
+
+### Qu'est-ce qu'un HOMA-IR normal ?
+
+Il n'existe pas de seuil universel. Dans une grande cohorte espagnole, le seuil associé au syndrome métabolique était d'environ 1,85 chez l'homme. Sous 1,5, c'est rassurant ; au-delà de 2, une résistance à l'insuline est probable, à confirmer par un second dosage.
+
+### La créatine fausse-t-elle la prise de sang ?
+
+Elle augmente la créatinine, ce qui fait baisser le DFG estimé sans atteinte rénale. Signalez-la toujours. En cas de doute, la cystatine C estime la fonction rénale sans l'influence du muscle ni de la créatine.
+
+### À quelle fréquence faire un bilan sanguin complet ?
+
+Une fois par an chez un adulte en bonne santé, et 8 à 12 semaines après un changement important pour en vérifier l'effet. La Lp(a) ne se dose qu'une fois.
+
+---
+
+## Mon verdict : mesurer mieux plutôt que mesurer plus
+
+Le bilan de routine répond à une question : êtes-vous malade ? Ces 15 marqueurs répondent à une autre : dans quelle direction allez-vous ? L'ApoB et la Lp(a) précisent le risque cardiovasculaire, l'insuline et l'HbA1c montrent la dérive métabolique avant le diabète, la ferritine, la vitamine D et le magnésium éclairent une partie de la fatigue, la cystatine C et la bonne méthode de dosage de la testostérone libre évitent les faux diagnostics chez le pratiquant.
+
+Aucun de ces chiffres ne vaut seul. Ils prennent leur sens quand on les croise, qu'on les compare à vos bilans précédents et qu'ils débouchent sur un plan concret.
+
+> **Passez des chiffres à l'action**
+>
+> Le coaching Achzod part de vos marqueurs pour construire votre programme d'entraînement et votre nutrition, avec un suivi régulier et des ajustements à chaque nouveau bilan.
+>
+> [Réserver mon accompagnement personnalisé](https://www.achzodcoaching.com)
+
+> **Vous envisagez les peptides ?**
+>
+> Le Peptides Engine commence par l'analyse de votre profil et de votre bilan sanguin, fixe des critères de suivi et d'arrêt, et vous accompagne dans la durée. Aucune promesse de résultat : un cadre.
+>
+> [Voir l'analyse Peptides Engine](/offers/peptides-engine)
+
+*ACHZOD*
+
+---
+
+## Références
+
+1. Sniderman AD, et al. Apolipoprotein B particles and cardiovascular disease: a narrative review. *JAMA Cardiol.* 2019;4(12):1287-1295. [doi:10.1001/jamacardio.2019.3780](https://doi.org/10.1001/jamacardio.2019.3780)
+2. Mach F, et al. 2019 ESC/EAS Guidelines for the management of dyslipidaemias: lipid modification to reduce cardiovascular risk. *Eur Heart J.* 2020;41(1):111-188. [doi:10.1093/eurheartj/ehz455](https://doi.org/10.1093/eurheartj/ehz455)
+3. Kronenberg F, et al. Lipoprotein(a) in atherosclerotic cardiovascular disease and aortic stenosis: a European Atherosclerosis Society consensus statement. *Eur Heart J.* 2022;43(39):3925-3946. [doi:10.1093/eurheartj/ehac361](https://doi.org/10.1093/eurheartj/ehac361)
+4. Homocysteine Studies Collaboration. Homocysteine and risk of ischemic heart disease and stroke: a meta-analysis. *JAMA.* 2002;288(16):2015-2022. [doi:10.1001/jama.288.16.2015](https://doi.org/10.1001/jama.288.16.2015)
+5. Ridker PM. A test in context: high-sensitivity C-reactive protein. *J Am Coll Cardiol.* 2016;67(6):712-723. [doi:10.1016/j.jacc.2015.11.037](https://doi.org/10.1016/j.jacc.2015.11.037)
+6. Harris WS, von Schacky C. The Omega-3 Index: a new risk factor for death from coronary heart disease? *Prev Med.* 2004;39(1):212-220. [doi:10.1016/j.ypmed.2004.02.030](https://doi.org/10.1016/j.ypmed.2004.02.030)
+7. Harris WS, et al. Blood n-3 fatty acid levels and total and cause-specific mortality from 17 prospective studies. *Nat Commun.* 2021;12(1):2329. [doi:10.1038/s41467-021-22370-2](https://doi.org/10.1038/s41467-021-22370-2)
+8. Matthews DR, et al. Homeostasis model assessment: insulin resistance and beta-cell function from fasting plasma glucose and insulin concentrations in man. *Diabetologia.* 1985;28(7):412-419. [doi:10.1007/BF00280883](https://doi.org/10.1007/BF00280883)
+9. Gayoso-Diz P, et al. Insulin resistance (HOMA-IR) cut-off values and the metabolic syndrome in a general adult population: effect of gender and age: EPIRCE cross-sectional study. *BMC Endocr Disord.* 2013;13:47. [doi:10.1186/1472-6823-13-47](https://doi.org/10.1186/1472-6823-13-47)
+10. Selvin E, et al. Glycated hemoglobin, diabetes, and cardiovascular risk in nondiabetic adults. *N Engl J Med.* 2010;362(9):800-811. [doi:10.1056/NEJMoa0908359](https://doi.org/10.1056/NEJMoa0908359)
+11. Peyrin-Biroulet L, et al. Guidelines on the diagnosis and treatment of iron deficiency across indications: a systematic review. *Am J Clin Nutr.* 2015;102(6):1585-1594. [doi:10.3945/ajcn.114.103366](https://doi.org/10.3945/ajcn.114.103366)
+12. Sim M, et al. Iron considerations for the athlete: a narrative review. *Eur J Appl Physiol.* 2019;119(7):1463-1478. [doi:10.1007/s00421-019-04157-y](https://doi.org/10.1007/s00421-019-04157-y)
+13. Fraser A, et al. Gamma-glutamyltransferase is associated with incident vascular events independently of alcohol intake: analysis of the British Women's Heart and Health Study and meta-analysis. *Arterioscler Thromb Vasc Biol.* 2007;27(12):2729-2735. [doi:10.1161/ATVBAHA.107.152298](https://doi.org/10.1161/ATVBAHA.107.152298)
+14. Vermeulen A, Verdonck L, Kaufman JM. A critical evaluation of simple methods for the estimation of free testosterone in serum. *J Clin Endocrinol Metab.* 1999;84(10):3666-3672. [doi:10.1210/jcem.84.10.6079](https://doi.org/10.1210/jcem.84.10.6079)
+15. Bhasin S, et al. Testosterone therapy in men with hypogonadism: an Endocrine Society clinical practice guideline. *J Clin Endocrinol Metab.* 2018;103(5):1715-1744. [doi:10.1210/jc.2018-00229](https://doi.org/10.1210/jc.2018-00229)
+16. Wu FCW, et al. Identification of late-onset hypogonadism in middle-aged and elderly men. *N Engl J Med.* 2010;363(2):123-135. [doi:10.1056/NEJMoa0911101](https://doi.org/10.1056/NEJMoa0911101)
+17. Loucks AB, Heath EM. Induction of low-T3 syndrome in exercising women occurs at a threshold of energy availability. *Am J Physiol.* 1994;266(3 Pt 2):R817-R823. [doi:10.1152/ajpregu.1994.266.3.R817](https://doi.org/10.1152/ajpregu.1994.266.3.R817)
+18. Holick MF, et al. Evaluation, treatment, and prevention of vitamin D deficiency: an Endocrine Society clinical practice guideline. *J Clin Endocrinol Metab.* 2011;96(7):1911-1930. [doi:10.1210/jc.2011-0385](https://doi.org/10.1210/jc.2011-0385)
+19. Demay MB, et al. Vitamin D for the prevention of disease: an Endocrine Society clinical practice guideline. *J Clin Endocrinol Metab.* 2024;109(8):1907-1947. [doi:10.1210/clinem/dgae290](https://doi.org/10.1210/clinem/dgae290)
+20. Costello RB, et al. Perspective: the case for an evidence-based reference interval for serum magnesium: the time has come. *Adv Nutr.* 2016;7(6):977-993. [doi:10.3945/an.116.012765](https://doi.org/10.3945/an.116.012765)
+21. Shlipak MG, et al. Cystatin C versus creatinine in determining risk based on kidney function. *N Engl J Med.* 2013;369(10):932-943. [doi:10.1056/NEJMoa1214234](https://doi.org/10.1056/NEJMoa1214234)
+22. Inker LA, et al. New creatinine- and cystatin C-based equations to estimate GFR without race. *N Engl J Med.* 2021;385(19):1737-1749. [doi:10.1056/NEJMoa2102953](https://doi.org/10.1056/NEJMoa2102953)
+
+*Cet article est informatif et ne remplace pas un avis médical. Les zones visées sont des repères argumentés, pas des normes diagnostiques : tout résultat anormal doit être discuté avec un médecin.*
+`,
+  },
+  {  id: "147",
+    slug: "testosterone-basse-lire-son-bilan-sanguin",
+    title: "Testostérone basse : comment lire son bilan sanguin (totale, libre, SHBG, LH, FSH)",
+    seoTitle: "Testostérone basse : lire son bilan sanguin | APEXLABS",
+    excerpt: "Totale, libre calculée, SHBG, LH, FSH, estradiol, prolactine, hématocrite : comment lire un bilan de testostérone sans se tromper, distinguer hypogonadisme primaire et secondaire, et savoir quand consulter.",
+    metaDescription: "Testostérone basse : comment lire son bilan sanguin. Totale, libre, SHBG, LH, FSH, estradiol, prolactine : normes, pièges et quand consulter.",
+    category: "hormones",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "16 min",
+    image: "/images/blog/testosterone-basse-lire-son-bilan-sanguin/testosterone-basse-hero.webp",
+    content: `# Testostérone basse : comment lire son bilan sanguin (totale, libre, SHBG, LH, FSH)
+
+## Introduction : un chiffre bas ne fait pas un diagnostic
+
+Votre résultat tombe : testostérone totale à 3,1 ng/mL, ou 10,8 nmol/L selon le laboratoire. Petite flèche vers le bas, ou rien du tout. Sur les forums, on vous explique que c'est « un taux de vieux » et qu'il faut agir vite. Votre médecin, lui, vous dit que c'est dans les normes.
+
+Les deux peuvent avoir tort. Une **testostérone basse** ne se juge jamais sur un chiffre isolé. Elle se lit avec l'heure du prélèvement, la SHBG, la testostérone libre calculée correctement, la LH et la FSH qui disent d'où vient le problème, et quelques marqueurs voisins (estradiol, prolactine, hématocrite) qui évitent les faux diagnostics.
+
+Dans ce guide, vous allez apprendre à :
+
+- vérifier que votre prise de sang est interprétable
+- lire chaque marqueur de votre bilan hormonal masculin, avec ses pièges
+- distinguer un hypogonadisme primaire d'un hypogonadisme secondaire
+- repérer les causes liées au mode de vie, de loin les plus fréquentes chez l'homme jeune
+- savoir quand consulter
+
+Cet article ne parle ni de traitement hormonal ni de dosage : ces décisions relèvent d'un médecin. Il vous donne les clés pour arriver à la consultation avec un bilan propre et les bonnes questions.
+
+> **L'essentiel en 30 secondes**
+>
+> - Un prélèvement **à jeun, avant 10 h, répété une seconde fois** est indispensable. L'après-midi, la testostérone peut être 20 à 25 % plus basse chez l'homme de 30 à 40 ans.
+> - Chez l'homme jeune et non obèse, la norme harmonisée va de **264 à 916 ng/dL (9,2 à 31,8 nmol/L)**.
+> - La **SHBG** change tout : une totale basse avec une SHBG basse peut cacher une testostérone libre normale, et l'inverse.
+> - La testostérone libre doit être **calculée** (formule de Vermeulen), pas dosée par immunodosage direct.
+> - **LH et FSH** situent le problème : élevées, c'est le testicule (primaire) ; basses ou normales, c'est le cerveau (secondaire).
+> - Surpoids, manque de sommeil et déficit énergétique sont les premières causes à vérifier, et elles sont souvent réversibles.
+
+---
+
+## Testostérone basse : ce que dit vraiment un taux « bas »
+
+### Des symptômes et des chiffres, pas l'un sans l'autre
+
+Les recommandations de l'Endocrine Society sont claires : on ne parle d'hypogonadisme que chez un homme qui présente **des symptômes compatibles et des taux bas de façon nette et répétée** (Bhasin, 2018).
+
+L'étude européenne EMAS a précisé quels symptômes comptent. Sur 3 369 hommes de 40 à 79 ans, seuls **trois symptômes sexuels** étaient liés de façon cohérente à une testostérone basse : érections matinales moins fréquentes, baisse du désir et troubles de l'érection. La fatigue, l'humeur déprimée ou la baisse de vigueur physique étaient associées au taux, mais de façon moins spécifique. Les auteurs ont retenu comme définition minimale : **trois symptômes sexuels, une testostérone totale sous 11 nmol/L (3,2 ng/mL) et une testostérone libre sous 220 pmol/L (64 pg/mL)** (Wu, 2010). Avec ces critères, seulement 2,1 % des hommes de l'étude étaient concernés.
+
+Traduction : la fatigue seule ne suffit pas, et un chiffre bas sans symptôme ne suffit pas non plus.
+
+### Les normes : attention aux unités et aux laboratoires
+
+Les laboratoires français rendent la testostérone en **ng/mL** ou en **nmol/L**. Pour convertir : **1 ng/mL = 3,47 nmol/L**.
+
+Le problème des normes, c'est qu'elles varient d'un laboratoire à l'autre. Travison (2017) a harmonisé les dosages de 9 054 hommes de quatre cohortes américaines et européennes par rapport à la méthode de référence des CDC. Chez les hommes **non obèses de 19 à 39 ans**, la norme harmonisée allait de **264 à 916 ng/dL, soit 2,64 à 9,16 ng/mL ou 9,2 à 31,8 nmol/L**, avec une médiane à 531 ng/dL (5,3 ng/mL).
+
+Le seuil de 264 ng/dL est celui que retient l'Endocrine Society pour parler de taux bas avec une méthode fiable.
+
+---
+
+## Avant de lire : votre prise de sang est-elle interprétable ?
+
+Une bonne part des « testostérones basses » que je vois passer viennent d'un prélèvement mal fait. Vérifiez ces quatre points avant tout.
+
+### 1. L'heure
+
+La testostérone suit un rythme quotidien, avec un pic le matin. Brambilla (2009) a prélevé 66 hommes de 30 à 80 ans à six reprises, le matin et l'après-midi : chez les **30 à 40 ans, la testostérone était 20 à 25 % plus basse à 16 h qu'à 8 h**. L'écart diminuait avec l'âge (environ 10 % à 70 ans). Dix-sept hommes avaient au moins un résultat sous 300 ng/dL l'après-midi, alors que tous leurs prélèvements du matin étaient normaux.
+
+**Règle** : prélèvement **entre 7 h et 10 h**, ou dans les 3 heures après votre réveil si vous travaillez en horaires décalés.
+
+### 2. Le jeûne
+
+Caronia (2013) a donné 75 g de glucose à 74 hommes de 19 à 74 ans : la testostérone a chuté de **25 % en moyenne**, et restait abaissée deux heures après. Parmi les 66 hommes au taux normal au départ, **15 % sont passés sous le seuil d'hypogonadisme** à au moins un moment. Un petit déjeuner sucré avant la prise de sang suffit à fausser le résultat.
+
+**Règle** : **à jeun**, eau uniquement.
+
+### 3. La répétition
+
+La testostérone varie d'un jour à l'autre. L'Endocrine Society recommande de **confirmer tout résultat bas par un second dosage**, dans les mêmes conditions, quelques semaines plus tard (Bhasin, 2018).
+
+### 4. Le contexte
+
+Une nuit blanche, une infection, une grosse séance la veille, une semaine de déficit calorique sévère ou une période de stress aigu peuvent abaisser transitoirement le taux. Mentionnez aussi tout traitement en cours (opioïdes, corticoïdes, antidépresseurs, finastéride) et tout usage passé d'androgènes ou de stéroïdes anabolisants.
+
+---
+
+## Lire son bilan, marqueur par marqueur
+
+![Schéma de l'axe hypothalamus, hypophyse, testicules : GnRH, LH et FSH, testostérone totale, fractions liée à la SHBG, liée à l'albumine et libre, aromatase vers l'estradiol, rétrocontrôle négatif et effet freinateur de la prolactine](/images/blog/testosterone-basse-lire-son-bilan-sanguin/testosterone-axe-hhg-schema.webp)
+
+### Testostérone totale : le point de départ
+
+C'est la somme de toutes les fractions : liée à la SHBG (fortement, donc peu disponible), liée à l'albumine (faiblement, donc disponible) et libre (1 à 3 %). C'est le premier examen recommandé, avec une méthode fiable, idéalement la spectrométrie de masse.
+
+- **Sous 2,64 ng/mL (9,2 nmol/L)**, confirmé deux fois : taux bas.
+- **Entre 2,64 et 3,5 ng/mL (environ 9 à 12 nmol/L)** : zone grise, où la SHBG et la testostérone libre font la différence.
+- **Au-dessus** : un déficit androgénique est peu probable, sauf SHBG très élevée.
+
+### SHBG : la variable que tout le monde oublie
+
+La SHBG est fabriquée par le foie et transporte la testostérone. Elle modifie la lecture de la totale :
+
+- **SHBG basse** (souvent sous 15-20 nmol/L) : la totale paraît basse, alors que la libre peut être normale. C'est le profil typique de l'homme en **surpoids abdominal ou insulinorésistant**, car l'insuline freine la production de SHBG.
+- **SHBG haute** (souvent au-dessus de 50-60 nmol/L) : la totale paraît correcte, alors que la libre peut être basse. On la voit avec l'âge, le **déficit calorique prolongé**, l'hyperthyroïdie, l'alcool et certaines maladies du foie.
+
+### Testostérone libre : calculée, pas devinée
+
+Beaucoup de laboratoires dosent une « testostérone libre » par immunodosage direct avec analogue. Vermeulen (1999) a comparé cette méthode à la dialyse à l'équilibre, la référence : le dosage direct ne donne **qu'une fraction de la vraie valeur, et cette fraction varie avec la SHBG**. Il n'est pas fiable pour décider.
+
+À l'inverse, la **testostérone libre calculée** à partir de la totale, de la SHBG et de l'albumine (formule de Vermeulen) donnait des valeurs **presque identiques à la dialyse**. C'est la méthode que recommandent l'Endocrine Society et la Society for Endocrinology britannique (Bhasin, 2018 ; Jayasena, 2022).
+
+- **Ce qu'il faut demander** : testostérone totale + SHBG + albumine, puis calcul (des calculateurs en ligne utilisent la formule de Vermeulen).
+- **Repère** : sous **220 pmol/L (64 pg/mL)**, la testostérone libre est considérée comme basse dans les critères EMAS.
+
+### LH et FSH : savoir d'où vient le problème
+
+La LH stimule la production de testostérone par le testicule, la FSH la production de spermatozoïdes. Elles indiquent qui est en panne :
+
+- **Testostérone basse + LH et FSH élevées** : le cerveau pousse, le testicule ne répond pas. C'est un **hypogonadisme primaire**.
+- **Testostérone basse + LH et FSH basses ou « normales »** : le signal central est insuffisant. C'est un **hypogonadisme secondaire**. Une LH « dans la norme » face à une testostérone basse est déjà anormale : elle devrait monter.
+- **Testostérone normale + LH élevée** : on parle d'hypogonadisme compensé, le testicule tient grâce à une stimulation accrue.
+
+Les normes de LH vont en général d'environ 1,5 à 9 UI/L chez l'homme adulte.
+
+> **Un bilan hormonal ne se corrige pas tout seul**
+>
+> Dans la majorité des cas que je suis, une testostérone basse chez l'homme jeune s'explique par le poids, le sommeil, un déficit chronique ou une charge d'entraînement mal gérée. L'accompagnement personnalisé par Achzod construit votre programme d'entraînement et votre nutrition à partir de vos marqueurs, avec un suivi régulier et des ajustements bilan après bilan.
+>
+> [Découvrir le coaching Achzod](https://www.achzodcoaching.com)
+
+### Estradiol : ne le diabolisez pas
+
+Une partie de la testostérone est convertie en estradiol par l'aromatase, surtout dans le tissu adipeux. L'estradiol n'est pas « l'hormone de la femme » chez l'homme : il est indispensable.
+
+L'étude de Finkelstein (2013, *NEJM*) l'a démontré élégamment. Les chercheurs ont supprimé la production hormonale de 400 hommes de 20 à 50 ans pendant 16 semaines, puis leur ont redonné différentes doses de testostérone, avec ou sans un blocage de la conversion en estradiol. Résultat : la **masse maigre et la force** dépendaient surtout des androgènes, tandis que l'**augmentation de la masse grasse** était principalement due au manque d'estradiol. La fonction sexuelle dépendait des deux.
+
+- **Repère** : l'estradiol de l'homme se situe en général entre 15 et 40 pg/mL, selon la méthode. Les immunodosages standards sont peu précis à ces taux ; la spectrométrie de masse est préférable.
+- **Ma lecture** : un estradiol élevé chez un homme en surpoids reflète d'abord l'excès de tissu adipeux. On ne cherche pas à « l'écraser ».
+
+### Prolactine : le marqueur qui peut tout expliquer
+
+La prolactine en excès freine la GnRH, donc la LH, donc la testostérone. Elle est incluse dans le bilan de tout homme avec une testostérone basse et une LH basse ou normale.
+
+Les recommandations de l'Endocrine Society sur l'hyperprolactinémie (Melmed, 2011) listent les causes à éliminer avant de conclure à un adénome hypophysaire (prolactinome) : **stress du prélèvement, médicaments** (antipsychotiques, certains antidépresseurs, métoclopramide, dompéridone), **hypothyroïdie, insuffisance rénale**, et la présence de **macroprolactine**, une forme inactive qui gonfle le résultat.
+
+- **Repère** : chez l'homme, la prolactine est en général sous 15 à 20 ng/mL selon les laboratoires.
+- **Si elle est élevée** : on contrôle au repos, on cherche la macroprolactine, puis votre médecin décide d'une imagerie.
+
+### Hématocrite : un indice, pas un détail
+
+La testostérone stimule la production de globules rouges. L'hématocrite (la part des globules rouges dans le sang, environ 40 à 50 % chez l'homme) apporte donc des indices :
+
+- **Hématocrite plutôt bas** avec une testostérone basse : cohérent avec un déficit réel.
+- **Hématocrite élevé** (au-dessus de 52 %) : déshydratation, tabac, altitude, apnée du sommeil, ou apport d'androgènes.
+- **Le profil qui doit alerter** : testostérone basse, **LH et FSH effondrées**, SHBG basse et hématocrite haut chez un homme qui « ne prend rien ». C'est le schéma typique d'un apport d'androgènes, y compris certains compléments contaminés, ou d'un arrêt récent de stéroïdes anabolisants.
+
+---
+
+## Hypogonadisme primaire ou secondaire : la clé de lecture
+
+![Arbre de décision : testostérone totale basse confirmée, puis LH et FSH élevées pour un hypogonadisme primaire ou LH et FSH basses ou normales pour un hypogonadisme secondaire, avec les examens à vérifier](/images/blog/testosterone-basse-lire-son-bilan-sanguin/testosterone-primaire-secondaire-schema.webp)
+
+L'étude EMAS a classé ses 3 369 hommes de 40 à 79 ans selon la testostérone et la LH (Tajar, 2010) :
+
+- **11,8 %** présentaient un profil **secondaire** (testostérone basse, LH basse ou normale)
+- **2,0 %** un profil **primaire** (testostérone basse, LH élevée)
+- **9,5 %** un profil **compensé** (testostérone normale, LH élevée)
+
+Le chiffre le plus frappant : un **IMC de 30 ou plus multipliait par 8,7 la probabilité d'un hypogonadisme secondaire**. L'âge, lui, était surtout lié aux formes primaire et compensée.
+
+### Primaire : le testicule
+
+Causes possibles : syndrome de Klinefelter, antécédent de cryptorchidie, orchite (oreillons), traumatisme, chimiothérapie ou radiothérapie, varicocèle importante. Ce profil justifie un avis spécialisé.
+
+### Secondaire : l'hypothalamus et l'hypophyse
+
+C'est la forme la plus fréquente chez l'homme jeune et actif. Avant de penser à une maladie de l'hypophyse, on vérifie :
+
+- **le poids et le tour de taille**
+- **le sommeil**, y compris une apnée du sommeil
+- **le déficit énergétique** et la charge d'entraînement
+- **la prolactine**, la **ferritine et la saturation** (une surcharge en fer peut atteindre l'hypophyse)
+- **les médicaments** : opioïdes, corticoïdes au long cours
+- **l'usage passé ou présent d'androgènes**, qui met l'axe en sommeil pendant des mois
+
+Une testostérone très basse (sous environ 5 nmol/L, soit 1,5 ng/mL) avec une LH basse, une prolactine élevée, des maux de tête ou des troubles de la vision conduit votre médecin vers une imagerie de l'hypophyse.
+
+> **Peptides et axe hormonal : jamais sans bilan**
+>
+> Certains s'intéressent aux peptides pour l'axe hormonal ou l'hormone de croissance. Rappel : la plupart ne sont pas approuvés pour l'usage humain en dehors d'éventuelles autorisations de mise sur le marché, et figurent sur la liste des substances interdites de l'AMA pour les sportifs contrôlés. Le Peptides Engine est une analyse de profil individualisée : bilan sanguin avant et pendant, choix argumenté, suivi et critères d'arrêt. Aucune promesse, aucun raccourci.
+>
+> [Découvrir l'analyse Peptides Engine](/offers/peptides-engine)
+
+Le sujet est détaillé dans notre [guide complet des peptides](/blog/peptides-guide-complet) et dans l'article sur [CJC-1295, ipamoréline et IGF-1](/blog/cjc-1295-ipamoreline-hormone-de-croissance-igf-1).
+
+---
+
+## Les causes liées au mode de vie : les premières à vérifier
+
+![Chambre sombre et calme la nuit, lit défait aux draps anthracite, lumière de lune et halo jaune d'une lampe de chevet](/images/blog/testosterone-basse-lire-son-bilan-sanguin/testosterone-basse-sommeil.webp)
+
+### Le surpoids abdominal
+
+La graisse viscérale fait baisser la SHBG, augmente la conversion en estradiol et freine l'axe central. Le phénomène est en grande partie réversible. La méta-analyse de Corona (2013), sur 24 études, montre qu'une **perte de poids par régime hypocalorique augmente la testostérone totale d'environ 2,9 nmol/L**, et la chirurgie bariatrique d'environ 8,7 nmol/L. Le gain est d'autant plus marqué que la perte de poids est importante.
+
+### Le manque de sommeil
+
+Leproult et Van Cauter (2011, *JAMA*) ont limité le sommeil de 10 jeunes hommes en bonne santé à 5 heures par nuit pendant une semaine : leur **testostérone diurne a baissé de 10 à 15 %**, l'équivalent de 10 à 15 ans de vieillissement. Une seule nuit blanche a fait chuter la testostérone de **24 %** dans l'étude de Lamon (2021), menée sur 13 jeunes adultes (7 hommes et 6 femmes). Échantillons petits, mais le signal est constant.
+
+### Le déficit énergétique et le surentraînement
+
+Hackney (2020) décrit chez les hommes très entraînés, en particulier en endurance, une testostérone de repos abaissée avec une LH qui ne compense pas. Une partie de ces cas relève d'une **faible disponibilité énergétique**, l'équivalent masculin du syndrome RED-S. Le pratiquant qui enchaîne sèche sur sèche avec un gros volume d'entraînement coche toutes les cases. Indices au bilan : SHBG haute, T3 libre basse, testostérone basse, LH basse ou normale.
+
+### Une alimentation trop pauvre en graisses
+
+Whittaker et Wu (2021) ont regroupé 6 études d'intervention (206 hommes) : les régimes pauvres en graisses **abaissaient la testostérone totale et libre** par rapport aux régimes plus riches en graisses, avec un effet faible à modéré (différence moyenne standardisée de -0,38). Les études sont peu nombreuses et hétérogènes. Retenez qu'il est inutile de descendre très bas en lipides de façon prolongée.
+
+### L'alcool, les opioïdes, les androgènes
+
+Consommation d'alcool importante, antalgiques opioïdes au long cours, et surtout **arrêt de stéroïdes anabolisants** : l'axe peut mettre plusieurs mois à repartir, parfois davantage.
+
+Pour les leviers concrets (entraînement, nutrition, micronutriments, compléments étudiés), lisez notre guide sur l'[optimisation naturelle de la testostérone](/blog/testosterone-naturelle-optimisation-masculine), ainsi que nos articles sur le [zinc](/blog/zinc-immunite-testosterone-sante) et l'[ashwagandha](/blog/ashwagandha-ksm66-stress-testosterone-cortisol).
+
+---
+
+## Tableau de lecture : les marqueurs du bilan hormonal masculin
+
+| Marqueur | Ce qu'il indique | Repère habituel (homme adulte) | Piège principal |
+|---|---|---|---|
+| Testostérone totale | Production globale | 2,64 à 9,16 ng/mL (9,2 à 31,8 nmol/L) chez l'homme jeune non obèse | Prélèvement tardif ou non à jeun |
+| SHBG | Transport, statut métabolique | Environ 15 à 50 nmol/L | Basse en surpoids, haute en déficit |
+| Testostérone libre calculée | Fraction active | Au-dessus de 220 pmol/L (64 pg/mL) | Immunodosage direct peu fiable |
+| LH | Commande du testicule | Environ 1,5 à 9 UI/L | « Normale » mais inadaptée à une T basse |
+| FSH | Production de spermatozoïdes | Environ 1,5 à 12 UI/L | Élevée si atteinte testiculaire |
+| Estradiol | Conversion par l'aromatase | Environ 15 à 40 pg/mL | Dosage standard imprécis |
+| Prolactine | Frein central possible | Sous 15 à 20 ng/mL | Stress, médicaments, macroprolactine |
+| Hématocrite | Effet sur les globules rouges | Environ 40 à 50 % | Élevé si androgènes, apnée, tabac |
+
+Les normes exactes dépendent de chaque laboratoire et de sa technique. Comparez toujours votre résultat à l'intervalle indiqué sur votre compte rendu.
+
+---
+
+## Trois profils de bilan, trois histoires différentes
+
+**Profil 1 : 28 ans, troisième sèche de l'année.** Testostérone totale 2,9 ng/mL, SHBG 62 nmol/L, LH 2 UI/L, T3 libre dans le tiers inférieur. Lecture : déficit énergétique probable. Priorité : sortir du déficit, réduire le volume, dormir. Contrôle dans 8 à 12 semaines.
+
+**Profil 2 : 42 ans, IMC 31, tour de taille 104 cm.** Testostérone totale 2,8 ng/mL, SHBG 14 nmol/L, testostérone libre calculée proche de la normale, LH 3 UI/L, insuline à jeun élevée. Lecture : profil métabolique, SHBG écrasée par l'insulinorésistance. Priorité : perte de graisse viscérale, musculation, sommeil, dépistage d'une apnée.
+
+**Profil 3 : 30 ans, « je ne prends rien ».** Testostérone totale 0,6 ng/mL, LH et FSH quasi indétectables, SHBG 11 nmol/L, hématocrite 53 %. Lecture : schéma typique d'un apport ou d'un arrêt récent d'androgènes, ou d'un complément contaminé. Priorité : avis médical, et honnêteté totale avec le médecin.
+
+---
+
+## Quand consulter
+
+Prenez rendez-vous avec votre médecin, qui vous orientera si besoin vers un endocrinologue ou un andrologue, si :
+
+- votre testostérone est basse **sur deux prélèvements corrects** et vous avez des symptômes sexuels
+- votre LH et votre FSH sont **élevées**, ou au contraire **effondrées**
+- votre **prolactine** est élevée, ou vous avez des maux de tête ou des troubles visuels
+- vous avez un **projet de paternité** ou des difficultés à concevoir
+- vous constatez une **gynécomastie**, une diminution du volume testiculaire, ou des fractures inhabituelles
+- vos symptômes persistent après 3 mois d'efforts réels sur le poids, le sommeil et l'alimentation
+
+---
+
+> **Faites lire votre bilan hormonal**
+>
+> Avec la [Blood Analysis](/offers/blood-analysis), vous déposez votre compte rendu et recevez une lecture de vos marqueurs hormonaux et métaboliques, avec des priorités claires. Pour comprendre plus largement ce que votre bilan ne montre pas, lisez notre article sur les [marqueurs que votre médecin ne demande pas](/blog/bilan-sanguin-marqueurs-que-medecin-ne-demande-pas) et notre guide [hormones et bilan sanguin](/blog/hormones-bilan-sanguin).
+
+---
+
+## FAQ : testostérone basse et bilan sanguin
+
+### Quel est le taux normal de testostérone chez l'homme ?
+
+Chez l'homme de 19 à 39 ans non obèse, la norme harmonisée va de 264 à 916 ng/dL, soit 2,64 à 9,16 ng/mL ou 9,2 à 31,8 nmol/L. Les normes de votre laboratoire peuvent différer légèrement selon la technique. Un taux sous 2,64 ng/mL, confirmé deux fois le matin à jeun, est considéré comme bas.
+
+### À quelle heure faire une prise de sang pour la testostérone ?
+
+Le matin, entre 7 h et 10 h, à jeun. L'après-midi, la testostérone peut être 20 à 25 % plus basse chez l'homme de 30 à 40 ans, et un repas sucré la fait chuter d'environ 25 %. Faites toujours le second dosage dans les mêmes conditions.
+
+### Testostérone totale ou libre : laquelle compte ?
+
+Les deux. La totale est le premier examen. La libre devient indispensable quand la totale est limite ou quand la SHBG est anormale. Elle doit être calculée à partir de la totale, de la SHBG et de l'albumine, pas dosée par immunodosage direct.
+
+### Que signifie une SHBG élevée ?
+
+Une SHBG élevée retient davantage de testostérone et réduit la fraction libre. On la retrouve avec l'âge, un déficit calorique prolongé, l'hyperthyroïdie, l'alcool ou certaines maladies du foie. Une testostérone totale correcte avec une SHBG haute peut masquer une testostérone libre basse.
+
+### La testostérone basse peut-elle remonter naturellement ?
+
+Oui, quand la cause est liée au mode de vie. Une perte de poids augmente la testostérone totale d'environ 2,9 nmol/L en moyenne avec un régime hypocalorique, et corriger un manque de sommeil ou un déficit énergétique chronique aide aussi. Un hypogonadisme primaire ou une cause hypophysaire relèvent en revanche d'une prise en charge médicale.
+
+### Quel médecin consulter pour une testostérone basse ?
+
+Commencez par votre médecin traitant avec deux bilans corrects. Il vous orientera vers un endocrinologue, ou un andrologue en cas de projet de paternité ou de troubles sexuels, si la LH, la FSH ou la prolactine sont anormales ou si les symptômes persistent malgré les efforts sur le mode de vie.
+
+---
+
+## Mon verdict : un bilan bien fait vaut mieux qu'un chiffre affolant
+
+Une testostérone basse est un signal, pas une sentence. Avant de conclure, vérifiez l'heure, le jeûne et la répétition. Lisez la totale avec la SHBG, calculez la libre, regardez la LH et la FSH pour savoir où chercher, et ne négligez ni la prolactine ni l'hématocrite. Dans la majorité des cas chez l'homme jeune, la cause se trouve dans le poids, le sommeil, le déficit énergétique ou la charge d'entraînement, et elle se corrige.
+
+> **Reprenez la main sur vos hormones avec un plan concret**
+>
+> L'accompagnement personnalisé par Achzod part de votre bilan pour construire votre programme d'entraînement et votre nutrition, avec un suivi et des contrôles réguliers de vos marqueurs.
+>
+> [Réserver mon accompagnement personnalisé](https://www.achzodcoaching.com)
+
+> **Vous envisagez les peptides ?**
+>
+> Le Peptides Engine analyse votre profil et votre bilan sanguin, fixe des critères de suivi et d'arrêt, et vous accompagne dans la durée. Un cadre, pas une promesse.
+>
+> [Voir l'analyse Peptides Engine](/offers/peptides-engine)
+
+*ACHZOD*
+
+---
+
+## Références
+
+1. Bhasin S, et al. Testosterone therapy in men with hypogonadism: an Endocrine Society clinical practice guideline. *J Clin Endocrinol Metab.* 2018;103(5):1715-1744. [doi:10.1210/jc.2018-00229](https://doi.org/10.1210/jc.2018-00229)
+2. Wu FCW, et al. Identification of late-onset hypogonadism in middle-aged and elderly men. *N Engl J Med.* 2010;363(2):123-135. [doi:10.1056/NEJMoa0911101](https://doi.org/10.1056/NEJMoa0911101)
+3. Travison TG, et al. Harmonized reference ranges for circulating testosterone levels in men of four cohort studies in the United States and Europe. *J Clin Endocrinol Metab.* 2017;102(4):1161-1173. [doi:10.1210/jc.2016-2935](https://doi.org/10.1210/jc.2016-2935)
+4. Brambilla DJ, et al. The effect of diurnal variation on clinical measurement of serum testosterone and other sex hormone levels in men. *J Clin Endocrinol Metab.* 2009;94(3):907-913. [doi:10.1210/jc.2008-1902](https://doi.org/10.1210/jc.2008-1902)
+5. Caronia LM, et al. Abrupt decrease in serum testosterone levels after an oral glucose load in men: implications for screening for hypogonadism. *Clin Endocrinol (Oxf).* 2013;78(2):291-296. [doi:10.1111/j.1365-2265.2012.04486.x](https://doi.org/10.1111/j.1365-2265.2012.04486.x)
+6. Vermeulen A, Verdonck L, Kaufman JM. A critical evaluation of simple methods for the estimation of free testosterone in serum. *J Clin Endocrinol Metab.* 1999;84(10):3666-3672. [doi:10.1210/jcem.84.10.6079](https://doi.org/10.1210/jcem.84.10.6079)
+7. Jayasena CN, et al. Society for Endocrinology guidelines for testosterone replacement therapy in male hypogonadism. *Clin Endocrinol (Oxf).* 2022;96(2):200-219. [doi:10.1111/cen.14633](https://doi.org/10.1111/cen.14633)
+8. Finkelstein JS, et al. Gonadal steroids and body composition, strength, and sexual function in men. *N Engl J Med.* 2013;369(11):1011-1022. [doi:10.1056/NEJMoa1206168](https://doi.org/10.1056/NEJMoa1206168)
+9. Melmed S, et al. Diagnosis and treatment of hyperprolactinemia: an Endocrine Society clinical practice guideline. *J Clin Endocrinol Metab.* 2011;96(2):273-288. [doi:10.1210/jc.2010-1692](https://doi.org/10.1210/jc.2010-1692)
+10. Tajar A, et al. Characteristics of secondary, primary, and compensated hypogonadism in aging men: evidence from the European Male Ageing Study. *J Clin Endocrinol Metab.* 2010;95(4):1810-1818. [doi:10.1210/jc.2009-1796](https://doi.org/10.1210/jc.2009-1796)
+11. Corona G, et al. Body weight loss reverts obesity-associated hypogonadotropic hypogonadism: a systematic review and meta-analysis. *Eur J Endocrinol.* 2013;168(6):829-843. [doi:10.1530/EJE-12-0955](https://doi.org/10.1530/EJE-12-0955)
+12. Leproult R, Van Cauter E. Effect of 1 week of sleep restriction on testosterone levels in young healthy men. *JAMA.* 2011;305(21):2173-2174. [doi:10.1001/jama.2011.710](https://doi.org/10.1001/jama.2011.710)
+13. Lamon S, et al. The effect of acute sleep deprivation on skeletal muscle protein synthesis and the hormonal environment. *Physiol Rep.* 2021;9(1):e14660. [doi:10.14814/phy2.14660](https://doi.org/10.14814/phy2.14660)
+14. Hackney AC. Hypogonadism in exercising males: dysfunction or adaptive-regulatory adjustment? *Front Endocrinol (Lausanne).* 2020;11:11. [doi:10.3389/fendo.2020.00011](https://doi.org/10.3389/fendo.2020.00011)
+15. Whittaker J, Wu K. Low-fat diets and testosterone in men: systematic review and meta-analysis of intervention studies. *J Steroid Biochem Mol Biol.* 2021;210:105878. [doi:10.1016/j.jsbmb.2021.105878](https://doi.org/10.1016/j.jsbmb.2021.105878)
+
+*Cet article est informatif et ne remplace pas un avis médical. Il n'aborde ni traitement hormonal ni dosage : toute décision thérapeutique relève d'un médecin.*
+`,
+  },
+  {  id: "148",
+    slug: "stagnation-musculation-pourquoi-vous-stagnez",
+    title: "Stagnation en musculation : pourquoi vous stagnez et comment relancer vos progrès",
+    seoTitle: "Stagnation en musculation : 9 causes | APEXLABS",
+    excerpt: "Volume, intensité, surcharge progressive, récupération, sommeil, protéines, déficit chronique, hormones, technique : les 9 causes d'un plateau en musculation, ce que disent les études et une grille pour trouver la vôtre.",
+    metaDescription: "Stagnation en musculation : volume, intensité, surcharge progressive, sommeil, protéines, déficit, hormones. Les 9 causes et une grille de diagnostic.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2026-11-19",
+    readTime: "14 min",
+    image: "/images/blog/stagnation-musculation-pourquoi-vous-stagnez/stagnation-musculation-hero.webp",
+    content: `# Stagnation en musculation : pourquoi vous stagnez et comment relancer vos progrès
+
+## Introduction : même salle, mêmes charges, même miroir
+
+Vous vous entraînez quatre fois par semaine depuis des mois. Vous ne ratez presque jamais une séance. Et pourtant, votre développé couché est bloqué au même chiffre depuis l'été, vos bras n'ont pas pris un centimètre, et le miroir vous renvoie la même image qu'il y a un an.
+
+La **stagnation en musculation** n'a presque jamais une cause mystérieuse. Elle vient d'un nombre limité de facteurs : un volume mal dosé, des séries trop éloignées de l'échec, une progression qui n'existe que dans votre tête, une récupération sabotée, un sommeil trop court, des protéines insuffisantes, un déficit calorique qui ne finit jamais, plus rarement un problème hormonal, et une technique qui dérive. Le piège, c'est de chercher la cause rare (les hormones, la génétique, le supplément miracle) avant d'avoir éliminé les causes banales.
+
+Dans ce guide :
+
+- comment savoir si vous stagnez vraiment
+- les 9 causes de stagnation, avec ce que disent les études et comment les corriger
+- une **grille de diagnostic** pour trouver votre point faible en 15 minutes
+- l'ordre dans lequel chercher, du plus fréquent au plus rare
+
+> **L'essentiel en 30 secondes**
+>
+> - Un vrai plateau, c'est **4 à 6 semaines sans progrès** en charge ou en répétitions sur vos exercices principaux, dans des conditions stables.
+> - Le **volume** compte : chaque série hebdomadaire supplémentaire est associée à un peu plus d'hypertrophie, avec un repère utile autour de **10 séries dures par muscle et par semaine** et plus.
+> - L'**intensité** compte aussi : pour l'hypertrophie, les séries finies **à 0 à 3 répétitions de l'échec** sont plus efficaces que les séries « confort ».
+> - Côté nutrition : environ **1,6 g de protéines par kilo et par jour**, et un **déficit d'environ 500 kcal par jour suffit à bloquer la prise de masse maigre**.
+> - Une seule nuit blanche réduit la synthèse des protéines musculaires de **18 %**.
+> - Les hormones expliquent rarement un plateau chez un pratiquant en bonne santé. On les vérifie **en dernier**, par une prise de sang.
+
+---
+
+## Êtes-vous vraiment en stagnation ?
+
+### Ralentir n'est pas stagner
+
+Les premiers mois, tout progresse : les charges montent chaque semaine, le corps change vite. Puis la courbe s'aplatit. C'est normal : plus vous êtes avancé, plus les gains sont lents. Un pratiquant de 5 ans qui gagne 2,5 kg sur son squat en deux mois progresse. Il ne stagne pas. Pour situer vos attentes, lisez notre article sur le [potentiel génétique en musculation](/blog/potentiel-genetique-musculation).
+
+### Définir un plateau
+
+Je parle de plateau quand trois conditions sont réunies :
+
+1. **Aucun progrès en charge ni en répétitions** sur vos 3 ou 4 exercices principaux depuis **4 à 6 semaines**
+2. **Aucun changement mesurable** du tour de bras, de cuisse ou de taille sur la même période, à poids de corps stable
+3. **Un programme et une hygiène de vie stables** (pas de déménagement, de blessure ou de maladie qui expliquent la pause)
+
+Si vous n'avez **pas de carnet d'entraînement**, vous ne pouvez pas savoir si vous stagnez. C'est la première chose à corriger.
+
+---
+
+## Les 9 causes de stagnation en musculation
+
+### 1. Le volume : trop peu, ou beaucoup trop
+
+Le volume se compte en **séries dures par groupe musculaire et par semaine**. La méta-analyse de Schoenfeld (2017) a regroupé 15 études (34 groupes) : **chaque série hebdomadaire supplémentaire était associée à environ 0,37 % d'hypertrophie en plus**, et les groupes à 10 séries ou plus par semaine tendaient à progresser davantage.
+
+En 2019, la même équipe a comparé 1, 3 et 5 séries par exercice chez 34 hommes entraînés, 3 fois par semaine pendant 8 semaines (Schoenfeld, 2019). La **force a progressé de façon similaire** dans les trois groupes, mais l'**hypertrophie était plus marquée dans les groupes à volume élevé** sur plusieurs sites mesurés. Limites : 8 semaines, échantillon réduit, et un groupe « 5 séries » au volume très élevé, difficile à tenir longtemps.
+
+Deux erreurs opposées :
+
+- **Trop peu** : 4 à 6 séries par muscle et par semaine, souvent chez ceux qui font « un muscle par jour » avec 3 exercices bâclés.
+- **Trop** : 25 à 30 séries par muscle, en permanence, sans que la récupération suive. Les performances baissent, les articulations protestent.
+
+**Ma règle** : partir de **10 à 20 séries dures par muscle et par semaine**, et n'ajouter du volume que si la récupération suit et que les performances montent.
+
+### 2. L'intensité : des séries trop confortables
+
+Une série « dure » est une série qui finit près de l'échec. La méta-analyse de Refalo (2023, 15 études) montre qu'aller jusqu'à l'**échec musculaire complet n'apporte pas d'avantage net** par rapport à s'arrêter juste avant. Mais celle de Robinson (2024) précise le tableau : **l'hypertrophie augmente à mesure que les séries se terminent plus près de l'échec**, alors que la force progresse de façon similaire sur une large plage.
+
+Traduction : la plupart des pratiquants qui stagnent ne s'entraînent pas trop dur. Ils s'arrêtent à 10 répétitions parce que c'est le chiffre écrit sur le programme, alors qu'il leur en restait 5 dans le réservoir.
+
+**Ma règle** : finir la plupart des séries à **1 à 3 répétitions de l'échec** (RIR 1 à 3), en allant jusqu'à l'échec surtout sur les exercices d'isolation et les machines, où le risque est faible. Notre article [l'entraînement à l'échec est-il nécessaire](/blog/entrainement-echec-necessaire) détaille le sujet.
+
+### 3. La surcharge progressive : celle qui n'existe que dans votre tête
+
+Sans augmentation de la difficulté au fil du temps, le corps n'a aucune raison de s'adapter. La bonne nouvelle : il n'y a pas qu'une manière de progresser. Plotkin (2022) a comparé, chez 43 pratiquants entraînés depuis au moins un an, une progression en **charge** à une progression en **répétitions** à charge fixe pendant 8 semaines : l'**hypertrophie était comparable** dans les deux groupes.
+
+Ce qui ne marche pas, c'est de changer de programme toutes les trois semaines, de varier les exercices au point de ne jamais pouvoir comparer, ou de ne rien noter.
+
+**Ma règle** : un **carnet**, une méthode de progression simple (double progression : on monte les répétitions dans une fourchette, puis la charge), et des exercices principaux stables sur 8 à 12 semaines. Voir notre guide de la [surcharge progressive](/blog/surcharge-progressive-guide).
+
+### 4. La récupération : la fatigue qui masque la forme
+
+Une charge d'entraînement trop élevée trop longtemps finit par faire baisser les performances. La revue de Bell (2020, 47 études) trouve peu de preuves d'un syndrome de surentraînement avéré en musculation, mais des cas de **surmenage non fonctionnel** quand le volume ou l'intensité restent élevés trop longtemps.
+
+Faut-il programmer des semaines de décharge ? Coleman (2024) a testé chez 39 pratiquants entraînés une semaine d'arrêt au milieu d'un programme de 9 semaines : **pas de différence d'hypertrophie**, une progression de **force un peu moindre** que chez ceux qui avaient continué. Deux des auteurs déclarent des liens avec l'industrie du fitness (matériel, programmes en ligne).
+
+**Ma règle** : la décharge n'est pas obligatoire à date fixe. Elle se déclenche sur signaux : charges en baisse sur plusieurs séances, douleurs articulaires, motivation en chute, sommeil perturbé. Voir [la semaine de décharge](/blog/deload-semaine-decharge) et [la fatigue du système nerveux](/blog/fatigue-systeme-nerveux).
+
+### 5. Le sommeil : le facteur le plus sous-estimé
+
+Le sommeil agit directement sur la construction musculaire. Dans l'essai croisé de Lamon (2021), sur 13 jeunes adultes, **une seule nuit blanche a réduit la synthèse des protéines musculaires de 18 %**, augmenté le cortisol de 21 % et diminué la testostérone de 24 %. La revue de Knowles (2018, 17 études) montre que plusieurs nuits de sommeil raccourci **réduisent la force sur les mouvements polyarticulaires**, comme le squat ou le développé couché.
+
+Et en sèche, c'est encore plus net. Nedeltcheva (2010) a soumis 10 adultes en surpoids à 14 jours de restriction calorique avec 8,5 ou 5,5 heures de sommeil possibles. Avec le sommeil court, la **perte de masse maigre est passée de 1,5 à 2,4 kg**, et la perte de graisse de 1,4 à 0,6 kg. Même régime, résultat inversé.
+
+**Ma règle** : **7 heures minimum**, des horaires réguliers, et un dépistage de l'apnée du sommeil en cas de ronflements et de fatigue au réveil. Lisez [5 façons d'optimiser le sommeil profond](/blog/5-facons-optimiser-sommeil-profond).
+
+---
+
+> **Vous voulez savoir précisément ce qui bloque chez vous ?**
+>
+> Un plateau se règle rarement avec un programme téléchargé. L'accompagnement personnalisé par Achzod commence par l'analyse de votre entraînement, de votre nutrition et de votre récupération, puis construit un programme d'entraînement et un plan alimentaire ajustés semaine après semaine, avec un suivi.
+>
+> [Découvrir le coaching Achzod](https://www.achzodcoaching.com)
+
+---
+
+### 6. Les protéines : souvent insuffisantes, rarement le seul problème
+
+La méta-analyse de Morton (2018) a regroupé 49 essais et 1 863 participants : la supplémentation en protéines augmente les gains de masse maigre et de force pendant un programme de musculation, et **au-delà d'environ 1,6 g par kilo et par jour, aucun gain supplémentaire n'était détecté** en moyenne. La borne haute de l'intervalle de confiance montait à environ 2,2 g/kg, ce qui justifie de viser un peu plus haut par sécurité.
+
+Le problème du pratiquant qui stagne n'est pas l'absence de shaker. C'est un petit déjeuner sans protéines, un déjeuner pris sur le pouce et un total réel autour de 1 g/kg quand on fait le compte.
+
+**Ma règle** : **1,6 à 2,2 g/kg/jour**, répartis sur 3 à 5 repas d'au moins 25 à 40 g. En sèche, on monte vers le haut de la fourchette. Voir [les protéines chez les pratiquants](/blog/proteines-bodybuilders-doses).
+
+![Flat-lay sur ardoise sombre : haltères hexagonaux noirs, blanc de poulet et riz, œufs, yaourt grec et shaker](/images/blog/stagnation-musculation-pourquoi-vous-stagnez/stagnation-musculation-nutrition.webp)
+
+### 7. Le déficit chronique : la sèche qui ne finit jamais
+
+On ne construit pas de muscle à partir de rien. Murphy et Koehler (2022) ont analysé les essais de musculation menés en déficit énergétique pendant au moins 3 semaines : **les gains de masse maigre étaient nettement réduits** (taille d'effet de -0,57 par rapport aux groupes sans déficit), alors que **la force progressait de façon comparable**. Leur méta-régression suggère qu'un **déficit d'environ 500 kcal par jour suffisait à annuler les gains de masse maigre**.
+
+C'est le profil le plus fréquent que je rencontre : quelqu'un qui « fait attention » toute l'année, mange un peu moins que ses besoins depuis 18 mois, gagne en force mais ne change pas physiquement, et s'étonne de ne pas prendre de muscle.
+
+**Ma règle** : une sèche a **une date de début et une date de fin**, avec une perte de 0,5 à 1 % du poids par semaine (Helms, 2014). Ensuite, on remonte à la maintenance ou à un léger surplus. Le débutant ou le pratiquant en surpoids peut faire une [recomposition corporelle](/blog/recomposition-corporelle-possible) ; le pratiquant avancé et sec, beaucoup moins.
+
+### 8. Les hormones : à vérifier, mais en dernier
+
+Les variations hormonales à l'intérieur des normes expliquent peu les différences de progression. Morton (2016) a suivi 49 hommes entraînés pendant 12 semaines, avec des charges légères (20 à 25 répétitions) ou lourdes (8 à 12 répétitions), toutes les séries menées à l'échec : **gains de masse maigre et de taille des fibres comparables**, et **aucune corrélation** entre la hausse hormonale après la séance et les gains. West (2012) aboutissait à la même conclusion sur 56 jeunes hommes.
+
+En revanche, un **vrai déficit** change la donne : testostérone franchement basse, déficit énergétique avec T3 libre effondrée, carence en fer chez la pratiquante, hypothyroïdie. Les signaux qui doivent vous faire vérifier : baisse de libido, érections matinales rares, fatigue inhabituelle, humeur en berne, cycle menstruel perturbé.
+
+Pour lire ces marqueurs, consultez nos articles sur la [testostérone basse et le bilan sanguin](/blog/testosterone-basse-lire-son-bilan-sanguin) et sur [les 15 marqueurs que votre médecin ne demande pas](/blog/bilan-sanguin-marqueurs-que-medecin-ne-demande-pas).
+
+### 9. La technique : les répétitions « gagnées » en trichant
+
+Votre carnet montre 3 répétitions de plus qu'il y a deux mois. Mais l'amplitude a raccourci, le rebond sur la poitrine s'est installé, le tempo s'est accéléré. Ce n'est pas un progrès, c'est une autre série.
+
+L'amplitude compte, en particulier en position d'étirement. Pedrosa (2022) a comparé plusieurs amplitudes au leg extension chez 45 femmes non entraînées : l'amplitude partielle **en position allongée du muscle** a produit une hypertrophie plus marquée dans certaines régions du quadriceps que l'amplitude complète, alors que l'amplitude partielle en position raccourcie faisait moins bien. Population débutante, un seul exercice : on retient surtout qu'**il ne faut pas sacrifier la partie étirée du mouvement**.
+
+**Ma règle** : même amplitude, même tempo contrôlé à la descente, même position, d'une séance à l'autre. Filmez une série par semaine. Voir [amplitude de mouvement et croissance musculaire](/blog/amplitude-mouvement-croissance).
+
+---
+
+> **Peptides : un dernier recours encadré, jamais un raccourci**
+>
+> Certains pratiquants bloqués se tournent vers les peptides. Rappel : la plupart ne sont pas approuvés pour l'usage humain en dehors d'éventuelles autorisations de mise sur le marché, et figurent sur la liste des substances interdites de l'AMA. Ils ne corrigent ni un programme mal construit ni un déficit chronique. Le Peptides Engine est une analyse de profil individualisée, qui commence par vérifier vos fondamentaux et votre bilan sanguin, avec un suivi et des critères d'arrêt. Sans promesse.
+>
+> [Découvrir l'analyse Peptides Engine](/offers/peptides-engine)
+
+Pour comprendre pourquoi deux personnes ne réagissent pas de la même façon, lisez [même peptide, résultats différents](/blog/meme-peptide-resultats-differents) et le [guide complet des peptides](/blog/peptides-guide-complet).
+
+---
+
+## La grille de diagnostic de la stagnation
+
+![Grille de diagnostic en 9 cases : volume, intensité, surcharge progressive, récupération, sommeil, protéines, déficit chronique, hormones et technique, avec pour chacune une question et un signal d'alerte](/images/blog/stagnation-musculation-pourquoi-vous-stagnez/stagnation-grille-diagnostic-schema.webp)
+
+Prenez votre carnet, une balance de cuisine pendant 3 jours et vos données de sommeil. Répondez honnêtement.
+
+| Facteur | Question à se poser | Signal d'alerte | Correction prioritaire |
+|---|---|---|---|
+| Volume | Combien de séries dures par muscle et par semaine ? | Moins de 10, ou plus de 20 avec performances en baisse | Viser 10 à 20 séries, ajuster selon la récupération |
+| Intensité | À combien de répétitions de l'échec finissent vos séries ? | Souvent 4 ou plus | RIR 1 à 3 sur la plupart des séries |
+| Surcharge progressive | Charge ou répétitions en hausse sur 8 semaines ? | Chiffres identiques, programme qui change sans cesse | Carnet + double progression, exercices stables |
+| Récupération | Arrivez-vous frais sur les mêmes exercices ? | Charges en baisse plusieurs séances, douleurs | Réduire le volume d'un tiers 1 semaine |
+| Sommeil | Combien d'heures, la plupart des nuits ? | Moins de 6 à 7 h, ronflements | 7 h minimum, horaires fixes, avis si apnée |
+| Protéines | Quel total réel par kilo de poids de corps ? | Moins de 1,2 à 1,4 g/kg | 1,6 à 2,2 g/kg en 3 à 5 repas |
+| Déficit chronique | Depuis quand êtes-vous en déficit ? | Plus de 12 à 16 semaines sans pause | Retour à la maintenance ou léger surplus |
+| Hormones | Libido, énergie, humeur, cycle ? | Symptômes persistants malgré le reste | Bilan sanguin ciblé, avis médical |
+| Technique | Amplitude et tempo constants ? | Répétitions gagnées en raccourcissant | Vidéo hebdomadaire, standard fixe |
+
+Un seul « signal d'alerte » suffit à expliquer un plateau. Deux ou trois, c'est la règle plutôt que l'exception.
+
+---
+
+## Dans quel ordre chercher la cause
+
+![Escalier de priorités en 6 étapes : mesurer, programme, nutrition, récupération, technique, puis biologie par bilan sanguin](/images/blog/stagnation-musculation-pourquoi-vous-stagnez/stagnation-ordre-priorites-schema.webp)
+
+1. **Mesurer** : sans carnet, sans pesée régulière et sans tour de taille, vous pilotez à l'aveugle.
+2. **Programme** : volume, intensité, progression, fréquence. Entraîner un muscle 2 fois par semaine fait mieux qu'une seule fois pour l'hypertrophie dans la méta-analyse de Schoenfeld (2016) ; à volume égal, la fréquence pèse peu sur la force (Grgic, 2018). Lisez [fréquence d'entraînement](/blog/frequence-entrainement-muscle) et [périodisation](/blog/periodisation-musculation).
+3. **Nutrition** : calories, protéines, durée du déficit.
+4. **Récupération** : sommeil, stress, travail physique, autres sports.
+5. **Technique** : amplitude, tempo, choix des exercices.
+6. **Biologie** : un bilan sanguin quand les cinq étapes précédentes sont propres, ou d'emblée en cas de symptômes.
+
+Côté compléments, un seul mérite d'être cité ici pour son niveau de preuve : la [créatine](/blog/creatine-guide-complet). Elle ne remplace aucune des étapes ci-dessus.
+
+---
+
+## Plan de relance sur 8 semaines
+
+- **Semaines 1 et 2** : audit. Carnet complet, pesée des repas sur 3 jours, suivi du sommeil, vidéo des exercices principaux. Aucun changement, on observe.
+- **Semaine 3** : on corrige **un ou deux facteurs**, ceux qui sont le plus loin de la cible (souvent déficit et protéines, ou intensité et progression).
+- **Semaines 3 à 8** : programme stable, double progression, séries à RIR 1 à 3, protéines et calories tenues, 7 h de sommeil.
+- **Semaine 8** : bilan. Charges, répétitions, mensurations, photos. Si rien n'a bougé avec des fondamentaux propres, on passe à l'étape biologique.
+
+---
+
+## FAQ : stagnation en musculation
+
+### Pourquoi je ne progresse plus en musculation ?
+
+Dans la plupart des cas, à cause d'un ou deux facteurs simples : volume trop faible ou trop élevé, séries trop loin de l'échec, absence de progression notée, sommeil court, protéines insuffisantes ou déficit calorique qui dure. Passez la grille de diagnostic de cet article avant de soupçonner les hormones ou la génétique.
+
+### Combien de temps dure un plateau en musculation ?
+
+Un plateau dure tant que sa cause n'est pas corrigée. On parle de stagnation après 4 à 6 semaines sans progrès en charge ou en répétitions dans des conditions stables. Une fois la cause identifiée, les performances repartent souvent en 3 à 6 semaines.
+
+### Faut-il changer de programme quand on stagne ?
+
+Pas forcément. Changer de programme sans comprendre pourquoi le précédent a cessé de fonctionner reproduit souvent le problème. Ajustez d'abord le volume, l'intensité et la méthode de progression, et gardez vos exercices principaux assez longtemps pour mesurer vos progrès.
+
+### Peut-on prendre du muscle en déficit calorique ?
+
+Le débutant, le pratiquant en reprise ou en surpoids peut en prendre un peu. Chez le pratiquant entraîné, les études montrent qu'un déficit d'environ 500 kcal par jour suffit à bloquer la prise de masse maigre, même si la force continue de progresser. Une sèche doit donc avoir une fin.
+
+### Une semaine de décharge relance-t-elle les progrès ?
+
+Pas automatiquement. Dans un essai de 2024, une semaine d'arrêt au milieu d'un programme de 9 semaines n'a rien changé à l'hypertrophie et a légèrement freiné les gains de force. La décharge est utile quand des signaux de fatigue accumulée apparaissent, pas à date fixe par principe.
+
+### La stagnation peut-elle venir d'une testostérone basse ?
+
+C'est possible, mais rare chez un pratiquant en bonne santé qui dort et mange suffisamment. Les variations à l'intérieur des normes pèsent peu sur les gains. En cas de symptômes (libido, érections matinales, fatigue, humeur), un bilan sanguin réalisé le matin à jeun permet de trancher.
+
+---
+
+## Mon verdict : la cause est presque toujours banale, et c'est une bonne nouvelle
+
+Une stagnation se diagnostique comme une panne : on vérifie d'abord ce qui casse le plus souvent. Volume, intensité, progression, sommeil, protéines, déficit. Ce n'est qu'après avoir coché ces cases, carnet à l'appui, qu'on regarde la technique fine puis la biologie. La bonne nouvelle : les causes les plus fréquentes sont aussi les plus faciles à corriger.
+
+> **Relancez vos progrès avec un plan construit pour vous**
+>
+> L'accompagnement personnalisé par Achzod identifie ce qui bloque, construit votre programme d'entraînement et votre nutrition, et les ajuste au fil d'un suivi régulier jusqu'à ce que les chiffres repartent.
+>
+> [Réserver mon coaching personnalisé](https://www.achzodcoaching.com)
+
+Vous préférez commencer par un état des lieux ? Le [Discovery Scan](/offers/discovery-scan) est gratuit et fait ressortir vos premiers points faibles. Pour une analyse complète qui croise hormones, sommeil, nutrition, récupération et entraînement, l'[Anabolic Bioscan](/offers/anabolic-bioscan) va plus loin.
+
+> **Fondamentaux propres et toujours bloqué ?**
+>
+> Le Peptides Engine analyse votre profil et votre bilan sanguin avant toute décision, avec un suivi et des critères d'arrêt définis à l'avance. Un cadre individualisé, pas une promesse.
+>
+> [Voir l'analyse Peptides Engine](/offers/peptides-engine)
+
+*ACHZOD*
+
+---
+
+## Références
+
+1. Schoenfeld BJ, Ogborn D, Krieger JW. Dose-response relationship between weekly resistance training volume and increases in muscle mass: a systematic review and meta-analysis. *J Sports Sci.* 2017;35(11):1073-1082. [doi:10.1080/02640414.2016.1210197](https://doi.org/10.1080/02640414.2016.1210197)
+2. Schoenfeld BJ, et al. Resistance training volume enhances muscle hypertrophy but not strength in trained men. *Med Sci Sports Exerc.* 2019;51(1):94-103. [doi:10.1249/MSS.0000000000001764](https://doi.org/10.1249/MSS.0000000000001764)
+3. Refalo MC, et al. Influence of resistance training proximity-to-failure on skeletal muscle hypertrophy: a systematic review with meta-analysis. *Sports Med.* 2023;53(3):649-665. [doi:10.1007/s40279-022-01784-y](https://doi.org/10.1007/s40279-022-01784-y)
+4. Robinson ZP, et al. Exploring the dose-response relationship between estimated resistance training proximity to failure, strength gain, and muscle hypertrophy: a series of meta-regressions. *Sports Med.* 2024;54(9):2209-2231. [doi:10.1007/s40279-024-02069-2](https://doi.org/10.1007/s40279-024-02069-2)
+5. Plotkin D, et al. Progressive overload without progressing load? The effects of load or repetition progression on muscular adaptations. *PeerJ.* 2022;10:e14142. [doi:10.7717/peerj.14142](https://doi.org/10.7717/peerj.14142)
+6. Bell L, et al. Overreaching and overtraining in strength sports and resistance training: a scoping review. *J Sports Sci.* 2020;38(16):1897-1912. [doi:10.1080/02640414.2020.1763077](https://doi.org/10.1080/02640414.2020.1763077)
+7. Coleman M, et al. Gaining more from doing less? The effects of a one-week deload period during supervised resistance training on muscular adaptations. *PeerJ.* 2024;12:e16777. [doi:10.7717/peerj.16777](https://doi.org/10.7717/peerj.16777)
+8. Lamon S, et al. The effect of acute sleep deprivation on skeletal muscle protein synthesis and the hormonal environment. *Physiol Rep.* 2021;9(1):e14660. [doi:10.14814/phy2.14660](https://doi.org/10.14814/phy2.14660)
+9. Knowles OE, et al. Inadequate sleep and muscle strength: implications for resistance training. *J Sci Med Sport.* 2018;21(9):959-968. [doi:10.1016/j.jsams.2018.01.012](https://doi.org/10.1016/j.jsams.2018.01.012)
+10. Nedeltcheva AV, et al. Insufficient sleep undermines dietary efforts to reduce adiposity. *Ann Intern Med.* 2010;153(7):435-441. [doi:10.7326/0003-4819-153-7-201010050-00006](https://doi.org/10.7326/0003-4819-153-7-201010050-00006)
+11. Morton RW, et al. A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults. *Br J Sports Med.* 2018;52(6):376-384. [doi:10.1136/bjsports-2017-097608](https://doi.org/10.1136/bjsports-2017-097608)
+12. Murphy C, Koehler K. Energy deficiency impairs resistance training gains in lean mass but not strength: a meta-analysis and meta-regression. *Scand J Med Sci Sports.* 2022;32(1):125-137. [doi:10.1111/sms.14075](https://doi.org/10.1111/sms.14075)
+13. Helms ER, Aragon AA, Fitschen PJ. Evidence-based recommendations for natural bodybuilding contest preparation: nutrition and supplementation. *J Int Soc Sports Nutr.* 2014;11:20. [doi:10.1186/1550-2783-11-20](https://doi.org/10.1186/1550-2783-11-20)
+14. Morton RW, et al. Neither load nor systemic hormones determine resistance training-mediated hypertrophy or strength gains in resistance-trained young men. *J Appl Physiol.* 2016;121(1):129-138. [doi:10.1152/japplphysiol.00154.2016](https://doi.org/10.1152/japplphysiol.00154.2016)
+15. West DWD, Phillips SM. Associations of exercise-induced hormone profiles and gains in strength and hypertrophy in a large cohort after weight training. *Eur J Appl Physiol.* 2012;112(7):2693-2702. [doi:10.1007/s00421-011-2246-z](https://doi.org/10.1007/s00421-011-2246-z)
+16. Pedrosa GF, et al. Partial range of motion training elicits favorable improvements in muscular adaptations when carried out at long muscle lengths. *Eur J Sport Sci.* 2022;22(8):1250-1260. [doi:10.1080/17461391.2021.1927199](https://doi.org/10.1080/17461391.2021.1927199)
+17. Schoenfeld BJ, Ogborn D, Krieger JW. Effects of resistance training frequency on measures of muscle hypertrophy: a systematic review and meta-analysis. *Sports Med.* 2016;46(11):1689-1697. [doi:10.1007/s40279-016-0543-8](https://doi.org/10.1007/s40279-016-0543-8)
+18. Grgic J, et al. Effect of resistance training frequency on gains in muscular strength: a systematic review and meta-analysis. *Sports Med.* 2018;48(5):1207-1220. [doi:10.1007/s40279-018-0872-x](https://doi.org/10.1007/s40279-018-0872-x)
+
+*Cet article est informatif et ne remplace pas un avis médical ou un suivi individualisé. Les repères chiffrés sont tirés des études citées et s'appliquent à des adultes en bonne santé.*
+`,
+  },
   {  id: "136",
     slug: "urolithine-a-mitophagie-muscle-longevite",
     title: "Urolithine A : mitophagie, muscle et longévité, ce que la science montre vraiment",
