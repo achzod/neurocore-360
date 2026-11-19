@@ -4,6 +4,7 @@ import type { Theme } from "./ultrahuman/types";
 import { DiscoveryWhatsAppLink } from "./DiscoveryWhatsAppCTA";
 import { getDeductionAmount } from "./ultrahuman/coachingOffers";
 import { trackDiscoveryOfferClick, type DiscoveryOfferClickPlacement } from "@/lib/analytics";
+import { useStickyOfferBarVisibility } from "@/lib/stickyOfferBar";
 import {
   DISCOVERY_OFFER_DESCRIPTIONS,
   DISCOVERY_OFFER_LABELS,
@@ -182,6 +183,7 @@ export const DiscoveryOfferStickyBar: React.FC<{ theme: Theme; view: DiscoveryOf
   show,
   clientName,
 }) => {
+  useStickyOfferBarVisibility(show);
   if (!show) return null;
   return (
     <div

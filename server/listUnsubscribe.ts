@@ -179,7 +179,7 @@ export function maskEmail(email: string): string {
   return `${visible}${"*".repeat(Math.max(1, local.length - visible.length))}@${domain}`;
 }
 
-function renderPage(title: string, body: string): string {
+export function renderPage(title: string, body: string): string {
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -207,7 +207,7 @@ ${body}
 </html>`;
 }
 
-const CONTACT_LINE = `<p class="small">Une question : <a href="mailto:coaching@achzodcoaching.com">coaching@achzodcoaching.com</a></p>`;
+export const CONTACT_LINE = `<p class="small">Une question : <a href="mailto:coaching@achzodcoaching.com">coaching@achzodcoaching.com</a></p>`;
 
 export function renderUnsubscribeConfirmPage(email: string, token: string): string {
   return renderPage(
