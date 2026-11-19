@@ -404,7 +404,8 @@ if (process.env.NODE_ENV === "production") {
       // questionnaire but didn't finish. Was only available as an admin endpoint, never
       // ran on its own. Now scheduled every 6h so abandons actually get recovered.
       // Respects the built-in min-6h wait + per-email dedup via logAbandonmentReminder.
-      const { autoSendAbandonmentReminders } = await import("./abandonmentReminders.js");
+      // Coupé par défaut : ne tourne que si DISCOVERY_ABANDON_REMINDERS_ENABLED=1.
+      const { autoSendAbandonmentReminders, isDiscoveryAbandonRemindersEnabled } = await import("./abandonmentReminders.js");
       const ABANDON_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
       let abandonRunning = false;
 
@@ -428,8 +429,12 @@ if (process.env.NODE_ENV === "production") {
       };
 
       // Don't run on startup ,  wait one interval so the service is settled.
-      setInterval(runAbandonRecovery, ABANDON_INTERVAL_MS);
-      log("Abandonment recovery cron started (every 6h, max 50 reminders/cycle)");
+      if (isDiscoveryAbandonRemindersEnabled()) {
+        setInterval(runAbandonRecovery, ABANDON_INTERVAL_MS);
+        log("Abandonment recovery cron started (every 6h, max 50 reminders/cycle)");
+      } else {
+        log("Abandonment recovery cron DISABLED (set DISCOVERY_ABANDON_REMINDERS_ENABLED=1 to enable)");
+      }
 
       // Recovery CTA drip - keeps the coaching recovery campaign moving without
       // batching enough SendPulse calls into one request to trigger gateway

@@ -36,3 +36,19 @@ test("Postgres tracking rows expose the provider error used by the policy", () =
   const storageSource = readFileSync(fileURLToPath(new URL("./storage.ts", import.meta.url)), "utf8");
   assert.match(storageSource, /sendpulseError:\s*row\.sendpulse_error\s*\?\?\s*null/);
 });
+
+test("une étape de séquence ratée 2 fois est close (fin de la boucle toutes les 30 min)", async () => {
+  const { collectAttemptedSequenceTypes } = await import("./emailSequencePolicy");
+  const quota = { emailType: "sendGratuitJ7Email", sendpulseStatus: "failed", sendpulseError: '{"message":"quota"}' };
+  assert.equal(collectAttemptedSequenceTypes([quota]).has("sendGratuitJ7Email"), false, "1 échec : un nouvel essai reste permis");
+  assert.equal(collectAttemptedSequenceTypes([quota, quota]).has("sendGratuitJ7Email"), true, "2 échecs : étape close");
+  assert.equal(
+    collectAttemptedSequenceTypes([{ emailType: "sendGratuitJ5Email", sendpulseStatus: "suppressed" }]).has("sendGratuitJ5Email"),
+    true,
+    "un blocage par la liste de suppression clôt l'étape",
+  );
+  assert.equal(
+    collectAttemptedSequenceTypes([{ emailType: "sendGratuitJ5Email", sendpulseStatus: "success" }]).has("sendGratuitJ5Email"),
+    true,
+  );
+});

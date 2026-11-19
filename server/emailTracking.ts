@@ -6,7 +6,7 @@
  * - Exports to Google Sheets for monitoring
  * - Provides analytics for admin dashboard
  *
- * Admin email CC: achkou@gmail.com receives copy of all emails
+ * Admin email: achkou@gmail.com (destinataire des mails admin ; plus de BCC systématique)
  */
 
 import { db, pool } from "./db";
@@ -25,7 +25,7 @@ export interface EmailTrackingData {
   subject: string;
   previewText?: string;
   sendpulseTaskId?: string;
-  sendpulseStatus?: "success" | "failed" | "pending" | "unsubscribed" | "auth_failed";
+  sendpulseStatus?: "success" | "failed" | "pending" | "unsubscribed" | "auth_failed" | "suppressed";
   sendpulseError?: string;
   metadata?: Record<string, any>;
 }
