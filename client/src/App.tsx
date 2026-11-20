@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import { CookieConsent } from "@/components/CookieConsent";
+import { BlackFridayBar } from "@/components/BlackFridayBar";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { WhatsAppConversionHub } from "@/components/WhatsAppConversionHub";
 import { isDiscoveryQuestionnaireHref, trackDiscoveryFunnelStep } from "@/lib/analytics";
@@ -292,6 +293,7 @@ function App() {
           <TooltipProvider>
             <ScrollToTop />
             <Toaster />
+            <BlackFridayBar />
             <Router />
             <InteractiveMedicalDisclaimer />
             <ConditionalWhatsAppConversionHub />
