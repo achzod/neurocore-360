@@ -143,6 +143,7 @@ import {
   sanitizePeptidesGenerationError,
 } from "./peptidesGenerationCircuitBreaker";
 import { isRetryablePeptauraSourceOutage } from "./peptidesSourcePreflight";
+import { buildPeptidesEuSourceOption } from "./peptidesEuSource";
 import {
   parseGhDuoPackagingOverstockException,
   type GhDuoPackagingOverstockException,
@@ -16806,6 +16807,8 @@ export async function registerRoutes(
         clientReport._catalogLiveSync = clientReport._peptauraLiveSync;
         delete clientReport._peptauraLiveSync;
       }
+      // Option 2 Peptides EU, calculee a la lecture : aucune ecriture en base.
+      clientReport._sourceOptions = buildPeptidesEuSourceOption(clientReport.peptides);
 
       res.json({
         success: true,
