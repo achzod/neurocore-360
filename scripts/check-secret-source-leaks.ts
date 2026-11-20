@@ -5,6 +5,7 @@ const roots = ["client/src", "client/public"];
 const forbidden = [
   /peptaura/i,
   /peptaura\.com\/coas/i,
+  /peptides-eu\.net/i,
 ];
 const allowedExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".json", ".html", ".xml", ".txt"]);
 const leaks: string[] = [];

@@ -65,6 +65,17 @@ interface PeptidesReport {
     syncedAt?: string;
     catalogRefreshedAt?: string;
   };
+  _sourceOptions?: SourceOptions;
+}
+
+interface SourceOptions {
+  option1Label: string;
+  option2Label: string;
+  intro: string;
+  storeUrl: string;
+  storeLabel: string;
+  pricesCheckedAt?: string;
+  peptides: Array<{ name: string; url: string; priceLine: string | null }>;
 }
 
 type PeptidesTier = "solo" | "coached" | "tracked";
@@ -500,6 +511,9 @@ export default function PeptidesEngineReport() {
     ? report.tier
     : "coached";
   const bloodCredits = reportTier === "tracked" ? 2 : reportTier === "coached" ? 1 : 0;
+  const sourceOptions = report._sourceOptions && Array.isArray(report._sourceOptions.peptides) && report._sourceOptions.peptides.length > 0
+    ? report._sourceOptions
+    : null;
   const liveSyncDate = report._catalogLiveSync?.syncedAt
     ? new Date(report._catalogLiveSync.syncedAt)
     : null;
@@ -615,6 +629,11 @@ export default function PeptidesEngineReport() {
             <Syringe className="w-5 h-5" style={{ color: AMBER }} />
             {isDecisionSupportReport ? "Piste analysee" : "Ton Stack Peptides"}
           </h2>
+          {sourceOptions && (
+            <div className="mb-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
+              <p className="text-sm leading-relaxed text-white/70">{sourceOptions.intro}</p>
+            </div>
+          )}
           <div className="grid gap-4">
             {report.peptides.map((pep, i) => (
               <div key={i} className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 hover:border-amber-500/30 transition-colors relative">
@@ -704,12 +723,28 @@ export default function PeptidesEngineReport() {
                 </div>}
 
                 {/* Purchase link */}
-                {pep.purchaseUrl && (
-                  <a href={pep.purchaseUrl} target="_blank" rel="noopener noreferrer"
-                     className="inline-flex items-center gap-1.5 text-xs font-mono px-4 py-2 rounded-lg border border-amber-500/30 hover:bg-amber-500/10 transition-colors" style={{ color: AMBER }}>
-                    Accéder à ta source privée <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
+                {pep.purchaseUrl && (() => {
+                  const option2 = pep.activationStatus !== "conditional-inactive"
+                    ? sourceOptions?.peptides.find((entry) => entry.name === pep.name)
+                    : undefined;
+                  return (
+                    <div className="flex flex-wrap items-start gap-3">
+                      <a href={pep.purchaseUrl} target="_blank" rel="noopener noreferrer"
+                         className="inline-flex items-center gap-1.5 text-xs font-mono px-4 py-2 rounded-lg border border-amber-500/30 hover:bg-amber-500/10 transition-colors" style={{ color: AMBER }}>
+                        {option2 ? sourceOptions!.option1Label : "Accéder à ta source privée"} <ExternalLink className="w-3 h-3" />
+                      </a>
+                      {option2 && (
+                        <div className="flex flex-col gap-1">
+                          <a href={option2.url} target="_blank" rel="noopener noreferrer sponsored"
+                             className="inline-flex items-center gap-1.5 text-xs font-mono px-4 py-2 rounded-lg border border-white/20 text-white/80 hover:bg-white/5 transition-colors">
+                            {sourceOptions!.option2Label} <ExternalLink className="w-3 h-3" />
+                          </a>
+                          {option2.priceLine && <span className="text-[11px] text-white/45">{option2.priceLine}</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -751,6 +786,11 @@ export default function PeptidesEngineReport() {
               </p>
             )}
             <ShoppingListCards list={report.shoppingList} />
+            {sourceOptions && sourceOptions.peptides.length > 0 && (
+              <p className="mt-4 text-xs leading-relaxed text-white/55">
+                Les liens et le total ci-dessus correspondent à l'option 1, la moins chère. Pour l'option 2, livrée depuis l'UE en 2 à 5 jours ouvrés, utilise les boutons « {sourceOptions.option2Label} » sur chaque fiche ou <a href={sourceOptions.storeUrl} target="_blank" rel="noopener noreferrer sponsored" className="underline" style={{ color: AMBER }}>{sourceOptions.storeLabel}</a>.
+              </p>
+            )}
           </motion.div>
         )}
 
