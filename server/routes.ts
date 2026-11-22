@@ -94,6 +94,7 @@ import {
   resolvePeptidesTier,
 } from "./peptidesEntitlements";
 import { buildPaidOrderNotificationPlan } from "./paidOrderNotifications";
+import { sendPurchaseAdminNotification, sendScanPurchaseConfirmation } from "./purchaseNotifications";
 import { buildPublicReviewCheckResponse, toPublicReview } from "./reviewPublicResponse";
 
 import { registerKnowledgeRoutes } from "./knowledge";
@@ -5336,16 +5337,14 @@ export async function registerRoutes(
     order: PaidOrderForNotification,
   ): Promise<void> => {
     if (order.status !== "paid" || !["PREMIUM", "ELITE"].includes(order.productType)) return;
-    const plan = buildPaidOrderNotificationPlan(order);
-    if (!plan) return;
+    if (!buildPaidOrderNotificationPlan(order)) return;
 
     await runOnceOnOrder(order.id, "adminPaymentNotifSentAt", async () => {
-      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-      return sendCTAEmail(adminEmail, plan.adminSubject, plan.adminMessage);
+      return sendPurchaseAdminNotification(order as any);
     });
 
     await runOnceOnOrder(order.id, "customerConfirmEmailSentAt", async () => {
-      return sendCTAEmail(plan.clientEmail, plan.customerSubject, plan.customerMessage);
+      return sendScanPurchaseConfirmation(order as any, { baseUrl: getBaseUrl() });
     });
   };
 
@@ -5787,10 +5786,10 @@ export async function registerRoutes(
                 name: `Peptides Engine ${peptidesTier.charAt(0).toUpperCase() + peptidesTier.slice(1)}`,
                 description:
                   peptidesTier === "solo"
-                    ? "Protocole peptides personnalise + acces source + credit deduction coaching 199 EUR."
+                    ? "Protocole peptides sur mesure, accès aux sources, crédit de 199 € déductible du coaching."
                     : peptidesTier === "coached"
-                    ? "Protocole peptides personnalise + 1 bilan sanguin + 30j support + credit deduction coaching 299 EUR."
-                    : "Protocole peptides personnalise + 2 bilans sanguins + 90j support + 1 reecriture + credit deduction coaching 399 EUR.",
+                    ? "Protocole peptides sur mesure, 1 bilan sanguin, 30 jours de support, crédit de 299 € déductible du coaching."
+                    : "Protocole peptides sur mesure, 2 bilans sanguins, 90 jours de support, 1 réécriture, crédit de 399 € déductible du coaching.",
               },
             },
           }]
@@ -6732,21 +6731,19 @@ export async function registerRoutes(
           // 7228 is gated on order.status === "pending"). Idempotent via
           // metadata flag so the webhook firing later doesn't double-send.
           await runOnceOnOrder(existingOrder.id, "customerConfirmEmailSentAt", async () => {
-            const clientName2 = email.split("@")[0];
-            const msg = `Salut ${clientName2},\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nVoici la liste exacte des marqueurs a demander a ton medecin ou directement au laboratoire (panel complet APEXLABS , 39 biomarqueurs) :\n\nPANEL 1 : HORMONES ANABOLIQUES\nTestosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, LH, FSH, Estradiol\n\nPANEL 2 : THYROIDE\nTSH, T3 libre, T4 libre, Anti-TPO\n\nPANEL 3 : METABOLISME ET LIPIDES\nGlycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides, ApoB, Lp(a)\n\nPANEL 4 : INFLAMMATION ET FER\nCRP ultra-sensible, Ferritine, Homocysteine, Vitesse de sedimentation\n\nPANEL 5 : VITAMINES ET MINERAUX\nVitamine D (25-OH), Vitamine B12, Magnesium, Zinc, Folates\n\nPANEL 6 : HEPATIQUE ET RENAL\nALAT, ASAT, Gamma-GT, Creatinine, DFG (eGFR), Acide urique\n\nNFS (Numeration Formule Sanguine) complete\n\nPresente-toi dans n'importe quel labo avec cette liste. La plupart acceptent sans ordonnance. Sinon, ton generaliste te fait l'ordonnance.\n\nUne fois ta prise de sang faite, uploade ton PDF sur : https://apexlabs.achzodcoaching.com/auth/login?next=%2Fblood-dashboard&email=${encodeURIComponent(email)}\n\nTu cliques sur le lien, tu recois un email avec un lien d'acces unique (verifie aussi tes spams), tu cliques dessus, tu arrives sur ton dashboard. La tu remplis tes infos, tu glisses ton PDF dans la zone d'upload, et tu lances l'analyse.\n\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner :\n- Sur iPhone (Fichiers) : mets tes PDFs dans un dossier, "Selectionner", coche-les dans l'ordre, "..." en bas, "Creer un PDF".\n- Alternative : ilovepdf.com/fr/fusionner_pdf , glisse-depose tes fichiers, telecharge le PDF unique, uploade-le.\n\nTon code promo : BLOOD99\n99€ deduits de ton coaching Elite/Private Lab 8 ou 12 semaines\nachzodcoaching.com/formules-coaching\n\nSi tu as des questions, reponds directement a cet email.\n\nAchzod`;
-            return sendCTAEmail(email, "Blood Analysis : commande recue", msg);
+            return sendScanPurchaseConfirmation(
+              { ...(existingOrder as any), email },
+              { firstName: (session as any)?.customer_details?.name || null, baseUrl: getBaseUrl() },
+            );
           });
 
           // Admin payment notification ,  same idempotency: ensures Achzod
           // sees every paid order even when confirm-session wins the race.
           await runOnceOnOrder(existingOrder.id, "adminPaymentNotifSentAt", async () => {
-            const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-            const amount = (existingOrder.finalAmountCents / 100).toFixed(2);
-            return sendCTAEmail(
-              adminEmail,
-              `PAIEMENT ${amount}EUR , Blood Analysis (99EUR) , ${email}`,
-              `PAIEMENT RECU!\n\nProduit: Blood Analysis\nClient: ${email}\nMontant: ${amount}EUR\nPromo: ${existingOrder.promoCode || "aucun"}\n\nOrder ID: ${existingOrder.id}`,
-            );
+            return sendPurchaseAdminNotification(existingOrder as any, {
+              clientName: (session as any)?.customer_details?.name || null,
+              stripeSessionId: sessionId,
+            });
           });
         }
         res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email, purchaseTracking });
@@ -13322,18 +13319,10 @@ export async function registerRoutes(
             // Admin notification for PAID orders (idempotent ,  confirm-session
             // may have already sent it for BLOOD_ANALYSIS)
             await runOnceOnOrder(order.id, "adminPaymentNotifSentAt", async () => {
-              const clientEmail = session.customer_details?.email || session.customer_email || order.email;
-              const clientName = session.customer_details?.name || clientEmail?.split("@")[0] || "Client";
-              const planLabel = order.productType === "PREMIUM" ? "Anabolic Bioscan (59EUR)" :
-                               order.productType === "ELITE" ? "Ultimate Scan (79EUR)" :
-                               order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis (99EUR)" : order.productName;
-              const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "coaching@achzodcoaching.com";
-              const amount = (order.finalAmountCents / 100).toFixed(2);
-              const sent = await sendCTAEmail(
-                adminEmail,
-                `PAIEMENT ${amount}EUR , ${planLabel} , ${clientName}`,
-                `PAIEMENT RECU!\n\nProduit: ${planLabel}\nClient: ${clientName}\nEmail: ${clientEmail}\nMontant: ${amount}EUR\nPromo: ${order.promoCode || "aucun"}\n\nOrder ID: ${order.id}`,
-              );
+              const sent = await sendPurchaseAdminNotification(order as any, {
+                clientName: session.customer_details?.name || null,
+                stripeSessionId: session.id,
+              });
               if (!sent) return false;
               console.log(`[Webhook] Admin payment notification sent for order ${order.id}`);
               return true;
@@ -13343,27 +13332,11 @@ export async function registerRoutes(
             // Idempotent ,  confirm-session may have already sent it.
             await runOnceOnOrder(order.id, "customerConfirmEmailSentAt", async () => {
               const clientEmail2 = session.customer_details?.email || session.customer_email || order.email;
-              const clientName2 = session.customer_details?.name || clientEmail2?.split("@")[0] || "Client";
-              const promoByType2: Record<string, { code: string; label: string }> = {
-                ELITE: { code: "ULTIMATE79", label: "79€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
-                PREMIUM: { code: "BIOSCAN59", label: "59€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
-                BLOOD_ANALYSIS: { code: "BLOOD99", label: "99€ déduits de ta formule coaching (Essential/Elite/Private Lab)" },
-              };
-              // PEPTIDES_ENGINE deduction is tier-aware (Solo/Coached/Tracked).
-              const peptidesTierForPromo = (order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined;
-              if (peptidesTierForPromo === "solo") {
-                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES199", label: "199€ déduits sur Essential 12 sem, Elite ou Private Lab 8/12 sem (valide 8 sem)" };
-              } else if (peptidesTierForPromo === "tracked") {
-                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES399", label: "399€ déduits sur Essential 12 sem, Elite ou Private Lab 8/12 sem (valide 8 sem)" };
-              } else {
-                // Default to Coached for missing tier (back-compat with old orders pre-tier).
-                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES299", label: "299€ déduits sur Essential 12 sem, Elite ou Private Lab 8/12 sem (valide 8 sem)" };
-              }
-              const promo2 = promoByType2[order.productType];
-              const prodLabel2 = order.productType === "ELITE" ? "Ultimate Scan" : order.productType === "PREMIUM" ? "Anabolic Bioscan" : order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis" : order.productType === "PEPTIDES_ENGINE" ? "Peptides Engine" : order.productName;
+              const clientName2 = session.customer_details?.name || "";
+              // Les codes de déduction coaching (BIOSCAN59, ULTIMATE79, BLOOD99) sont dans
+              // server/purchaseEmails.ts ; Peptides Engine envoie le sien avec le rapport.
               if (["ELITE", "PREMIUM", "BLOOD_ANALYSIS", "PEPTIDES_ENGINE"].includes(order.productType)) {
                 const isPeptides = order.productType === "PEPTIDES_ENGINE";
-                const isBlood = order.productType === "BLOOD_ANALYSIS";
                 if (isPeptides) {
                   const freshPeptidesOrder = await storage.getOrder(order.id);
                   if (!freshPeptidesOrder) return false;
@@ -13378,14 +13351,10 @@ export async function registerRoutes(
                     orderId: freshPeptidesOrder.id,
                   });
                 }
-                let msg: string;
-                if (isBlood) {
-                  msg = `Salut ${clientName2},\n\nMerci pour ta commande Blood Analysis. Ton paiement est bien recu.\n\nVoici la liste exacte des marqueurs a demander a ton medecin ou directement au laboratoire (panel complet APEXLABS , 39 biomarqueurs) :\n\nPANEL 1 : HORMONES ANABOLIQUES\nTestosterone totale, Testosterone libre, SHBG, Cortisol (matin a jeun), DHEA-S, IGF-1, LH, FSH, Estradiol\n\nPANEL 2 : THYROIDE\nTSH, T3 libre, T4 libre, Anti-TPO\n\nPANEL 3 : METABOLISME ET LIPIDES\nGlycemie a jeun, HbA1c, Insuline a jeun, Cholesterol total, HDL, LDL, Triglycerides, ApoB, Lp(a)\n\nPANEL 4 : INFLAMMATION ET FER\nCRP ultra-sensible, Ferritine, Homocysteine, Vitesse de sedimentation\n\nPANEL 5 : VITAMINES ET MINERAUX\nVitamine D (25-OH), Vitamine B12, Magnesium, Zinc, Folates\n\nPANEL 6 : HEPATIQUE ET RENAL\nALAT, ASAT, Gamma-GT, Creatinine, DFG (eGFR), Acide urique\n\nNFS (Numeration Formule Sanguine) complete\n\nPresente-toi dans n'importe quel labo avec cette liste. La plupart acceptent sans ordonnance. Sinon, ton generaliste te fait l'ordonnance.\n\nUne fois ta prise de sang faite, uploade ton PDF sur : https://apexlabs.achzodcoaching.com/auth/login?next=%2Fblood-dashboard&email=${encodeURIComponent(clientEmail2 ?? "")}\n\nTu cliques sur le lien, tu recois un email avec un lien d'acces unique (verifie aussi tes spams), tu cliques dessus, tu arrives sur ton dashboard. La tu remplis tes infos, tu glisses ton PDF dans la zone d'upload, et tu lances l'analyse.\n\nIMPORTANT : un seul PDF par upload (10 MB max). Si tu as plusieurs fichiers a fusionner :\n- Sur iPhone (Fichiers) : mets tes PDFs dans un dossier, "Selectionner", coche-les dans l'ordre, "..." en bas, "Creer un PDF".\n- Alternative : ilovepdf.com/fr/fusionner_pdf , glisse-depose tes fichiers, telecharge le PDF unique, uploade-le.\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Achzod`;
-                } else {
-                  const deliveryMsg = "Ton rapport est en cours de generation. Tu le recevras par email d'ici 24h.";
-                  msg = `Salut ${clientName2},\n\nMerci pour ta commande ${prodLabel2}. Ton paiement est bien recu.\n\n${deliveryMsg}\n\n${promo2 ? `Ton code promo : ${promo2.code}\n${promo2.label}\nachzodcoaching.com/formules-coaching\n\n` : ""}Si tu as des questions, reponds directement a cet email.\n\nAchzod`;
-                }
-                const sent = await sendCTAEmail(clientEmail2!, `${prodLabel2} : commande recue`, msg);
+                const sent = await sendScanPurchaseConfirmation(
+                  { ...(order as any), email: clientEmail2 || order.email },
+                  { firstName: session.customer_details?.name || null, baseUrl: getBaseUrl() },
+                );
                 if (!sent) return false;
               }
               return true;
@@ -16963,7 +16932,16 @@ export async function registerRoutes(
       crypto.randomUUID(),
     );
     if (!claimed) return false;
-    return sendPeptidesOrderConfirmationEmail(freshOrder.email, input).catch((error) => {
+    const tierKey = String(freshMeta.peptidesTier || "").toLowerCase();
+    const tierLabels: Record<string, string> = { solo: "Solo", coached: "Coached", tracked: "Tracked" };
+    const tierCredit: Record<string, string> = { solo: "199\u00a0€", coached: "299\u00a0€", tracked: "399\u00a0€" };
+    const enriched = {
+      ...input,
+      tierLabel: input.tierLabel ?? (tierLabels[tierKey] || null),
+      coachingCreditAmount: input.coachingCreditAmount ?? (tierCredit[tierKey] || null),
+      promoCode: input.promoCode ?? (freshOrder as any).promoCode ?? null,
+    };
+    return sendPeptidesOrderConfirmationEmail(freshOrder.email, enriched).catch((error) => {
       console.error(`[Peptides Confirmation] Provider result uncertain for ${freshOrder.email}; claim retained to prevent duplicates:`, error);
       return false;
     });

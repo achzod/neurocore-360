@@ -33,12 +33,27 @@ ${cta ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margi
 </table></td></tr></table></body></html>`;
 }
 
-export function buildAccessEmail(input: { uploadUrl: string; credits: number; available: number }) {
+/** Numéro de commande FormCheck lisible, stable pour une session Stripe donnée. */
+export function formcheckOrderNumber(stripeSessionId: string): string {
+  const tail = String(stripeSessionId || "").replace(/[^A-Za-z0-9]/g, "").slice(-8).toUpperCase();
+  return `FC-${tail || "00000000"}`;
+}
+
+const formatEurosFr = (cents: number) => `${(Math.max(0, Number(cents) || 0) / 100).toFixed(2).replace(".", ",")} €`;
+
+export function buildAccessEmail(input: { uploadUrl: string; credits: number; available: number; amountCents?: number; orderNumber?: string }) {
   const subject = "FormCheck : ton accès pour envoyer ta vidéo";
   const plural = input.credits > 1 ? "s" : "";
+  const recap = input.orderNumber
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 16px;border:1px solid ${C.line};border-radius:6px;">
+       <tr><td style="padding:9px 14px;color:${C.muted};font-size:14px;">Produit</td><td align="right" style="padding:9px 14px;font-weight:700;font-size:14px;">FormCheck, ${input.credits} analyse${plural}</td></tr>
+       ${input.amountCents ? `<tr><td style="padding:9px 14px;border-top:1px solid ${C.line};color:${C.muted};font-size:14px;">Montant payé</td><td align="right" style="padding:9px 14px;border-top:1px solid ${C.line};font-weight:700;font-size:14px;">${formatEurosFr(input.amountCents)}</td></tr>` : ""}
+       <tr><td style="padding:9px 14px;border-top:1px solid ${C.line};color:${C.muted};font-size:14px;">N° de commande</td><td align="right" style="padding:9px 14px;border-top:1px solid ${C.line};font-weight:700;font-size:14px;">${esc(input.orderNumber)}</td></tr>
+     </table>`
+    : "";
   const html = wrapFormcheckEmail(
     "Paiement reçu, à toi de filmer",
-    `<p>Merci pour ton achat : <strong>${input.credits} analyse${plural} FormCheck</strong> ajoutée${plural} à ton compte. Il te reste <strong>${input.available} crédit${input.available > 1 ? "s" : ""}</strong> disponible${input.available > 1 ? "s" : ""}.</p>
+    `<p>Merci pour ton achat : <strong>${input.credits} analyse${plural} FormCheck</strong> ajoutée${plural} à ton compte. Il te reste <strong>${input.available} crédit${input.available > 1 ? "s" : ""}</strong> disponible${input.available > 1 ? "s" : ""}.</p>${recap}
      <p><strong>Pour une analyse fiable :</strong></p>
      <ul style="padding-left:18px;margin:6px 0;">
        <li>une seule série, 60 secondes maximum, en .mp4 ou .mov (200 Mo max) ;</li>
@@ -50,7 +65,7 @@ export function buildAccessEmail(input: { uploadUrl: string; credits: number; av
      <p style="color:${C.muted};font-size:13px;">Garde cet email : ce lien te sert pour toutes tes prochaines vidéos.</p>`,
     { href: input.uploadUrl, label: "Envoyer ma vidéo" },
   );
-  const text = `Paiement reçu : ${input.credits} analyse${plural} FormCheck. Crédits disponibles : ${input.available}.\nEnvoie ta vidéo ici : ${input.uploadUrl}\nUne seule série, 60 s maximum, .mp4 ou .mov, 200 Mo maximum. Ton rapport arrive par email sous 3 heures après l'envoi de ta vidéo. Le crédit n'est utilisé que si le rapport est livré.`;
+  const text = `Paiement reçu : ${input.credits} analyse${plural} FormCheck${input.amountCents ? ` (${formatEurosFr(input.amountCents)})` : ""}. Crédits disponibles : ${input.available}.${input.orderNumber ? ` N° de commande : ${input.orderNumber}.` : ""}\nEnvoie ta vidéo ici : ${input.uploadUrl}\nUne seule série, 60 s maximum, .mp4 ou .mov, 200 Mo maximum. Ton rapport arrive par email sous 3 heures après l'envoi de ta vidéo. Le crédit n'est utilisé que si le rapport est livré.`;
   return { subject, html, text };
 }
 

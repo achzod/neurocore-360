@@ -3907,17 +3907,19 @@ export class PgStorage implements IStorage {
       return { valid: false, discount: 0, error: "Ce code promo a atteint son nombre maximum d'utilisations" };
     }
 
-    // WELCOME20: valide uniquement pour les analyses payantes (pas GRATUIT)
+    // WELCOME20 (relance J+7 post-Discovery) et RETOUR30 (relance abandon) :
+    // uniquement Anabolic Bioscan, Ultimate Scan et Blood Analysis, comme le
+    // disent leur description en base et leur message d'erreur. Ils ne
+    // s'appliquent ni au Discovery gratuit ni à Peptides Engine.
     if (promo.code === "WELCOME20") {
-      if (auditType === "GRATUIT") {
-        return { valid: false, discount: 0, error: "Ce code promo est réservé aux analyses payantes" };
+      if (!["PREMIUM", "ELITE", "BLOOD_ANALYSIS"].includes(auditType)) {
+        return { valid: false, discount: 0, error: "Ce code promo est réservé aux analyses Anabolic, Ultimate et Blood" };
       }
       return { valid: true, discount: promo.discountPercent };
     }
 
-    // RETOUR30: valide uniquement pour PREMIUM, ELITE, BLOOD_ANALYSIS (pas GRATUIT)
     if (promo.code === "RETOUR30") {
-      if (auditType === "GRATUIT") {
+      if (!["PREMIUM", "ELITE", "BLOOD_ANALYSIS"].includes(auditType)) {
         return { valid: false, discount: 0, error: "Ce code promo est réservé aux analyses Anabolic, Ultimate et Blood" };
       }
       return { valid: true, discount: promo.discountPercent };

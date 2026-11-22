@@ -11,10 +11,10 @@ const INLINE_CHECKOUT_PRODUCTS = new Set<ProductTypeEnum>([
 ]);
 
 const ProductCheckoutDescriptions: Partial<Record<ProductTypeEnum, string>> = {
-  PREMIUM: "Anabolic Bioscan personnalise avec rapport complet APEXLABS.",
-  ELITE: "Ultimate Scan personnalise avec rapport complet APEXLABS.",
-  BURNOUT: "Burnout Engine personnalise avec rapport complet APEXLABS.",
-  BLOOD_ANALYSIS: `${BLOOD_ANALYSIS_PURCHASE_CREDITS} credits Blood Analysis sans expiration.`,
+  PREMIUM: "Questionnaire complet et rapport détaillé Anabolic Bioscan, livré par email.",
+  ELITE: "Questionnaire complet, analyse photo et rapport détaillé Ultimate Scan, livré par email.",
+  BURNOUT: "Rapport détaillé Burnout, livré par email.",
+  BLOOD_ANALYSIS: `${BLOOD_ANALYSIS_PURCHASE_CREDITS} analyses Blood Analysis, sans date d'expiration.`,
 };
 
 export function usesInlineCheckoutLineItem(productType: string): productType is ProductTypeEnum {
