@@ -118,6 +118,21 @@ export default function CGV() {
                   d'expiration, non déductibles des coachings. Analyse technique uniquement, sans diagnostic médical.
                 </p>
               </div>
+              <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
+                <h4 className="font-semibold text-white">Guide Peptides : 99 € (paiement unique)</h4>
+                <p className="mt-1 text-sm text-white/50">
+                  Ebook « Peptides, le guide de référence » par Achzod, au format PDF (199 pages), contenu éducatif
+                  réservé à la recherche, sans protocole ni avis médical. Lien de téléchargement privé envoyé par
+                  email après paiement, valable 30 jours et renouvelable avec l'email d'achat. Licence personnelle,
+                  non cessible. Inclut l'accès privé aux sources sur demande (avec le numéro de commande) et un code
+                  de 99 € valable sur Peptides Engine ou un coaching Achzod.
+                </p>
+                <p className="mt-3 text-xs font-semibold text-red-400">
+                  Contenu numérique livré immédiatement, à la demande expresse du client qui renonce à son droit de
+                  rétractation : aucun remboursement après livraison du guide (article L221-28 du Code de la
+                  consommation). Voir article 7.
+                </p>
+              </div>
             </div>
           </section>
 

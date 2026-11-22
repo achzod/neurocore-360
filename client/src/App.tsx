@@ -87,6 +87,8 @@ const AuditPremium = lazy(() => import("@/pages/offers/AuditPremium"));
 const BloodAnalysisOffer = lazy(() => import("@/pages/offers/BloodAnalysisOffer"));
 const ProPanel = lazy(() => import("@/pages/offers/ProPanel"));
 const FormCheck = lazy(() => import("@/pages/offers/FormCheck"));
+const GuidePeptides = lazy(() => import("@/pages/offers/GuidePeptides"));
+const GuidePeptidesMerci = lazy(() => import("@/pages/GuidePeptidesMerci"));
 const FormCheckUpload = lazy(() => import("@/pages/FormCheckUpload"));
 const DiscoveryScanAds = lazy(() => import("@/pages/DiscoveryScanAds"));
 
@@ -99,6 +101,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/offers/ultimate-scan": "Ultimate Scan - L'Analyse La Plus Complète | APEXLABS",
   "/offers/formcheck": "FormCheck - Analyse Vidéo de Tes Mouvements | APEXLABS",
   "/formcheck/upload": "Envoyer ma vidéo FormCheck | APEXLABS",
+  "/offers/guide-peptides": "Peptides, le guide de référence par AchZod | Ebook PDF 99 €",
+  "/guide-peptides/merci": "Merci, ton guide Peptides arrive | AchZod",
   "/offers/peptides-engine": "Peptides Engine - Protocole Peptides Personnalisé | APEXLABS",
   "/peptides-engine": "Questionnaire Peptides | APEXLABS",
   "/peptides-preview": "Aperçu Peptides Personnalisé | APEXLABS",
@@ -198,6 +202,8 @@ function ScrollToTop() {
 function ConditionalWhatsAppConversionHub() {
   const [location] = useLocation();
   if (location === "/peptides-preview" || location === "/offers/peptides-engine" || location === "/offre-coaching") return null;
+  // Guide Peptides : page de vente claire, un seul appel à l'action.
+  if (location === "/offers/guide-peptides" || location === "/guide-peptides/merci") return null;
   return <WhatsAppConversionHub />;
 }
 
@@ -235,6 +241,8 @@ function Router() {
         <Route path="/offers/ultimate-scan" component={ProPanel} />
         <Route path="/offers/formcheck" component={FormCheck} />
         <Route path="/formcheck/upload" component={FormCheckUpload} />
+        <Route path="/offers/guide-peptides" component={GuidePeptides} />
+        <Route path="/guide-peptides/merci" component={GuidePeptidesMerci} />
         <Route path="/offers/peptides-engine" component={PeptidesEngineOffer} />
         <Route path="/peptides-preview" component={PeptidesPreviewPage} />
         <Route path="/peptides-engine" component={PeptidesEnginePage} />

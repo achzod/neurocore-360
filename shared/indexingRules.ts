@@ -15,6 +15,7 @@ export const FLOW_CANONICAL_OVERRIDES: Readonly<Record<string, string>> = {
   "/peptides-engine": "/offers/peptides-engine",
   "/audit-complet/questionnaire": "/questionnaire",
   "/formcheck/upload": "/offers/formcheck",
+  "/guide-peptides/merci": "/offers/guide-peptides",
   "/blood-analysis": "/offers/blood-analysis",
 };
 
@@ -29,6 +30,7 @@ export const NOINDEX_PATH_PATTERNS: readonly RegExp[] = [
   /^\/audit-complet\/questionnaire$/,
   /^\/audit-complet\/checkout$/,
   /^\/formcheck\/upload$/,
+  /^\/guide-peptides\/merci$/,
   /^\/blood-analysis$/,
   /^\/dashboard(?:\/|$)/,
   /^\/blood-dashboard(?:\/|$)/,

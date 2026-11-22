@@ -1258,6 +1258,9 @@ ${sorted
     "peptides-engine": {
       title: "Peptides Engine - Protocole Peptides Personnalisé | APEXLABS",
       desc: "Protocole peptides sur-mesure basé sur ton profil hormonal et tes objectifs. Stack, dosage, timing, monitoring. Approche structurée par ACHZOD.",
+    },    "guide-peptides": {
+      title: "Peptides, le guide de référence par AchZod | Ebook PDF 99 €",
+      desc: "199 pages, 83 molécules décryptées : mécanismes, ce que dit la science face au marketing, repérer une source fiable, reconstitution, logique de stacking et de timing. Ebook PDF par AchZod.",
     },
   };
 
@@ -1422,6 +1425,33 @@ ${sorted
         },
       ],
     },
+    "guide-peptides": {
+      h1: "Peptides, le guide de référence",
+      lead:
+        "L'ebook de 199 pages d'AchZod pour comprendre les peptides sans le marketing : 83 molécules décryptées, de la science à la pratique.",
+      sections: [
+        {
+          title: "Ce que contient le guide",
+          body: [
+            "Les mécanismes de chaque molécule, ce que disent réellement les études face aux promesses commerciales, la méthode pour juger une source, une masterclass de reconstitution et la logique du stacking et du timing.",
+            "18 chapitres : introduction, ce qu'est un peptide, le marché des peptides en 2026, repérer une source fiable, la masterclass de reconstitution, la pharmacopée complète, axe GH/IGF-1 et myogenèse, réparation tissulaire et inflammation, métabolisme GLP-1 et perte de gras, longévité, mitochondries et biorégulateurs, peau, cheveux et pigmentation, cognition, humeur et sommeil, autres axes, les blends, consommables et composés d'appoint, l'art du stacking et du timing, conclusion, références.",
+          ],
+        },
+        {
+          title: "Ce que le guide ne contient pas",
+          body: [
+            "Aucun protocole, volontairement. Un protocole se construit au cas par cas, selon le profil, l'historique et les objectifs : c'est le rôle de Peptides Engine.",
+            "Contenu éducatif, réservé à la recherche. Le guide ne constitue pas un avis médical.",
+          ],
+        },
+        {
+          title: "Livraison",
+          body: [
+            "Ebook PDF, 99 €. Paiement sécurisé par Stripe, sans compte. Le lien de téléchargement arrive par email juste après le paiement, avec un code de 99 € valable sur Peptides Engine ou un coaching AchZod.",
+          ],
+        },
+      ],
+    },
     "peptides-engine": {
       h1: "Peptides Engine",
       lead:
@@ -1509,7 +1539,27 @@ ${sorted
     const body = offerContent[offerSlug]
       ? renderNoscriptPage(offerContent[offerSlug])
       : "";
-    const productSchema = {
+    const productSchema = offerSlug === "guide-peptides"
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Book",
+          name: "Peptides, le guide de référence",
+          description: meta.desc,
+          author: { "@type": "Person", name: "AchZod" },
+          bookFormat: "https://schema.org/EBook",
+          inLanguage: "fr",
+          numberOfPages: 199,
+          image: `${BASE_URL}/images/guide-peptides/guide-peptides-og.jpg`,
+          url,
+          offers: {
+            "@type": "Offer",
+            price: "99.00",
+            priceCurrency: "EUR",
+            availability: "https://schema.org/InStock",
+            url,
+          },
+        }
+      : {
       "@context": "https://schema.org",
       "@type": "Service",
       name: offerContent[offerSlug]?.h1 || meta.title,
@@ -1554,8 +1604,15 @@ ${sorted
       .replace("</head>", `${schemaMarkup}\n</head>`)
       .replace("</body>", `${body}\n</body>`);
 
+    // Guide Peptides : la couverture du guide comme image de partage.
+    const finalHtml = offerSlug === "guide-peptides"
+      ? injectedHtml
+          .replace(/<meta property="og:image" content="[^"]*"/, `<meta property="og:image" content="${BASE_URL}/images/guide-peptides/guide-peptides-og.jpg"`)
+          .replace(/<meta property="og:image:type" content="[^"]*"/, `<meta property="og:image:type" content="image/jpeg"`)
+          .replace(/<meta name="twitter:image" content="[^"]*"/, `<meta name="twitter:image" content="${BASE_URL}/images/guide-peptides/guide-peptides-og.jpg"`)
+      : injectedHtml;
     res.setHeader("Cache-Control", "public, max-age=3600");
-    res.send(injectedHtml);
+    res.send(finalHtml);
   });
 
   // SSR meta for FAQ page
@@ -1840,6 +1897,14 @@ ${sorted
 
   // Page d'envoi de vidéo FormCheck : lien personnel reçu par email après paiement.
   // Route SPA réelle (pas de 404), jamais indexée.
+  ssrSimplePage(["/guide-peptides/merci"], {
+    title: "Merci, ton guide Peptides arrive | AchZod",
+    desc: "Ton paiement est confirmé : télécharge ton guide Peptides. Le lien arrive aussi par email.",
+    canonical: `${BASE_URL}/offers/guide-peptides`,
+    robots: "noindex, follow",
+    cacheControl: INTERACTIVE_FLOW_CACHE_CONTROL,
+  });
+
   ssrSimplePage(["/formcheck/upload"], {
     title: "Envoyer ma vidéo FormCheck | APEXLABS",
     desc: "Envoie la vidéo de ta série pour recevoir ton analyse technique FormCheck en PDF par email.",
