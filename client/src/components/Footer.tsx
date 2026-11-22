@@ -93,6 +93,11 @@ export function Footer({ hideCoachingLink = false }: { hideCoachingLink?: boolea
                 </Link>
               </li>
               <li>
+                <Link href="/offers/guide-peptides" className="hover:text-white transition-colors">
+                  Guide Peptides (ebook)
+                </Link>
+              </li>
+              <li>
                 <Link href="/peptides-preview?utm_source=footer&utm_medium=sitewide&utm_campaign=pre_peptides_engine" className="font-semibold text-[#FCDD00] hover:text-white transition-colors">
                   Estimer mon stack gratuitement
                 </Link>

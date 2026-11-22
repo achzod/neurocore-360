@@ -182,3 +182,28 @@ export const verifyFormcheckAccessToken = (token: string): string | null => {
     return null;
   }
 };
+
+// Guide Peptides : lien de téléchargement privé du PDF, valable 30 jours.
+// Un nouveau lien peut être redemandé avec l'email d'achat.
+export const GUIDE_PEPTIDES_DOWNLOAD_TTL_DAYS = 30;
+type GuidePeptidesDownloadPayload = { tokenType: "guide_peptides_download"; email: string; sessionId: string };
+
+export const signGuidePeptidesDownloadToken = (email: string, sessionId: string): string => jwt.sign(
+  { tokenType: "guide_peptides_download", email: email.trim().toLowerCase(), sessionId } satisfies GuidePeptidesDownloadPayload,
+  getAuthSecret(),
+  { issuer: "apexlabs", audience: "guide-peptides-download", expiresIn: `${GUIDE_PEPTIDES_DOWNLOAD_TTL_DAYS}d` },
+);
+
+export const verifyGuidePeptidesDownloadToken = (token: string): { email: string; sessionId: string } | null => {
+  try {
+    const payload = jwt.verify(token, getAuthSecret(), {
+      issuer: "apexlabs",
+      audience: "guide-peptides-download",
+    }) as GuidePeptidesDownloadPayload;
+    if (payload.tokenType !== "guide_peptides_download" || typeof payload.email !== "string" || !payload.email) return null;
+    if (typeof payload.sessionId !== "string" || !payload.sessionId) return null;
+    return { email: payload.email, sessionId: payload.sessionId };
+  } catch {
+    return null;
+  }
+};

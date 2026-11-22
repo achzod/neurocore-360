@@ -15,6 +15,12 @@ export const FORMCHECK_TRANSACTIONAL_EMAIL_TYPES = new Set([
   "sendFormcheckIssueEmail",
 ]);
 
+/** Guide Peptides : lien de téléchargement payé (et son renvoi), notification de vente. Jamais bloqués par un désabonnement marketing. */
+export const GUIDE_PEPTIDES_TRANSACTIONAL_EMAIL_TYPES = new Set([
+  "sendGuidePeptidesDeliveryEmail",
+  "sendGuidePeptidesAdminSaleEmail",
+]);
+
 export const isCriticalTransactionalEmail = (emailType: string, subject: string): boolean => {
   const normalized = normalizeEmailPolicyText(subject);
   return emailType === "sendMagicLinkEmail"
@@ -22,6 +28,7 @@ export const isCriticalTransactionalEmail = (emailType: string, subject: string)
     || emailType === "sendBloodAnalysisHtmlEmail"
     || emailType === "sendPeptidesOrderConfirmation"
     || FORMCHECK_TRANSACTIONAL_EMAIL_TYPES.has(emailType)
+    || GUIDE_PEPTIDES_TRANSACTIONAL_EMAIL_TYPES.has(emailType)
     || (emailType === "sendCTAEmail" && (
       normalized.includes("protocole peptides")
       || normalized.includes("commande recue")

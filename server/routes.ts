@@ -100,6 +100,8 @@ import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
 import { fulfillFormcheckCheckoutSession, isFormcheckCheckoutSession, registerFormcheckRoutes } from "./formcheck/routes";
+import { fulfillGuidePeptidesCheckoutSession, isGuidePeptidesCheckoutSession, registerGuidePeptidesRoutes } from "./guidePeptides/routes";
+import { peptidesFlatPromoAmountOffCents, resolvePromoDiscountCents } from "./peptidesFlatPromos";
 import { signAuthToken } from "./auth";
 import {
   analyzeDiscoveryScan,
@@ -5643,10 +5645,11 @@ export async function registerRoutes(
             // special case here on planType, so even if a future promo with the
             // same code label exists on a different product, it never triggers
             // the flat -100€ branch.
-            const isPeptides100OnPeptides =
-              promoCodeNormalized === 'PEPTIDES100' && planType === 'PEPTIDES_ENGINE';
-            const couponParams: any = isPeptides100OnPeptides
-              ? { id: couponId, amount_off: 10000, currency: 'eur', duration: 'once', max_redemptions: 1 }
+            // BOOKPEPTIDES99 (bonus Guide Peptides) suit la même règle : -99 € fixes,
+            // uniquement sur PEPTIDES_ENGINE (server/peptidesFlatPromos.ts).
+            const flatPeptidesAmountOff = peptidesFlatPromoAmountOffCents(promoCodeNormalized, planType);
+            const couponParams: any = flatPeptidesAmountOff
+              ? { id: couponId, amount_off: flatPeptidesAmountOff, currency: 'eur', duration: 'once', max_redemptions: 1 }
               : { id: couponId, percent_off: validation.discount, duration: 'once', max_redemptions: 1 };
             const coupon = await stripe.coupons.create(couponParams);
             discounts = [{ coupon: coupon.id }];
@@ -5844,10 +5847,9 @@ export async function registerRoutes(
         // PEPTIDES100 uses amount_off=10000 cents at Stripe, regardless of stored %.
         // Guard on planType so the flat -100€ never applies to another product
         // (Marc M. 2026-05-11 ELITE 0€ incident).
+        // BOOKPEPTIDES99 = flat 9900 cents, same rule (server/peptidesFlatPromos.ts).
         const discountCents = promoObj
-          ? (validatedPromoCode?.toUpperCase() === 'PEPTIDES100' && pType === 'PEPTIDES_ENGINE'
-              ? 10000
-              : Math.round(baseCents * promoObj.discountPercent / 100))
+          ? resolvePromoDiscountCents({ code: validatedPromoCode, planType: pType, baseCents, discountPercent: promoObj.discountPercent })
           : 0;
 
         // Persist consent record with server-authoritative timestamp + IP + UA.
@@ -6904,10 +6906,9 @@ export async function registerRoutes(
           promoObj = await storage.getPromoCode(promoCode);
           // PEPTIDES100 = flat -100EUR but ONLY on PEPTIDES_ENGINE
           // (Marc M. 2026-05-11 ELITE 0€ incident ,  see Stripe branch).
+          // BOOKPEPTIDES99 = flat -99EUR, same rule (server/peptidesFlatPromos.ts).
           discountCents = promoObj
-            ? (promoCode.toUpperCase() === 'PEPTIDES100' && planType === 'PEPTIDES_ENGINE'
-                ? 10000
-                : Math.round(baseCents * promoObj.discountPercent / 100))
+            ? resolvePromoDiscountCents({ code: promoCode, planType, baseCents, discountPercent: promoObj.discountPercent })
             : 0;
         }
       }
@@ -13162,6 +13163,7 @@ export async function registerRoutes(
   // ==================== BLOOD TESTS DASHBOARD ROUTES ====================
   registerBloodTestsRoutes(app);
   registerFormcheckRoutes(app);
+  registerGuidePeptidesRoutes(app);
 
   // ==================== STRIPE WEBHOOK ====================
   // Idempotency guard: track recently processed Stripe event IDs (TTL 1h)
@@ -13222,6 +13224,11 @@ export async function registerRoutes(
           // FormCheck V2 : crédits d'analyse par email, hors table orders.
           if (isFormcheckCheckoutSession(session)) {
             await fulfillFormcheckCheckoutSession(session);
+            break;
+          }
+          // Guide Peptides (ebook PDF) : lien de téléchargement par email, hors table orders.
+          if (isGuidePeptidesCheckoutSession(session)) {
+            await fulfillGuidePeptidesCheckoutSession(session);
             break;
           }
           const order = await storage.getOrderByStripeSession(session.id);

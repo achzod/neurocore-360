@@ -19,6 +19,7 @@ import {
 } from "./discoveryOfferWindow";
 import {
   FORMCHECK_TRANSACTIONAL_EMAIL_TYPES,
+  GUIDE_PEPTIDES_TRANSACTIONAL_EMAIL_TYPES,
   isCriticalTransactionalEmail,
   shouldBlockForMarketingUnsubscribe,
 } from "./emailDeliveryPolicy";
@@ -753,7 +754,10 @@ async function sendEmailWithTracking(
     const allowAcceptedWithoutLiveVerification = trackingData.emailType === "sendReportReadyEmail"
       // FormCheck : le worker relance sur échec, une vérification live manquante
       // provoquerait des doublons de rapport.
-      || FORMCHECK_TRANSACTIONAL_EMAIL_TYPES.has(trackingData.emailType);
+      || FORMCHECK_TRANSACTIONAL_EMAIL_TYPES.has(trackingData.emailType)
+      // Guide Peptides : l'email part une seule fois par achat, un faux échec
+      // de vérification live déclencherait une alerte admin inutile.
+      || GUIDE_PEPTIDES_TRANSACTIONAL_EMAIL_TYPES.has(trackingData.emailType);
     let liveDeliveryFailure: Record<string, unknown> | null = null;
 
     if (result.result && sendpulseTaskId) {
@@ -3915,6 +3919,43 @@ export async function sendFormcheckTransactionalEmail(input: {
     return result.result === true;
   } catch (error) {
     console.error(`[FormCheck] ${input.emailType} send failed:`, error);
+    return false;
+  }
+}
+
+/**
+ * Guide Peptides : envoi transactionnel (lien de téléchargement, notification de vente)
+ * via le même rail que FormCheck (SendPulse, repli Brevo).
+ */
+export async function sendGuidePeptidesTransactionalEmail(input: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  emailType: "sendGuidePeptidesDeliveryEmail" | "sendGuidePeptidesAdminSaleEmail";
+  metadata?: Record<string, any>;
+}): Promise<boolean> {
+  try {
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(input.html),
+        text: input.text,
+        subject: input.subject,
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email: input.to }],
+      },
+      {
+        emailType: input.emailType,
+        recipientEmail: input.to,
+        auditType: "GUIDE_PEPTIDES",
+        metadata: input.metadata,
+        bccAdmin: false,
+        allowProviderFallback: true,
+      },
+    );
+    return result.result === true;
+  } catch (error) {
+    console.error(`[GuidePeptides] ${input.emailType} send failed:`, error);
     return false;
   }
 }

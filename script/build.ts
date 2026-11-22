@@ -119,6 +119,7 @@ async function buildAll() {
     "/offers/blood-analysis",
     "/offers/formcheck",
     "/offers/peptides-engine",
+    "/offers/guide-peptides",
     "/blog",
     "/faq",
     "/press",

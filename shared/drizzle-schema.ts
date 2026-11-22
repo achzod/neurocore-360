@@ -219,3 +219,18 @@ export const formcheckFrames = pgTable("formcheck_frames", {
   jpeg: bytea("jpeg").notNull(),
   annotated: bytea("annotated"),
 }, (table) => [primaryKey({ columns: [table.analysisId, table.frameIndex] })]);
+
+// ==================== GUIDE PEPTIDES (ebook PDF) ====================
+// Un achat par session Stripe. La table est aussi créée au démarrage
+// (CREATE TABLE IF NOT EXISTS) par server/guidePeptides/store.ts, avec les mêmes colonnes.
+export const guidePeptidesPurchases = pgTable("guide_peptides_purchases", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  stripeSessionId: varchar("stripe_session_id", { length: 255 }).notNull().unique(),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
+  orderNumber: varchar("order_number", { length: 32 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("eur"),
+  deliveryEmailSentAt: timestamp("delivery_email_sent_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
