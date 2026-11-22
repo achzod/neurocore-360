@@ -2171,7 +2171,7 @@ function Hero() {
             </span>
             <span className="flex items-center gap-1.5">
               <Check className="h-3 w-3" style={{ color: PRIMARY }} />
-              Coaching déductible 8 sem
+              Crédit coaching valable 8 sem
             </span>
           </div>
         </motion.div>
