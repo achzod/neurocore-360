@@ -324,8 +324,8 @@ test("every Peptides tier includes its exact coaching conversion code and deduct
     });
     assert.match(coachingBlock, new RegExp(`TON BONUS COACHING \\(${expected.label}\\)`));
     assert.match(coachingBlock, new RegExp(`Code : ${expected.code}`));
-    assert.match(coachingBlock, new RegExp(`${expected.amount}EUR deduits sur ton coaching Essential, Elite ou Private Lab`));
-    assert.match(coachingBlock, /Valable sur les engagements 8 ou 12 semaines uniquement/);
+    assert.match(coachingBlock, new RegExp(`${expected.amount}EUR deduits sur ton coaching Essential 12 semaines, Elite 8 ou 12 semaines, ou Private Lab 8 ou 12 semaines`));
+    assert.match(coachingBlock, /Pas valable sur Essential 4 ou 8 semaines/);
     assert.match(coachingBlock, /Expire le 08 octobre 2026/);
     assert.match(coachingBlock, /achzodcoaching\.com\/coaching-essential/);
     assert.match(coachingBlock, /achzodcoaching\.com\/coaching-elite/);

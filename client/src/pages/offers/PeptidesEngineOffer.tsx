@@ -1261,7 +1261,7 @@ function ScarcityGuarantee() {
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1">
               <p className="text-xs font-mono uppercase tracking-widest text-[#0071E3] mb-2">Peptides + Coaching</p>
-              <p className="text-xl font-bold text-[#1D1D1F] mb-3">Ton montant Peptides Engine (199€, 299€ ou 399€) est intégralement déduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 semaines.</p>
+              <p className="text-xl font-bold text-[#1D1D1F] mb-3">Ton montant Peptides Engine (199€, 299€ ou 399€) est intégralement déduit de ton coaching Essential 12 semaines, Elite ou Private Lab 8 ou 12 semaines.</p>
               <p className="text-sm text-[#6E6E73] leading-relaxed mb-4">
                 Tu peux commander tes peptides maintenant, prendre un coaching Achzod, et commencer le suivi une fois que tu as reçu tes peptides. Le crédit déduction est valable 8 semaines à compter de la livraison de ton rapport.
               </p>
@@ -1272,7 +1272,7 @@ function ScarcityGuarantee() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
-                  <span>Prends ta formule coaching Essential, Elite ou Private Lab (8 ou 12 semaines)</span>
+                  <span>Prends ta formule coaching Essential 12 semaines, Elite ou Private Lab (8 ou 12 semaines)</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-[#424245]">
                   <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: PRIMARY }} />
@@ -1757,7 +1757,7 @@ function PricingTiers() {
                     <span className="mb-2 text-sm text-[#86868B]">TTC</span>
                   </div>
                   <p className="mt-2 text-xs font-mono text-[#0071E3]">
-                    {tier.deduction}€ déductibles sur ton coaching 8 ou 12 sem
+                    {tier.deduction}€ déductibles sur Essential 12 sem, Elite ou Private Lab
                   </p>
                 </div>
 
@@ -1816,14 +1816,6 @@ function PricingTiers() {
 const DEDUCTION_MATRIX = [
   {
     coachingName: "Essential",
-    duration: "8 sem",
-    basePrice: 399,
-    soloFinal: 200,
-    coachedFinal: 100,
-    trackedFinal: 0,
-  },
-  {
-    coachingName: "Essential",
     duration: "12 sem",
     basePrice: 549,
     soloFinal: 350,
@@ -1878,10 +1870,10 @@ function CoachingDeduction() {
           <h2 className="mt-4 text-3xl font-bold text-[#1D1D1F] md:text-5xl leading-tight">
             Ton Peptides Engine est{" "}
             <span style={{ color: PRIMARY }}>intégralement déduit</span><br className="hidden md:block" />
-            sur ton coaching Essential, Elite ou Private Lab.
+            sur ton coaching Essential 12 semaines, Elite ou Private Lab.
           </h2>
           <p className="mt-6 text-lg text-[#6E6E73] max-w-3xl mx-auto leading-relaxed">
-            Tu paies ton protocole peptides aujourd'hui. Si tu décides de passer au coaching dans les 8 semaines, ton montant Peptides est retiré du prix du coaching 8 ou 12 semaines, peu importe la formule.
+            Tu paies ton protocole peptides aujourd'hui. Si tu décides de passer au coaching dans les 8 semaines, ton montant Peptides Engine est retiré du prix de ton coaching Essential 12 semaines, Elite 8 ou 12 semaines, ou Private Lab 8 ou 12 semaines. Pas de déduction sur Essential 4 ou 8 semaines.
           </p>
           <p className="mt-4 text-sm font-mono text-[#86868B]">
             Crédit valable 8 semaines après livraison du rapport · Cumulable avec aucune autre promo
@@ -1901,19 +1893,19 @@ function CoachingDeduction() {
                 Combo signature
               </p>
               <h3 className="text-2xl md:text-3xl font-bold text-[#1D1D1F] leading-tight">
-                Tracked 399€ + Essential 8 sem
+                Tracked 399€ + Essential 12 sem
               </h3>
               <p className="mt-3 text-base text-[#424245] leading-relaxed">
-                399€ Peptides Engine + 399€ Essential 8 sem = 399€ déduits. <strong className="text-[#1D1D1F]">Ton coaching Essential 8 semaines est totalement offert.</strong>
+                Essential 12 semaines à 549€, moins les 399€ de ton Peptides Engine. <strong className="text-[#1D1D1F]">Tu paies ton coaching 12 semaines 150€ seulement.</strong>
               </p>
               <p className="mt-3 text-sm text-[#6E6E73]">
-                Tu paies une seule fois 399€ et tu repars avec : le protocole peptides personnalisé, 2 bilans sanguins, 90 jours de support, ET 8 semaines de coaching Essential complet. Pour le prix d'un coaching Essential seul.
+                Pour 549€ au total, tu repars avec : le protocole Peptides Engine personnalisé, 2 bilans sanguins, 90 jours de support, ET 12 semaines de coaching Essential complet. Tu veux plus de suivi ? Elite 8 semaines te revient à 250€ après déduction.
               </p>
             </div>
             <div className="flex flex-col items-center md:items-end gap-2 md:gap-3 w-full md:w-auto">
               <div className="text-right">
-                <p className="text-xs font-mono text-[#86868B] line-through">Valeur séparée 798€</p>
-                <p className="text-5xl md:text-6xl font-bold text-[#1D1D1F] leading-none">399€</p>
+                <p className="text-xs font-mono text-[#86868B] line-through">Valeur séparée 948€</p>
+                <p className="text-5xl md:text-6xl font-bold text-[#1D1D1F] leading-none">549€</p>
                 <p className="mt-1 text-xs font-mono text-[#0071E3]">Économie 399€</p>
               </div>
               <Link
@@ -1971,7 +1963,7 @@ function CoachingDeduction() {
               </thead>
               <tbody>
                 {DEDUCTION_MATRIX.map((row, idx) => {
-                  const isLastOfGroup = idx % 2 === 1;
+                  const isLastOfGroup = DEDUCTION_MATRIX[idx + 1]?.coachingName !== row.coachingName;
                   const isFreeCell = row.trackedFinal === 0;
                   return (
                     <tr
@@ -2013,7 +2005,7 @@ function CoachingDeduction() {
               <a href="https://www.achzodcoaching.com/formules-coaching" className="underline" style={{ color: PRIMARY }} target="_blank" rel="noopener noreferrer">
                 achzodcoaching.com/formules-coaching
               </a>
-              {" "}, valable uniquement sur les engagements 8 ou 12 semaines de Essential, Elite ou Private Lab.
+              {" "}, valable uniquement sur Essential 12 semaines, Elite 8 ou 12 semaines et Private Lab 8 ou 12 semaines. Pas de déduction sur Essential 4 ou 8 semaines.
             </p>
           </div>
         </motion.div>
@@ -2161,7 +2153,7 @@ function Hero() {
             className="max-w-md text-center font-mono text-[11px] font-bold tracking-wide md:text-xs"
             style={{ color: PRIMARY }}
           >
-            Intégralement déduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 sem
+            Intégralement déduit de ton coaching Essential 12 sem, Elite ou Private Lab
           </motion.p>
 
           <p className="text-xs font-medium text-[#128C7E]">
