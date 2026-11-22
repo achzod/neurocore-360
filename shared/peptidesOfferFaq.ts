@@ -6,7 +6,7 @@ export type PeptidesOfferFaqEntry = {
 export const PEPTIDES_OFFER_FAQ: readonly PeptidesOfferFaqEntry[] = [
   {
     question: "Pourquoi 399€ ?",
-    answer: "Le contenu varie selon le tier. Solo (199€) : le protocole personnalisé, le guide de reconstitution et le calendrier hebdo. Coached (299€) : tout Solo + 1 bilan sanguin + 30 jours de support ecrit. Tracked (399€) : tout Coached + 1 bilan supplementaire + 90 jours de support + 1 reecriture si evolution. Et dans les 3 tiers, le montant paye est integralement deduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 semaines (crédit valable 8 semaines).",
+    answer: "Le contenu varie selon le tier. Solo (199€) : le protocole personnalisé, le guide de reconstitution et le calendrier hebdo. Coached (299€) : tout Solo + 1 bilan sanguin + 30 jours de support ecrit. Tracked (399€) : tout Coached + 1 bilan supplementaire + 90 jours de support + 1 reecriture si evolution. Et dans les 3 tiers, le montant paye est integralement deduit de ton coaching Essential 12 semaines, Elite 8 ou 12 semaines, ou Private Lab 8 ou 12 semaines (pas sur Essential 4 ou 8 semaines) (crédit valable 8 semaines).",
   },
   {
     question: "Comment je vérifie la qualité de ce que j'utilise ?",

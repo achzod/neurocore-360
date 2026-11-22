@@ -307,7 +307,7 @@ export function discoveryOfferDeduction(
   if (offer === "peptides-engine") {
     return {
       title: "Montant intégralement déduit de ton coaching",
-      detail: "Ce que tu paies pour Peptides Engine est intégralement déduit de ton coaching Essential, Elite ou Private Lab 8 ou 12 semaines (crédit valable 8 semaines).",
+      detail: "Ce que tu paies pour Peptides Engine est intégralement déduit de ton coaching Essential 12 semaines, Elite 8 ou 12 semaines, ou Private Lab 8 ou 12 semaines (crédit valable 8 semaines).",
       code: null,
     };
   }
