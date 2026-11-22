@@ -195,7 +195,7 @@ export default function AuditPremium() {
   ];
 
   return (
-    <div ref={containerRef} className="bg-[#050505] min-h-screen">
+    <div ref={containerRef} className="bg-[#050505] min-h-screen overflow-x-clip">
       <Header />
 
       {/* HERO */}

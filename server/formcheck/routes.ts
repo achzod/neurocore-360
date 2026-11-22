@@ -17,13 +17,14 @@ import {
   FORMCHECK_MAX_BYTES,
   FORMCHECK_PACKS,
   FORMCHECK_PLAN_TYPE,
+  getFormcheckAdminEmail,
   isFormcheckWorkerEnabled,
   computeFormcheckDeliverAfter,
   resolveFormcheckPack,
   validateUploadedFileMeta,
   validateVideoDuration,
 } from "./config";
-import { buildAccessEmail, buildReceivedEmail } from "./emails";
+import { buildAccessEmail, buildReceivedEmail, formcheckOrderNumber } from "./emails";
 import { formcheckLinks } from "./links";
 import * as store from "./store";
 import { extractFrames, probeVideo } from "./video";
@@ -89,9 +90,27 @@ export async function fulfillFormcheckCheckoutSession(session: Stripe.Checkout.S
   if (granted) {
     const balance = await store.getFormcheckBalance(email);
     const links = formcheckLinks(getFormcheckBaseUrl(), email);
-    const mail = buildAccessEmail({ uploadUrl: links.uploadUrl, credits: pack.credits, available: balance.available });
+    const orderNumber = formcheckOrderNumber(session.id);
+    const mail = buildAccessEmail({ uploadUrl: links.uploadUrl, credits: pack.credits, available: balance.available, amountCents: amount || pack.amountCents, orderNumber });
     const sent = await sendMail({ to: email, ...mail, emailType: "sendFormcheckAccessEmail", metadata: { stripeSessionId: session.id, pack: pack.id } });
     if (!sent) await notifyAdmin("FormCheck email d'accès non envoyé", `Client ${email}, session ${session.id}. Les crédits sont bien attribués.`);
+    // Notification de vente au propriétaire (marquée TEST pour une session cs_test_).
+    try {
+      const { buildPurchaseAdminNotificationEmail } = await import("../purchaseEmails");
+      const { sendPurchaseTransactionalEmail } = await import("../emailService");
+      const admin = buildPurchaseAdminNotificationEmail({
+        productLabel: `FormCheck ${pack.label}`,
+        email,
+        amountCents: amount || pack.amountCents,
+        orderId: orderNumber,
+        orderNumber,
+        stripeSessionId: session.id,
+        channel: `Stripe${sent ? "" : " (email d'accès NON envoyé)"}`,
+      });
+      await sendPurchaseTransactionalEmail({ to: getFormcheckAdminEmail(), ...admin, emailType: "sendPurchaseAdminNotification", metadata: { stripeSessionId: session.id, pack: pack.id } });
+    } catch (adminError: any) {
+      console.error("[FormCheck] admin sale notification failed:", adminError?.message || adminError);
+    }
     console.log(`[FormCheck] +${pack.credits} crédit(s) pour ${email} (session ${session.id})`);
   }
   return { granted, email };

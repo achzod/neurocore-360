@@ -19,7 +19,7 @@ test("Blood Analysis checkout uses server-side inline Stripe price data", () => 
     unit_amount: 9900,
     product_data: {
       name: "Blood Analysis",
-      description: "2 credits Blood Analysis sans expiration.",
+      description: "2 analyses Blood Analysis, sans date d'expiration.",
     },
   });
 });
@@ -37,7 +37,7 @@ test("paid Apex products with static prices use server-side inline Stripe price 
       unit_amount: 5900,
       product_data: {
         name: "Anabolic Bioscan",
-        description: "Anabolic Bioscan personnalise avec rapport complet APEXLABS.",
+        description: "Questionnaire complet et rapport détaillé Anabolic Bioscan, livré par email.",
       },
     },
   });
@@ -49,7 +49,7 @@ test("paid Apex products with static prices use server-side inline Stripe price 
       unit_amount: 7900,
       product_data: {
         name: "Ultimate Scan",
-        description: "Ultimate Scan personnalise avec rapport complet APEXLABS.",
+        description: "Questionnaire complet, analyse photo et rapport détaillé Ultimate Scan, livré par email.",
       },
     },
   });

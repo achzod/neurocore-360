@@ -54,8 +54,11 @@ const SMTP_HOST = process.env.SMTP_HOST || "";
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASS = process.env.SMTP_PASS || "";
+import { buildPeptidesOrderConfirmationEmail } from "./purchaseEmails";
 export const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
-export const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
+// Nom d'expéditeur unique pour tous les emails clients (avant : APEXLABS, Achzod, Achzod Coaching selon les envois).
+// SENDER_NAME_OVERRIDE permet de le changer sans redéploiement de code ; l'ancienne variable SENDER_NAME (APEXLABS) est ignorée.
+export const SENDER_NAME = process.env.SENDER_NAME_OVERRIDE || "AchZod Coaching";
 
 let smtpFallbackTransport: ReturnType<typeof nodemailer.createTransport> | null = null;
 
@@ -1742,7 +1745,7 @@ export async function sendDiscoveryUpdatedEmail(input: DiscoveryUpdatedEmailInpu
       html: encodeBase64(built.html), // le wrapper contient deja le lien {{UNSUB_LINK}}
       text: built.text,
       subject: built.subject,
-      from: { name: "Achzod", email: SENDER_EMAIL },
+      from: { name: SENDER_NAME, email: SENDER_EMAIL },
       to: [{ email: input.email }],
     },
     {
@@ -3960,6 +3963,38 @@ export async function sendGuidePeptidesTransactionalEmail(input: {
   }
 }
 
+export async function sendPurchaseTransactionalEmail(input: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  emailType: "sendPurchaseConfirmationEmail" | "sendPurchaseAdminNotification";
+  metadata?: Record<string, any>;
+}): Promise<boolean> {
+  try {
+    const result = await sendEmailWithTracking(
+      {
+        html: encodeBase64(input.html),
+        text: input.text,
+        subject: input.subject,
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to: [{ email: input.to }],
+      },
+      {
+        emailType: input.emailType,
+        recipientEmail: input.to,
+        metadata: input.metadata,
+        bccAdmin: false,
+        allowProviderFallback: true,
+      },
+    );
+    return result.result === true;
+  } catch (error) {
+    console.error(`[Purchase] ${input.emailType} send failed:`, error);
+    return false;
+  }
+}
+
 export async function sendOperationalAlertEmail(
   incident: string,
   details: string,
@@ -4276,7 +4311,7 @@ Achzod`;
     const result = await sendEmailWithTracking(
       {
         subject: subjectByCohort[cohort],
-        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
         html: encodeBase64(emailContent),
         text: plainText,
@@ -4432,7 +4467,7 @@ async function sendRecoveryCtaEmailWithoutCode(
   const result = await sendEmailWithTracking(
     {
       subject: RECOVERY_NO_CODE_SUBJECT[cohort],
-      from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+      from: { name: SENDER_NAME, email: SENDER_EMAIL },
       to: [{ email }],
       html: encodeBase64(emailContent),
       text: plainText,
@@ -4555,7 +4590,7 @@ export async function sendWhatsAppLeadFollowupEmail(
     const result = await sendEmailWithTracking(
       {
         subject: "Ton orientation WhatsApp APEXLABS",
-        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
         html: encodeBase64(emailContent),
         text: plainText,
@@ -4750,7 +4785,7 @@ export async function sendWhatsAppLeadAdminAlert(lead: WhatsAppLeadAdminAlertLea
     const result = await sendEmailWithTracking(
       {
         subject: `Lead WhatsApp chaud - ${orientation.primary}`,
-        from: { name: "APEXLABS", email: SENDER_EMAIL },
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email: adminEmail }],
         html: encodeBase64(emailContent),
         text: [
@@ -4909,7 +4944,7 @@ export async function sendCoachingFormulaChoiceLeadEmail(
     const result = await sendEmailWithTracking(
       {
         subject: `${tier.label} : ta formule coaching recommandée`,
-        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
         html: encodeBase64(emailContent),
         text: plainParts.join("\n"),
@@ -5055,7 +5090,7 @@ async function sendCoachingFormulaChoiceLeadEmailWithoutCode(
   const result = await sendEmailWithTracking(
     {
       subject: `${tier.label} : ta formule coaching recommandée`,
-      from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+      from: { name: SENDER_NAME, email: SENDER_EMAIL },
       to: [{ email }],
       html: encodeBase64(emailContent),
       text: plainParts.join("\n"),
@@ -5641,7 +5676,7 @@ async function sendDiscoveryFollowupWithoutCode(
       html: encodeBase64(emailContent),
       text,
       subject: copy.subject,
-      from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+      from: { name: SENDER_NAME, email: SENDER_EMAIL },
       to: [{ email }],
     },
     {
@@ -5775,7 +5810,7 @@ export async function sendGratuitUpsellEmail(
         html: encodeBase64(emailContent),
         text: `Ton code DISCOVERY20 est actif : -20% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate}.\n\nChoisir ma formule : ${trackedCoachingLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\nComparer les 3 formules : ${trackedAllFormulesLink}\n\nAu paiement, copie DISCOVERY20 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: `DISCOVERY20 actif jusqu'au ${deadlineDate} , -20% sur ton coaching`,
-        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
       {
@@ -6362,7 +6397,7 @@ export async function sendGratuitJ5Email(
         html: encodeBase64(emailContent),
         text: `Ton code DISCOVERY20 est actif : -20% sur formules coaching 8 et 12 semaines, valable jusqu'au ${deadlineDate} (7 jours après ton rapport).\n\nLe Discovery te donne le diagnostic. Le coaching te donne le plan jour-par-jour, l'ajustement hebdo, et le contrat moral.\n\nChoisir ma formule : ${trackedPrimaryCtaLink}\nDemander mon avis sur WhatsApp : ${whatsappHref}\nComparer les 3 formules : ${trackedSecondaryCtaLink}\nRelire le Discovery : ${trackedReportLink}\n\nAu checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?".\n\nAchzod`,
         subject: `${countdown} pour activer DISCOVERY20 , -20% coaching jusqu'au ${deadlineDate}`,
-        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
       {
@@ -6501,7 +6536,7 @@ export async function sendGratuitJ7Email(
         html: encodeBase64(emailContent),
         text: `${countdown} pour activer DISCOVERY20 (jusqu'au ${deadlineDate}).\n\nComparaison des 3 formules coaching avec DISCOVERY20 :\n\nEssential 8 sem : 319,20€ (au lieu de 399€) , ${trackedEssentialLink}\nElite 8 sem : 519,20€ (au lieu de 649€) , ${trackedEliteLink}\nPrivate Lab 8 sem : 639,20€ (au lieu de 799€) , ${trackedPrivateLabLink}\n\nDemander mon avis sur WhatsApp : ${whatsappHref}\n\nAu checkout, copie DISCOVERY20 dans le champ "Code promotionnel ?". Les 4 semaines ne sont pas éligibles au code, seules les 8 et 12 sem le sont.\n\nAchzod`,
         subject: `${countdown} pour DISCOVERY20 , -20% coaching jusqu'au ${deadlineDate}`,
-        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
       {
@@ -6642,7 +6677,7 @@ export async function sendPromoCodeEmail(
         html: encodeBase64(htmlContent),
         text: `${prenom}, voici ton code promo : ${promoCode}. ${config.discount}.${validityText} Utilise-le ici : ${ctaHref}`,
         subject: offer ? `${config.title} - ${promoCode} (jusqu'au ${offer.label})` : `${config.title} - ${promoCode}`,
-        from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
       },
       {
@@ -6732,7 +6767,7 @@ async function sendDiscoveryReviewThanksWithoutCode(
       html: encodeBase64(emailContent),
       text,
       subject: "Merci pour ton avis sur ton Discovery",
-      from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+      from: { name: SENDER_NAME, email: SENDER_EMAIL },
       to: [{ email }],
     },
     {
@@ -7211,131 +7246,35 @@ export async function sendPeptidesOrderConfirmationEmail(
     scheduledDeliveryAt: Date;
     bloodCreditsCount?: number;
     orderId: string;
+    tierLabel?: string | null;
+    coachingCreditAmount?: string | null;
   }
 ): Promise<boolean> {
   try {
-    const firstName = (opts.firstName || email.split("@")[0]).trim();
     const deliveryParis = opts.scheduledDeliveryAt.toLocaleString("fr-FR", {
       timeZone: "Europe/Paris",
-      day: "2-digit",
+      day: "numeric",
       month: "long",
       hour: "2-digit",
       minute: "2-digit",
+    }).replace(":", " h ").replace(/ h 00$/, " h");
+    const mail = buildPeptidesOrderConfirmationEmail({
+      orderId: opts.orderId,
+      email,
+      firstName: opts.firstName || null,
+      amountCents: Math.round((Number(opts.amountEur) || 0) * 100),
+      promoCode: opts.promoCode || null,
+      tierLabel: opts.tierLabel || null,
+      deliveryLabel: deliveryParis,
+      bloodCreditsCount: opts.bloodCreditsCount || 0,
+      coachingCreditAmount: opts.coachingCreditAmount || null,
     });
-    const promoLine = opts.promoCode
-      ? `<tr><td style="padding:4px 0;color:#86868b;font-size:13px;">Code promo</td><td style="padding:4px 0;color:#1d1d1f;font-size:14px;text-align:right;font-weight:600;">${opts.promoCode}</td></tr>`
-      : "";
-    const peptidesLine = opts.peptidesNames
-      ? `<tr><td style="padding:8px 0;color:#86868b;font-size:13px;vertical-align:top;">Peptides identifiés</td><td style="padding:8px 0;color:#1d1d1f;font-size:14px;text-align:right;line-height:1.5;">${opts.peptidesNames}</td></tr>`
-      : "";
-    const creditsBlock = (opts.bloodCreditsCount || 0) > 0
-      ? `
-      <div style="margin:24px 0 0;padding:18px 20px;background:#f5f5f7;border-radius:12px;border-left:3px solid #0071E3;">
-        <p style="margin:0;color:#1d1d1f;font-size:14px;font-weight:600;">Bonus inclus : ${opts.bloodCreditsCount} Blood Analysis offertes</p>
-        <p style="margin:6px 0 0;color:#515154;font-size:13px;line-height:1.5;">Tes codes promo Blood Analysis seront livrés en bas de ton rapport peptides (utilisables sur achzodcoaching.com).</p>
-      </div>`
-      : "";
-
-    const html = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Commande confirmée , Peptides Engine</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f7;padding:48px 16px;">
-<tr><td align="center">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-<tr><td style="padding:32px 40px 0;">
-  <p style="margin:0;color:#86868b;font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:600;">ApexLabs , Peptides Engine</p>
-</td></tr>
-<tr><td style="padding:8px 40px 0;">
-  <h1 style="margin:0;color:#1d1d1f;font-size:28px;font-weight:700;letter-spacing:-0.5px;line-height:1.25;">Commande confirmée</h1>
-  <p style="margin:8px 0 0;color:#515154;font-size:15px;line-height:1.5;">Salut ${firstName}, ton paiement est bien reçu. Je m'occupe de finaliser ton protocole personnalisé.</p>
-</td></tr>
-<tr><td style="padding:24px 40px 0;">
-  <div style="padding:20px 22px;border:1px solid #d2d2d7;border-radius:12px;background:#ffffff;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-      <tr><td style="padding:4px 0;color:#86868b;font-size:13px;">Produit</td><td style="padding:4px 0;color:#1d1d1f;font-size:14px;text-align:right;font-weight:600;">Peptides Engine</td></tr>
-      <tr><td style="padding:4px 0;color:#86868b;font-size:13px;">Montant</td><td style="padding:4px 0;color:#1d1d1f;font-size:14px;text-align:right;font-weight:600;">${opts.amountEur.toFixed(2)} EUR</td></tr>
-      ${promoLine}
-      ${peptidesLine}
-    </table>
-  </div>
-  ${creditsBlock}
-</td></tr>
-<tr><td style="padding:32px 40px 0;">
-  <h2 style="margin:0;color:#1d1d1f;font-size:18px;font-weight:600;letter-spacing:-0.2px;">Et maintenant ?</h2>
-  <p style="margin:10px 0 0;color:#515154;font-size:15px;line-height:1.6;">
-    Je relis personnellement ton dossier (réponses au questionnaire, marqueurs déclarés, objectifs) pour calibrer le protocole. Pas un template, pas une recommandation générique. Je te livre ton rapport complet directement par email.
-  </p>
-  <div style="margin:18px 0 0;padding:14px 18px;background:#f5f5f7;border-radius:10px;">
-    <p style="margin:0;color:#1d1d1f;font-size:14px;font-weight:600;">Livraison estimée : ${deliveryParis} (heure de Paris)</p>
-    <p style="margin:6px 0 0;color:#86868b;font-size:13px;line-height:1.5;">Garde un oeil sur ta boîte mail. Si tu ne vois rien à cette heure, regarde tes spams avant de t'inquiéter.</p>
-  </div>
-</td></tr>
-<tr><td style="padding:32px 40px 0;">
-  <h2 style="margin:0;color:#1d1d1f;font-size:18px;font-weight:600;letter-spacing:-0.2px;">Ce que ton rapport contiendra</h2>
-  <ul style="margin:12px 0 0;padding:0 0 0 18px;color:#515154;font-size:14px;line-height:1.7;">
-    <li>Ta sélection de peptides personnalisée avec dosages exacts et fréquences d'injection</li>
-    <li>Calendrier complet du cycle (durée, pauses, paliers)</li>
-    <li>Liste des fournisseurs vérifiés (sourcing pharmaceutique propre)</li>
-    <li>Protocole de reconstitution étape par étape</li>
-    <li>Marqueurs sanguins à monitorer avant, mi-cycle et post-cycle</li>
-    <li>Stack de supplements complémentaires</li>
-    <li>Plan de récupération post-cycle (PCT et bilan métabolique)</li>
-  </ul>
-</td></tr>
-<tr><td style="padding:32px 40px 0;">
-  <div style="padding:18px 20px;background:#f5f5f7;border-radius:12px;border-left:3px solid #0071E3;">
-    <p style="margin:0;color:#1d1d1f;font-size:14px;font-weight:600;">Une question urgente ?</p>
-    <p style="margin:6px 0 0;color:#515154;font-size:13px;line-height:1.5;">Réponds directement à ce mail, je lis et je te réponds personnellement (en général sous 24h).</p>
-  </div>
-</td></tr>
-<tr><td style="padding:32px 40px 40px;">
-  <p style="margin:0;color:#1d1d1f;font-size:15px;line-height:1.6;">À très vite,<br><strong>Achzod</strong></p>
-  <p style="margin:24px 0 0;color:#86868b;font-size:11px;line-height:1.5;border-top:1px solid #d2d2d7;padding-top:20px;">
-    ApexLabs by Achzod , coaching@achzodcoaching.com<br>
-    Référence commande : ${opts.orderId.slice(0,8)}<br>
-    Tu reçois cet email parce que tu as commandé un protocole Peptides Engine.
-  </p>
-</td></tr>
-</table>
-</td></tr>
-</table>
-</body>
-</html>`;
-
-    const text = `Commande confirmée
-
-Salut ${firstName},
-
-Ton paiement de ${opts.amountEur.toFixed(2)} EUR pour Peptides Engine est bien reçu.
-
-Je m'occupe de finaliser ton protocole personnalisé en relisant ton dossier.
-
-Livraison estimée : ${deliveryParis} (heure de Paris).
-
-Ton rapport contiendra :
-- Sélection de peptides personnalisée + dosages + fréquences
-- Calendrier complet du cycle
-- Fournisseurs vérifiés
-- Protocole de reconstitution
-- Marqueurs sanguins à monitorer
-- Stack de supplements
-- Plan de récupération post-cycle
-
-${opts.bloodCreditsCount && opts.bloodCreditsCount > 0 ? `Bonus inclus : ${opts.bloodCreditsCount} Blood Analysis offertes (codes dans ton rapport).\n\n` : ""}Une question urgente ? Réponds directement à ce mail.
-
-À très vite,
-Achzod
-ApexLabs , coaching@achzodcoaching.com
-Réf. commande : ${opts.orderId.slice(0,8)}`;
+    const html = mail.html;
+    const text = mail.text;
 
     const result = await sendEmailWithTracking(
       {
-        subject: `Commande Peptides Engine confirmée , ton protocole arrive bientôt`,
+        subject: mail.subject,
         from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email }],
         html: encodeBase64(html),
@@ -7530,7 +7469,7 @@ export async function sendCheckoutRecoveryEmail(input: {
     const result = await sendEmailWithTracking(
       {
         subject: input.subject,
-        from: { name: "Achzod", email: SENDER_EMAIL },
+        from: { name: SENDER_NAME, email: SENDER_EMAIL },
         to: [{ email: input.email }],
         html: encodeBase64(input.html),
         text: input.text,

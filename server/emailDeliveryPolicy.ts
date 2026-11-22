@@ -21,6 +21,12 @@ export const GUIDE_PEPTIDES_TRANSACTIONAL_EMAIL_TYPES = new Set([
   "sendGuidePeptidesAdminSaleEmail",
 ]);
 
+/** Confirmations d'achat (scans, Blood Analysis) et notifications de vente. Jamais bloquées par un désabonnement marketing. */
+export const PURCHASE_TRANSACTIONAL_EMAIL_TYPES = new Set([
+  "sendPurchaseConfirmationEmail",
+  "sendPurchaseAdminNotification",
+]);
+
 export const isCriticalTransactionalEmail = (emailType: string, subject: string): boolean => {
   const normalized = normalizeEmailPolicyText(subject);
   return emailType === "sendMagicLinkEmail"
@@ -29,6 +35,7 @@ export const isCriticalTransactionalEmail = (emailType: string, subject: string)
     || emailType === "sendPeptidesOrderConfirmation"
     || FORMCHECK_TRANSACTIONAL_EMAIL_TYPES.has(emailType)
     || GUIDE_PEPTIDES_TRANSACTIONAL_EMAIL_TYPES.has(emailType)
+    || PURCHASE_TRANSACTIONAL_EMAIL_TYPES.has(emailType)
     || (emailType === "sendCTAEmail" && (
       normalized.includes("protocole peptides")
       || normalized.includes("commande recue")
