@@ -54,7 +54,7 @@ export function buildGuideDeliveryEmail(input: GuideDeliveryEmailInput, opts: { 
   const sourcesMailto = `mailto:${GUIDE_PEPTIDES_SOURCES_EMAIL}?subject=${encodeURIComponent(`Accès aux sources, commande ${input.orderNumber}`)}`;
   const html = wrapGuideEmail(
     opts.resend ? "Voici ton nouveau lien" : "Merci, ton guide est là",
-    `<p>${opts.resend ? "Comme demandé, voici un nouveau lien pour télécharger" : "Merci pour ta confiance. Ton exemplaire de"} <strong>Peptides, le guide de référence</strong>${opts.resend ? "." : " t'attend : 199 pages, 83 molécules décryptées."}</p>
+    `<p>${opts.resend ? "Comme demandé, voici un nouveau lien pour télécharger" : "Merci pour ta confiance. Ton exemplaire de"} <strong>Peptides, le guide de référence</strong>${opts.resend ? "." : " t'attend : 194 pages, 83 molécules décryptées."}</p>
      <p style="margin:0 0 4px;">Ton numéro de commande : <strong>${esc(input.orderNumber)}</strong></p>
      <p style="color:${C.muted};font-size:13px;margin:0;">Garde-le, il te sert pour l'accès aux sources.</p>
      <!--cta-->
@@ -77,7 +77,7 @@ export function buildGuideDeliveryEmail(input: GuideDeliveryEmailInput, opts: { 
     `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0 10px;"><tr><td style="background:${C.black};border-radius:6px;"><a href="${esc(input.downloadUrl)}" style="display:inline-block;padding:14px 24px;color:${C.yellow};font-weight:800;text-decoration:none;font-size:15px;">Télécharger mon guide (PDF)</a></td></tr></table>`,
   );
   const text = [
-    opts.resend ? "Voici ton nouveau lien pour télécharger Peptides, le guide de référence." : "Merci pour ta confiance. Ton exemplaire de Peptides, le guide de référence t'attend : 199 pages, 83 molécules décryptées.",
+    opts.resend ? "Voici ton nouveau lien pour télécharger Peptides, le guide de référence." : "Merci pour ta confiance. Ton exemplaire de Peptides, le guide de référence t'attend : 194 pages, 83 molécules décryptées.",
     `Numéro de commande : ${input.orderNumber}`,
     `Télécharger le guide (PDF) : ${input.downloadUrl}`,
     `Ce lien est privé et valable ${input.ttlDays} jours, téléchargeable autant de fois que tu veux. Lien expiré ? Redemande-le sur ${offerUrl} avec ton email d'achat.`,

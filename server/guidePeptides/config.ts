@@ -42,7 +42,7 @@ export function buildGuidePeptidesLineItem(
       unit_amount: GUIDE_PEPTIDES_AMOUNT_CENTS,
       product_data: {
         name: GUIDE_PEPTIDES_PRODUCT_NAME,
-        description: "Peptides, le guide de référence par AchZod. Ebook PDF de 199 pages, lien de téléchargement par email.",
+        description: "Peptides, le guide de référence par AchZod. Ebook PDF de 194 pages, lien de téléchargement par email.",
       },
     },
   };

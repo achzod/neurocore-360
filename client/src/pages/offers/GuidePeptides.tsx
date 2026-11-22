@@ -72,7 +72,7 @@ const CHAPTERS = [
 const FAQ = [
   {
     q: "Sous quel format est le guide ?",
-    a: "Un PDF de 199 pages, lisible sur téléphone, tablette et ordinateur. Tu peux l'enregistrer et le relire hors connexion.",
+    a: "Un PDF de 194 pages, lisible sur téléphone, tablette et ordinateur. Tu peux l'enregistrer et le relire hors connexion.",
   },
   {
     q: "Quand est-ce que je le reçois ?",
@@ -266,7 +266,7 @@ export default function GuidePeptides() {
       <section ref={heroRef} className="px-5 pb-16 pt-10 sm:px-6 sm:pt-16 lg:pb-24">
         <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
           <div>
-            <Eyebrow>Ebook PDF · 199 pages · Édition 2026</Eyebrow>
+            <Eyebrow>Ebook PDF · 194 pages · Édition 2026</Eyebrow>
             <h1 className="gp-anton mt-6 text-[64px] leading-[0.92] sm:text-[96px] lg:text-[112px]" data-testid="gp-title">
               Peptides
             </h1>
@@ -353,7 +353,7 @@ export default function GuidePeptides() {
           </div>
           <div className="mt-10 grid grid-cols-3 gap-3 sm:max-w-2xl">
             {[
-              { n: "199", l: "pages" },
+              { n: "194", l: "pages" },
               { n: "83", l: "molécules décryptées" },
               { n: "18", l: "chapitres" },
             ].map((s) => (
@@ -447,7 +447,7 @@ export default function GuidePeptides() {
             </div>
             <ul className="mt-6 space-y-2.5 text-[15px]">
               {[
-                "L'ebook PDF de 199 pages, 83 molécules décryptées",
+                "L'ebook PDF de 194 pages, 83 molécules décryptées",
                 "Le téléchargement immédiat, et le lien par email",
                 "Bonus : l'accès privé à mes sources",
                 "Bonus : le code BOOKPEPTIDES99, 99\u00a0€ sur Peptides Engine ou un coaching",

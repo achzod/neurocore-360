@@ -1260,7 +1260,7 @@ ${sorted
       desc: "Protocole peptides sur-mesure basé sur ton profil hormonal et tes objectifs. Stack, dosage, timing, monitoring. Approche structurée par ACHZOD.",
     },    "guide-peptides": {
       title: "Peptides, le guide de référence par AchZod | Ebook PDF 99 €",
-      desc: "199 pages, 83 molécules décryptées : mécanismes, ce que dit la science face au marketing, repérer une source fiable, reconstitution, logique de stacking et de timing. Ebook PDF par AchZod.",
+      desc: "194 pages, 83 molécules décryptées : mécanismes, ce que dit la science face au marketing, repérer une source fiable, reconstitution, logique de stacking et de timing. Ebook PDF par AchZod.",
     },
   };
 
@@ -1428,7 +1428,7 @@ ${sorted
     "guide-peptides": {
       h1: "Peptides, le guide de référence",
       lead:
-        "L'ebook de 199 pages d'AchZod pour comprendre les peptides sans le marketing : 83 molécules décryptées, de la science à la pratique.",
+        "L'ebook de 194 pages d'AchZod pour comprendre les peptides sans le marketing : 83 molécules décryptées, de la science à la pratique.",
       sections: [
         {
           title: "Ce que contient le guide",
@@ -1548,7 +1548,7 @@ ${sorted
           author: { "@type": "Person", name: "AchZod" },
           bookFormat: "https://schema.org/EBook",
           inLanguage: "fr",
-          numberOfPages: 199,
+          numberOfPages: 194,
           image: `${BASE_URL}/images/guide-peptides/guide-peptides-og.jpg`,
           url,
           offers: {
