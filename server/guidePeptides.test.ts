@@ -147,3 +147,14 @@ test("jeton de téléchargement : aller-retour, audience dédiée, durée 30 jou
   assert.equal(payload.exp - payload.iat, 30 * 24 * 3600);
   assert.equal(auth.GUIDE_PEPTIDES_DOWNLOAD_TTL_DAYS, 30);
 });
+
+test("notification admin : une session cs_test_ est marquée comme test, une session live non", async () => {
+  const { buildGuideAdminSaleEmail } = await import("./guidePeptides/emails");
+  const base = { email: "a@b.fr", orderNumber: "GP-X", amountCents: 9900, currency: "eur", deliveryEmailSent: true };
+  const t = buildGuideAdminSaleEmail({ ...base, stripeSessionId: "cs_test_abcTESTONLY" });
+  assert.ok(t.subject.startsWith("[TEST, pas une vente]"));
+  assert.ok(t.text.startsWith("TEST"));
+  const l = buildGuideAdminSaleEmail({ ...base, stripeSessionId: "cs_live_abc" });
+  assert.ok(l.subject.startsWith("[ApexLabs]"));
+  assert.ok(!l.text.includes("TEST"));
+});

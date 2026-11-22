@@ -100,7 +100,9 @@ export function buildGuideAdminSaleEmail(input: {
   deliveryEmailSent: boolean;
 }) {
   const amount = `${(input.amountCents / 100).toFixed(2).replace(".", ",")} ${input.currency.toUpperCase()}`;
-  const subject = `[ApexLabs] Nouvel achat Guide Peptides : ${input.email}`;
+  // Session Stripe de test (cs_test_...) : jamais une vraie vente, on le dit dans l'objet et le corps.
+  const isTest = String(input.stripeSessionId || "").startsWith("cs_test_");
+  const subject = `${isTest ? "[TEST, pas une vente] " : ""}[ApexLabs] Nouvel achat Guide Peptides : ${input.email}`;
   const rows: Array<[string, string]> = [
     ["Client", input.email],
     ["Commande", input.orderNumber],
@@ -109,7 +111,7 @@ export function buildGuideAdminSaleEmail(input: {
     ["Email de livraison", input.deliveryEmailSent ? "envoyé" : "NON envoyé, à renvoyer"],
   ];
   const html = wrapGuideEmail(
-    "Nouvel achat du Guide Peptides",
+    isTest ? "Achat de test du Guide Peptides (aucun paiement)" : "Nouvel achat du Guide Peptides",
     `<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;">${rows
       .map(([k, v]) => `<tr><td style="padding:4px 14px 4px 0;color:${C.muted};">${esc(k)}</td><td style="padding:4px 0;font-weight:700;">${esc(v)}</td></tr>`)
       .join("")}</table>
@@ -117,6 +119,6 @@ export function buildGuideAdminSaleEmail(input: {
     null,
     null,
   );
-  const text = rows.map(([k, v]) => `${k} : ${v}`).join("\n");
+  const text = `${isTest ? "TEST : session Stripe de test, aucun paiement, ne compte pas comme une vente.\n\n" : ""}${rows.map(([k, v]) => `${k} : ${v}`).join("\n")}`;
   return { subject, html, text };
 }
