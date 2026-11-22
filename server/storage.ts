@@ -340,7 +340,11 @@ export interface IStorage {
   hasPeptidesDeliveryEmailBeenSent(email: string): Promise<boolean>;
   /** Returns true when the recipient's latest provider event is a terminal unsubscribe signal. */
   hasLatestTerminalUnsubscribeSignal(email: string): Promise<boolean>;
-  hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean>;
+  /**
+   * Confirmation Peptides Engine déjà envoyée pour CETTE commande (pas pour l'adresse) :
+   * un client qui rachète doit recevoir une nouvelle confirmation.
+   */
+  hasPeptidesOrderConfirmationBeenSent(email: string, orderId: string, orderCreatedAt?: Date | string | null): Promise<boolean>;
   /** Returns true if a blood analysis HTML email has already been tracked for this report (audit_id) */
   hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean>;
   /** Returns true if a blood analysis HTML email was sent to this recipient within the last N hours */
@@ -1253,18 +1257,20 @@ export class MemStorage implements IStorage {
     });
   }
 
-  async hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean> {
-    return Array.from(this.emailTrackings.values()).some(
-      (t: any) => String(t.recipientEmail || "").toLowerCase() === email.toLowerCase()
-        && (
-          t.emailType === "sendPeptidesOrderConfirmation"
-          || (
-            t.emailType === "sendCTAEmail"
-            && /peptides engine\s*:\s*commande re[cç]ue/i.test(String(t.subject || ""))
-          )
-        )
-        && !["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())
-    );
+  async hasPeptidesOrderConfirmationBeenSent(email: string, orderId: string, orderCreatedAt?: Date | string | null): Promise<boolean> {
+    const since = orderCreatedAt ? new Date(orderCreatedAt).getTime() : NaN;
+    return Array.from(this.emailTrackings.values()).some((t: any) => {
+      if (String(t.recipientEmail || "").toLowerCase() !== email.toLowerCase()) return false;
+      const isConfirmation = t.emailType === "sendPeptidesOrderConfirmation"
+        || (t.emailType === "sendCTAEmail" && /peptides engine\s*:\s*commande re[cç]ue/i.test(String(t.subject || "")));
+      if (!isConfirmation) return false;
+      if (["failed", "auth_failed", "unsubscribed"].includes(String(t.sendpulseStatus || "").toLowerCase())) return false;
+      const trackedOrderId = String((t.metadata as any)?.orderId || "");
+      if (trackedOrderId) return trackedOrderId === orderId;
+      // Ancienne ligne sans orderId : ne compte que si elle date de cette commande ou après.
+      const sentAt = t.sentAt ? new Date(t.sentAt).getTime() : NaN;
+      return Number.isFinite(since) && Number.isFinite(sentAt) && sentAt >= since;
+    });
   }
 
   async hasBloodAnalysisEmailBeenSentForReport(reportId: string): Promise<boolean> {
@@ -4046,8 +4052,12 @@ export class PgStorage implements IStorage {
     }
   }
 
-  async hasPeptidesOrderConfirmationBeenSent(email: string): Promise<boolean> {
+  async hasPeptidesOrderConfirmationBeenSent(email: string, orderId: string, orderCreatedAt?: Date | string | null): Promise<boolean> {
     try {
+      // Dédup par commande : une ligne qui porte un orderId ne compte que pour cette
+      // commande. Une ancienne ligne sans orderId ne compte que si elle a été envoyée
+      // après la création de cette commande (jamais pour un rachat ultérieur).
+      const since = orderCreatedAt ? new Date(orderCreatedAt) : null;
       const result = await pool.query(
         `SELECT 1 FROM email_tracking
           WHERE LOWER(recipient_email) = LOWER($1)
@@ -4062,8 +4072,16 @@ export class PgStorage implements IStorage {
               )
             )
             AND (sendpulse_status IS NULL OR sendpulse_status NOT IN ('failed','auth_failed','unsubscribed'))
+            AND (
+              metadata->>'orderId' = $2
+              OR (
+                COALESCE(metadata->>'orderId', '') = ''
+                AND $3::timestamptz IS NOT NULL
+                AND sent_at >= $3::timestamptz
+              )
+            )
           LIMIT 1`,
-        [email]
+        [email, orderId, since && Number.isFinite(since.getTime()) ? since.toISOString() : null]
       );
       return (result.rowCount ?? 0) > 0;
     } catch (err) {

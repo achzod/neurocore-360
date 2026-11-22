@@ -8639,7 +8639,7 @@ export async function registerRoutes(
         responses: (order.metadata as any)?.peptidesResponses || null,
       }))) return;
       if (!force) {
-        const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+        const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email, order.id, (order as any).createdAt).catch(() => false);
         if (alreadyConfirmed) {
           res.json({ success: false, skipped: "already_sent", email });
           return;
@@ -16924,7 +16924,7 @@ export async function registerRoutes(
     if (!freshOrder || freshOrder.productType !== "PEPTIDES_ENGINE" || !isActivePaidOrderStatus(freshOrder.status)) return false;
     const freshMeta = ((freshOrder.metadata as any) || {}) as Record<string, any>;
     const reportId = String(freshMeta.peptidesReportId || "");
-    if (await storage.hasPeptidesOrderConfirmationBeenSent(freshOrder.email).catch(() => false)) return false;
+    if (await storage.hasPeptidesOrderConfirmationBeenSent(freshOrder.email, freshOrder.id, (freshOrder as any).createdAt).catch(() => false)) return false;
     const claimed = await storage.claimPeptidesAutomation(
       freshOrder.id,
       reportId,
@@ -17304,7 +17304,7 @@ export async function registerRoutes(
             );
             // Immediate confirmation email so client knows order is registered
             // (no zero-feedback window during the 4-8h anti-automation deferral).
-            const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email).catch(() => false);
+            const alreadyConfirmed = await storage.hasPeptidesOrderConfirmationBeenSent(email, order!.id, (order as any).createdAt).catch(() => false);
             if (!alreadyConfirmed) {
               const firstName = (order.metadata as any)?.peptidesResponses?.prenom
                 || (order.email ? order.email.split("@")[0] : undefined);
