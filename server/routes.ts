@@ -13345,12 +13345,12 @@ export async function registerRoutes(
               // PEPTIDES_ENGINE deduction is tier-aware (Solo/Coached/Tracked).
               const peptidesTierForPromo = (order.metadata as any)?.peptidesTier as "solo" | "coached" | "tracked" | undefined;
               if (peptidesTierForPromo === "solo") {
-                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES199", label: "199€ déduits sur Essential/Elite/Private Lab 8 ou 12 sem (valide 8 sem)" };
+                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES199", label: "199€ déduits sur Essential 12 sem, Elite ou Private Lab 8/12 sem (valide 8 sem)" };
               } else if (peptidesTierForPromo === "tracked") {
-                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES399", label: "399€ déduits sur Essential/Elite/Private Lab 8 ou 12 sem (valide 8 sem)" };
+                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES399", label: "399€ déduits sur Essential 12 sem, Elite ou Private Lab 8/12 sem (valide 8 sem)" };
               } else {
                 // Default to Coached for missing tier (back-compat with old orders pre-tier).
-                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES299", label: "299€ déduits sur Essential/Elite/Private Lab 8 ou 12 sem (valide 8 sem)" };
+                promoByType2.PEPTIDES_ENGINE = { code: "PEPTIDES299", label: "299€ déduits sur Essential 12 sem, Elite ou Private Lab 8/12 sem (valide 8 sem)" };
               }
               const promo2 = promoByType2[order.productType];
               const prodLabel2 = order.productType === "ELITE" ? "Ultimate Scan" : order.productType === "PREMIUM" ? "Anabolic Bioscan" : order.productType === "BLOOD_ANALYSIS" ? "Blood Analysis" : order.productType === "PEPTIDES_ENGINE" ? "Peptides Engine" : order.productName;
