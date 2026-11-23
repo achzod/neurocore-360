@@ -357,7 +357,7 @@ const DELIVERABLES = [
   {
     icon: ShoppingCart,
     title: "Liste de courses complète",
-    desc: "Liens directs fournisseur + coût total estimé. Tu sais exactement ce que le cycle va coûter.",
+    desc: "Liens directs fournisseur + coût total estimé. Deux options : la moins chère, ou une livraison depuis l'UE en 2 à 5 jours ouvrés. Tu sais exactement ce que le cycle va coûter.",
   },
   {
     icon: Activity,
