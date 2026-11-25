@@ -1153,10 +1153,30 @@ export async function registerRoutes(
     }
   });
 
+  // Robots : texte au hasard sans espace (ex. "BZdtTahZuUiqxguFVnA"), champ piège rempli.
+  const isGibberishLeadText = (value: unknown): boolean => {
+    const text = String(value ?? "").trim();
+    if (!text) return false;
+    if (/\s/.test(text)) return false;
+    if (!/^[A-Za-z]{10,}$/.test(text)) return false;
+    const caseSwitches = (text.match(/[a-z][A-Z]|[A-Z][a-z]/g) || []).length;
+    return caseSwitches >= 4;
+  };
+  const isBotWhatsAppLead = (body: any): boolean => {
+    if (!body || typeof body !== "object") return false;
+    if (String(body.website || body.company || body.hp || "").trim()) return true;
+    return [body.goal, body.details, body.message].some(isGibberishLeadText);
+  };
+
   app.post("/api/track/whatsapp-lead", whatsappLeadLimiter, async (req, res) => {
     try {
       await ensureWhatsAppLeadsTable();
       const body = req.body || {};
+      if (isBotWhatsAppLead(body)) {
+        console.warn("[WhatsAppLead] bot ignored", { ua: safeLeadText(req.get("user-agent"), 160) });
+        res.json({ success: true, captured: true, hasContact: false, excludedFromFollowup: true });
+        return;
+      }
       const email = cleanLeadEmail(body.contactEmail || body.email);
       const phone = cleanLeadPhone(body.phone);
       const offer = safeLeadText(body.offer, 120) || "APEXLABS";
