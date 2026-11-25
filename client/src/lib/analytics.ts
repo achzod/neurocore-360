@@ -176,6 +176,38 @@ export function trackDiscoveryStartOnce(): boolean {
 }
 
 // Track high-intent WhatsApp contact clicks without counting them as purchases.
+const RECAPTCHA_SITE_KEY = '6LfxcjIuAAAAAI4odHqagcNzovoyULAIMA9g3xjB';
+let recaptchaLoading: Promise<any> | null = null;
+
+function loadRecaptcha(): Promise<any> {
+  const w = window as any;
+  if (w.grecaptcha?.execute) return Promise.resolve(w.grecaptcha);
+  if (!recaptchaLoading) {
+    recaptchaLoading = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+      script.async = true;
+      script.onload = () => resolve(w.grecaptcha);
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  return recaptchaLoading;
+}
+
+// Anti-robots : jeton reCAPTCHA v3 pour les formulaires. Ne bloque jamais plus de 4 s.
+export function getRecaptchaToken(action: string): Promise<string | null> {
+  const attempt = loadRecaptcha().then(
+    (g) =>
+      new Promise<string | null>((resolve) => {
+        if (!g?.ready) return resolve(null);
+        g.ready(() => g.execute(RECAPTCHA_SITE_KEY, { action }).then(resolve, () => resolve(null)));
+      })
+  );
+  const timeout = new Promise<string | null>((resolve) => setTimeout(() => resolve(null), 4000));
+  return Promise.race([attempt, timeout]).catch(() => null);
+}
+
 export function trackWhatsAppClick({
   offer,
   placement,
@@ -251,7 +283,7 @@ export function trackWhatsAppClick({
         utm[key] = value;
       }
     });
-    const payload = JSON.stringify({
+    const payloadBase = {
       eventType,
       offer,
       placement,
@@ -268,13 +300,19 @@ export function trackWhatsAppClick({
       urgency,
       details,
       message,
-    });
-    fetch('/api/track/whatsapp-lead', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload,
-      keepalive: true,
-    }).catch(() => {});
+    };
+    const send = (recaptchaToken: string | null) =>
+      fetch('/api/track/whatsapp-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payloadBase, recaptchaToken: recaptchaToken || undefined }),
+        keepalive: true,
+      }).catch(() => {});
+    if (eventType === 'form') {
+      getRecaptchaToken('whatsapp_form').then(send, () => send(null));
+    } else {
+      send(null);
+    }
   } catch {
     // First-party lead capture must never block WhatsApp access.
   }

@@ -1172,6 +1172,32 @@ export async function registerRoutes(
     try {
       await ensureWhatsAppLeadsTable();
       const body = req.body || {};
+      const isFormEvent = /form|submit/i.test(String(body.eventType || ""));
+      if (isFormEvent && process.env.RECAPTCHA_SECRET_KEY) {
+        let human = true;
+        const token = String(body.recaptchaToken || "").trim();
+        if (!token) {
+          human = false;
+        } else {
+          try {
+            const verify = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({ secret: process.env.RECAPTCHA_SECRET_KEY, response: token }).toString(),
+              signal: AbortSignal.timeout(5000),
+            });
+            const result: any = await verify.json();
+            human = Boolean(result?.success) && Number(result?.score ?? 0) >= 0.3;
+          } catch {
+            human = true; // Google injoignable : ne pas perdre un vrai prospect
+          }
+        }
+        if (!human) {
+          console.warn("[WhatsAppLead] recaptcha refuse");
+          res.json({ success: true, captured: true, hasContact: false, excludedFromFollowup: true });
+          return;
+        }
+      }
       if (isBotWhatsAppLead(body)) {
         console.warn("[WhatsAppLead] bot ignored", { ua: safeLeadText(req.get("user-agent"), 160) });
         res.json({ success: true, captured: true, hasContact: false, excludedFromFollowup: true });
